@@ -1,3 +1,7 @@
+import { cmd } from './cmd.js';
+import { dom } from './dom.js';
+import { sheet } from './main.js';
+
 
 let LBT = undefined;
 let RBT = undefined;
@@ -149,3 +153,6 @@ function check_for_outofbound_scroll() {
 
   }, 100);
 }
+
+
+export { LBT, RBT, mouseX, mouseY, mouseXstart, mouseYstart, mouseTargetStart, TargetType, getTargetType, check_for_outofbound_scroll };

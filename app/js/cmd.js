@@ -1,3 +1,10 @@
+import { About } from './About.js';
+import { dom } from './dom.js';
+import { sheet, csvHandle } from './main.js';
+import { Setting, stg } from './Setting.js';
+import { Shortcuts } from './Shortcuts.js';
+import { round } from './utils/misc.js';
+
 const  cmd = {
     about           :{k:"H"    ,ctrl:true, run(){new About()}, description:"About"},
     new             :{k:"N"    ,ctrl:true, run(){csvHandle.new()}, description:"New sheet"},
@@ -87,3 +94,6 @@ function buildMenu() {
 
 
 
+
+
+export { cmd, buildCommands, buildMenu };

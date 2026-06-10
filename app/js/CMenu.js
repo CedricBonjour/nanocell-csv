@@ -1,3 +1,8 @@
+import { cmd, buildMenu } from './cmd.js';
+import { sheet } from './main.js';
+import { TargetType, getTargetType } from './mouse.js';
+import { Table } from './ui/input/Table.js';
+
 class CMenu extends HTMLElement {
   constructor() {
     super();
@@ -95,3 +100,5 @@ class CMenu extends HTMLElement {
   }
 }
 customElements.define('ui-cmenu', CMenu);
+
+export { CMenu };

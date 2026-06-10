@@ -26,3 +26,6 @@ customElements.define('ui-scroller', Scroller);
 
 
 
+
+
+export { Scroller };

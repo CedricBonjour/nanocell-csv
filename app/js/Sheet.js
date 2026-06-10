@@ -1,3 +1,13 @@
+import { Dataframe } from './Dataframe.js';
+import { dom } from './dom.js';
+import { Finder } from './Finder.js';
+import { sheet } from './main.js';
+import { LBT, TargetType } from './mouse.js';
+import { Msg } from './Msg.js';
+import { Setting, stg } from './Setting.js';
+import { Timer, isValidUrl, round } from './utils/misc.js';
+import './utils/DateExt.js';
+
 class Sheet extends HTMLTableElement {
   constructor(df = new Dataframe()) {
     super();
@@ -632,3 +642,5 @@ class Sheet extends HTMLTableElement {
   }
 }
 customElements.define('ui-sheet', Sheet, { extends: 'table' });
+
+export { Sheet };

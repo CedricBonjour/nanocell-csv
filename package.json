@@ -1,0 +1,44 @@
+{
+  "name": "nanocell-csv",
+  "version": "1.0.0",
+  "description": "A free csv file viewer and editor.",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "predev": "node scripts/generate_html.js",
+    "dev": "vite",
+    "prebuild": "node scripts/generate_html.js",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CedricBonjour/nanocell-csv.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/CedricBonjour/nanocell-csv/issues"
+  },
+  "homepage": "https://github.com/CedricBonjour/nanocell-csv#readme",
+  "devDependencies": {
+    "@eslint/js": "^9.21.0",
+    "@playwright/test": "^1.50.1",
+    "eslint": "^9.21.0",
+    "eslint-config-prettier": "^10.0.1",
+    "globals": "^16.0.0",
+    "jsdom": "^29.1.1",
+    "marked": "^18.0.5",
+    "prettier": "^3.5.2",
+    "vite": "^6.2.0",
+    "vite-plugin-pwa": "^0.21.1",
+    "vite-plugin-static-copy": "^4.1.1",
+    "vitest": "^3.0.7"
+  }
+}

@@ -1,3 +1,7 @@
+import { cmd } from './cmd.js';
+import { dom } from './dom.js';
+import { isOSX, getSheet } from './main.js';
+
 
 
 let buildKeys = function () {
@@ -10,7 +14,7 @@ let buildKeys = function () {
     var shift = e.shiftKey;
     var meta = e.metaKey;
     var inputting = document.activeElement.tagName == "INPUT";
-    sheet.slctRange = shift;
+    getSheet().slctRange = shift;
     if (ctrlDown && (prevent_dflt_list.includes(k))) { e.preventDefault(); } // prevent : 
     if (dom.dialog.isBusy && k === "ESCAPE") return dom.dialog.clear();
     if (dom.dialog.isLarge) return;
@@ -26,15 +30,15 @@ let buildKeys = function () {
 
     if (ctrlDown) {
       switch (k) {
-        case "ARROWUP": sheet.y = 0; sheet.slctRefresh(); return;
-        case "ARROWRIGHT": sheet.x = sheet.df.width - 1; sheet.slctRefresh(); return
-        case "ARROWDOWN": sheet.y = sheet.df.height - 1; sheet.slctRefresh(); return;
-        case "ARROWLEFT": sheet.x = 0; sheet.slctRefresh(); return;
+        case "ARROWUP": getSheet().y = 0; getSheet().slctRefresh(); return;
+        case "ARROWRIGHT": getSheet().x = getSheet().df.width - 1; getSheet().slctRefresh(); return
+        case "ARROWDOWN": getSheet().y = getSheet().df.height - 1; getSheet().slctRefresh(); return;
+        case "ARROWLEFT": getSheet().x = 0; getSheet().slctRefresh(); return;
       }
     }
 
     // any char without control keys will start inputing
-    if (e.key.length === 1 && !ctrlDown && !e.metaKey) { e.preventDefault(); return sheet.input(e.key); }
+    if (e.key.length === 1 && !ctrlDown && !e.metaKey) { e.preventDefault(); return getSheet().input(e.key); }
 
     // prevents the default from any cmd combo
     for (var c of Object.values(cmd))
@@ -42,21 +46,21 @@ let buildKeys = function () {
 
 
     switch (k) {
-      case "ARROWUP": sheet.y--; sheet.slctRefresh(); return;
-      case "ARROWDOWN": sheet.y++; sheet.slctRefresh(); return;
-      case "ARROWLEFT": sheet.x--; sheet.slctRefresh(); return;
-      case "ARROWRIGHT": sheet.x++; sheet.slctRefresh(); return;
-      case "TAB": sheet.x++; sheet.slctRefresh(); return;
-      case "ENTER": sheet.input(); return;
-      case "BACKSPACE": sheet.delete(); return;
+      case "ARROWUP": getSheet().y--; getSheet().slctRefresh(); return;
+      case "ARROWDOWN": getSheet().y++; getSheet().slctRefresh(); return;
+      case "ARROWLEFT": getSheet().x--; getSheet().slctRefresh(); return;
+      case "ARROWRIGHT": getSheet().x++; getSheet().slctRefresh(); return;
+      case "TAB": getSheet().x++; getSheet().slctRefresh(); return;
+      case "ENTER": getSheet().input(); return;
+      case "BACKSPACE": getSheet().delete(); return;
     }
   }
 
   document.onkeyup = function (e) {
     var k = e.key.toUpperCase();
     switch (k) {
-      case "CONTROL": if (e.shiftKey) sheet.slctRange = true; return;
-      case "SHIFT": sheet.slctRange = false; return;
+      case "CONTROL": if (e.shiftKey) getSheet().slctRange = true; return;
+      case "SHIFT": getSheet().slctRange = false; return;
     }
   }
 
@@ -64,7 +68,7 @@ let buildKeys = function () {
     var inputting = document.activeElement.tagName == "INPUT";
     if (inputting) return;
     e.preventDefault();
-    var clip = sheet.rangeArray().map(r => r.join('\t')).join('\n');
+    var clip = getSheet().rangeArray().map(r => r.join('\t')).join('\n');
     e.clipboardData.setData('text/plain', clip);
   });
 
@@ -72,18 +76,21 @@ let buildKeys = function () {
     var inputting = document.activeElement.tagName == "INPUT";
     if (inputting) return;
     e.preventDefault();
-    var clip = sheet.rangeArray().map(r => r.join('\t')).join('\n');
+    var clip = getSheet().rangeArray().map(r => r.join('\t')).join('\n');
     e.clipboardData.setData('text/plain', clip);
-    sheet.rangeEdit('');
-    sheet.refresh();
+    getSheet().rangeEdit('');
+    getSheet().refresh();
   });
 
   document.addEventListener('paste', function (e) {
     var inputting = document.activeElement.tagName == "INPUT";
     if (inputting) return;
     e.preventDefault();
-    sheet.paste((e.clipboardData).getData('text').split('\n').map(r => r.split(/[\t,]+/)));
-    sheet.refresh();
+    getSheet().paste((e.clipboardData).getData('text').split('\n').map(r => r.split(/[\t,]+/)));
+    getSheet().refresh();
   });
 
 }
+
+
+export { buildKeys };

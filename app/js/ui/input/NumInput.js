@@ -41,3 +41,6 @@ class NumInput extends HTMLElement {
 }
 customElements.define('ui-num', NumInput);
 
+
+
+export { NumInput };

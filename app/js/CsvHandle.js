@@ -1,16 +1,29 @@
+import { cmd } from './cmd.js';
+import { Dataframe } from './Dataframe.js';
+import { sheet, setSheet } from './main.js';
+import { Msg } from './Msg.js';
+import { stg } from './Setting.js';
+import { Sheet } from './Sheet.js';
+
+import { round } from './utils/misc.js';
+import SwWorker from '../sw_read_write_csv.js?worker';
+
+
 class CsvHandle {
   constructor() {
     this.handle = null;
     this.file = null;
     this.file_chunks = null;
     this.viewOnly = false;
-    this.sw = new Worker("sw_read_write_csv.js");
-    this.sw.addEventListener("message", e => {
-      let d = e.data
-      switch (d.cmd) {
-        case "chunk_loaded": this.file_chunk_loaded(d)
-      }
-    })
+    this.sw = typeof Worker !== 'undefined' ? new SwWorker() : null;
+    if (this.sw) {
+      this.sw.addEventListener("message", e => {
+        let d = e.data
+        switch (d.cmd) {
+          case "chunk_loaded": this.file_chunk_loaded(d)
+        }
+      })
+    }
   }
 
   async launchFile(handle) {
@@ -29,12 +42,13 @@ class CsvHandle {
 
   readSuccess() {
     let matrix = this.file_chunks.flat(1);
-    sheet = new Sheet(new Dataframe(matrix))
-    sheet.df.isSaved = true;
-    sheet.df.lock = this.viewOnly;
-    if(stg.trim) sheet.df.trimAll();
-    sheet.fixTop = stg.set_headers;
-    if(stg.fit_col_width) sheet.fitWidth();
+    let s = new Sheet(new Dataframe(matrix));
+    setSheet(s);
+    s.df.isSaved = true;
+    s.df.lock = this.viewOnly;
+    if(stg.trim) s.df.trimAll();
+    s.fixTop = stg.set_headers;
+    if(stg.fit_col_width) s.fitWidth();
   }
 
   read(file) {
@@ -151,3 +165,6 @@ Object.defineProperty(CsvHandle, 'pickerOptions', {
 });
 
 
+
+
+export { CsvHandle };

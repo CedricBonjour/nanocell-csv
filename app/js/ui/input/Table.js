@@ -30,3 +30,6 @@ class Table extends HTMLTableElement {
 }
 
 customElements.define('ui-table', Table, { extends: 'table' });
+
+
+export { Table };

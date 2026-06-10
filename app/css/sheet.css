@@ -3,7 +3,7 @@
   width: 100%;
   height: 100%;
   background: var(--table-borders);
-  border-spacing: 1px;
+  /* border-spacing: 1px; */
 }
 
 
@@ -47,7 +47,8 @@
   justify-content: center;
   cursor: col-resize;
 }
-.noclick{
+
+.noclick {
   pointer-events: none;
 }
 
@@ -76,7 +77,8 @@
 
 
 
-.sheet input, .sheet input:focus {
+.sheet input,
+.sheet input:focus {
   box-sizing: border-box;
   position: absolute;
   padding: 0 .5em 0 .5em;

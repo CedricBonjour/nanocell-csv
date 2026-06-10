@@ -13,7 +13,7 @@
   <link rel="shortcut icon" href="/favicon.ico" />
 
 
-  <link rel="manifest" href="manifest.JSON">
+
   <meta property="og:title" content="NanoCell - CSV file Viewer & Editor" />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://nanocell-csv.com" />
@@ -25,7 +25,7 @@
     content="Nanocell - CSV file Viewer & Editor : free, fast, simple, lightweight, offline, cross platform, and data accurate">
   <meta name="description"
     content="Nanocell - CSV file Viewer & Editor : free, fast, simple, lightweight, offline, cross platform, and data accurate">
-  <script defer src="/_vercel/insights/script.js"></script>
+
 </head>
 
 <body>
@@ -125,11 +125,6 @@
         mature. Help us get there faster by reporting on the github issue tracker <a
           href="https://github.com/CedricBonjour/nanocell-csv/issues/new" target="_blank">[here].</a> </p>
     </section>
-    <!-- <section id="support">
-      <h2>Contact</h2>
-      <code id="email">nanocell.csv@gmail.com</code>
-      <span id="copy_toast"> <img src="img/nav/cp.svg" alt="copy_icon"> copied to clipboard</span>
-    </section> -->
     <section id="footer">
       <div>
         <strong>Links</strong>
@@ -138,23 +133,21 @@
         <a href="https://github.com/CedricBonjour/nanocell-csv" target="_blank"> Github Repository</a>
       </div>
       <div>
-        <strong>Articles</strong>
-        <a href="/article/about-csv-files.html">Nanocell-csv: the why?</a>
-        <a href="/article/how-to-open-a-csv-file.html">Opening Large CSV files</a>
-        <a href="/article/lets-fix-csv-files.html">Let's fix csv files</a>
-        <a href="/article/pwa-showcase.html">About Progressive Web Apps</a>
-      </div>
-      <div>
         <strong>Contact</strong>
         <a href="https://CedricBonjour.github.io/" target="_blank">About the author</a>
         <span>
           <a id="email">nanocell.csv@gmail.com</a>
-          <code  id="copy_toast"> <img src="img/nav/cp.svg" alt="copy_icon"> copied to clipboard</code >
+          <code id="copy_toast"> <img src="img/nav/cp.svg" alt="copy_icon"> copied to clipboard</code>
         </span>
 
       </div>
     </section>
   </div>
+
+
+
+
+
 
 
   <script type="text/javascript">
@@ -163,21 +156,6 @@
     window.addEventListener("beforeinstallprompt", (event) => { installPrompt = event });
 
     document.getElementById('install').addEventListener("click", handleInstallPrompt);
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('app/sw_pwa_admin.js')
-        .then(registration => {
-          console.log('Service Worker is registered', registration);
-        })
-        .catch(err => {
-          console.error('Registration failed:', err);
-          if (navigator.userAgent.includes("Chrome")) installButton.innerHTML = "Download not available";
-          else installButton.innerHTML = "Download available on the Chrome Browser";
-        });
-
-    } else { alert("Service workers not suported by browser") }
-
-
-
 
     async function handleInstallPrompt() {
       if (!installPrompt) return;
@@ -235,7 +213,3 @@
 </body>
 
 </html>
-
-<!-- do a release notes  -->
-<!-- do doc -->
-<!-- do FAQ -->

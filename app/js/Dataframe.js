@@ -1,3 +1,6 @@
+import { stg } from './Setting.js';
+import { round } from './utils/misc.js';
+
 class Dataframe {
   constructor(d = [[""]]) {
     this.lock = false;
@@ -155,3 +158,6 @@ class Dataframe {
 Object.defineProperty(Dataframe, 'MS_DELTA', { value: 100 });
 
 
+
+
+export { Dataframe };

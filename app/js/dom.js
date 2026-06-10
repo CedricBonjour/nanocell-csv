@@ -1,6 +1,10 @@
+import { CMenu } from './CMenu.js';
+import { sheet } from './main.js';
+import { Scroller } from './ui/input/Scroller.js';
+
 var dom = undefined;
 
-build_dom = function () {
+let build_dom = function () {
   dom = {
     palette: document.getElementById("palette"),
     theme: document.getElementById("theme"),
@@ -54,3 +58,6 @@ build_dom = function () {
 }
 
 
+
+
+export { dom, build_dom };

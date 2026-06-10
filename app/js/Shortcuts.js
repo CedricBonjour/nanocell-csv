@@ -1,3 +1,7 @@
+import { cmd } from './cmd.js';
+import { dom } from './dom.js';
+import { Table } from './ui/input/Table.js';
+
 class Shortcuts extends HTMLElement {
   constructor() {
     super();
@@ -34,3 +38,6 @@ customElements.define('ui-shortcuts', Shortcuts);
 
 
 
+
+
+export { Shortcuts };

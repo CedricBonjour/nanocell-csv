@@ -1,3 +1,6 @@
+import { sheet } from '../../main.js';
+import { LBT, TargetType } from '../../mouse.js';
+
 class TCell extends HTMLTableCellElement {
   constructor() {
     super();
@@ -35,3 +38,5 @@ class TCell extends HTMLTableCellElement {
 }
 
 customElements.define("ui-cell", TCell, { extends: "td" });
+
+export { TCell };

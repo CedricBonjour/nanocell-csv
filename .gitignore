@@ -1,7 +1,6 @@
 app/test/
 test/csv_files/
 test/
-public/
 private/
 
 *TODO.md
@@ -9,3 +8,25 @@ private/
 # Ignore all .csv files except demo.csv
 *.csv
 !demo*.csv
+
+node_modules/
+dist/
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+blob-report/
+
+# Vite & Testing
+.vite/
+coverage/
+
+# Environment
+.env
+.env.*
+
+# Misc
+.DS_Store
+
+dev-dist/

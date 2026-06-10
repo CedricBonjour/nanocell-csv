@@ -1,3 +1,5 @@
+import { dom } from './dom.js';
+
 class Msg extends HTMLElement {
   constructor(txt = "Empty message", opt = {}) {
     super();
@@ -33,3 +35,6 @@ class Msg extends HTMLElement {
 }
 
 customElements.define('ui-msg', Msg);
+
+
+export { Msg };

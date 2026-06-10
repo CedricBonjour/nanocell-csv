@@ -1,3 +1,8 @@
+import { dom } from './dom.js';
+import { sheet } from './main.js';
+import { BoolInput } from './ui/input/BoolInput.js';
+import { Table } from './ui/input/Table.js';
+
 class Finder extends HTMLElement {
   constructor(sheet) {
     super();
@@ -167,3 +172,6 @@ class Finder extends HTMLElement {
 }
 
 customElements.define('ui-finder', Finder);
+
+
+export { Finder };

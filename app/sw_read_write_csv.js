@@ -2,10 +2,10 @@ const CHUNK_SIZE = 500 * 1000; // = 500ko
 const n_chars_for_separator_detection = 500;
 
 
-separatorDetection = function (txt) {
+function separatorDetection(txt) {
   if (txt.length > n_chars_for_separator_detection) txt = txt.substring(0, n_chars_for_separator_detection)
-  d = [',', '\t', ';', ':', '|']
-  n = [0, 0, 0, 0]
+  let d = [',', '\t', ';', ':', '|']
+  let n = [0, 0, 0, 0, 0]
   for (var i = 0; i < txt.length; i++) {
     for (var j = 0; j < d.length; j++) {
       if (txt[i] == d[j]) n[j]++;
@@ -14,7 +14,7 @@ separatorDetection = function (txt) {
   return d[n.indexOf(Math.max(...n))]
 }
 
-csv_parse = function (s, d = ",") {
+function csv_parse(s, d = ",") {
   var rows = [];
   var lr = '\n'
   var v = [];     //value characters;
@@ -45,13 +45,13 @@ csv_parse = function (s, d = ",") {
       v = []
     }
   }
-  if (s[len-1]=== '\n') rows.push([[""]]) 
+  if (s[len-1]=== '\n') rows.push([[""]])
   if (v.length >0) rows.push(v);
   return rows;
 }
 
 
-csv_parse1 = function (txt, d = ",") {
+function csv_parse1(txt, d = ",") {
   return txt.split(/[;\r]?\n/).map(s => {
     var r = [];     //result;
     var q = '"';    //quote
@@ -80,7 +80,7 @@ csv_parse1 = function (txt, d = ",") {
   })
 }
 
-loadcsv = function (data) {
+function loadcsv(data) {
   if (data.viewOnly) return load_csv_view_only(data);
   let file = data.file;
   console.log("reading chunk size : ", CHUNK_SIZE)
@@ -123,14 +123,14 @@ loadcsv = function (data) {
     })
     if (offset / fileSize < 1) seek()
   };
-  seek = function () {
+  function seek() {
     reader.readAsText(file.slice(offset, offset + CHUNK_SIZE), "utf-8");
     offset += CHUNK_SIZE;
   }
   seek()
 }
 
-load_csv_view_only = function (data) {
+function load_csv_view_only(data) {
   let file = data.file;
   console.log("reading chunk size : ", CHUNK_SIZE);
   console.log("sw loading view only : ", file.name);
@@ -166,7 +166,7 @@ load_csv_view_only = function (data) {
     if (iteration < lastIteration) seek()
   };
 
-  seek = function () {
+  function seek() {
     iteration++;
     let offset = (iteration - 1) * (fileSize / vo_n_chunks);
     if (iteration == lastIteration) reader.readAsText(file.slice(file.size - CHUNK_SIZE, file.size), "utf-8");

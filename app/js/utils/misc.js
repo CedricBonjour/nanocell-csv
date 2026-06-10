@@ -40,7 +40,7 @@ function isValidUrl(txt) {
 }
 
 
-round = function (n, integer = true) {
+let round = function (n, integer = true) {
   if (isNaN(n) || n === '') return n;
   n = Number(n);
   if (!integer) n *= 100;
@@ -55,3 +55,6 @@ round = function (n, integer = true) {
 }
 
 
+
+
+export { signOf, isAlphanumeric, Timer, rndStr, isValidUrl, round };

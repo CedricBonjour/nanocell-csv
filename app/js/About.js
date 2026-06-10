@@ -1,3 +1,5 @@
+import { dom } from './dom.js';
+
 class About extends HTMLElement {
   constructor() {
     super();
@@ -63,3 +65,5 @@ customElements.define('ui-about', About);
 // height: 7vh;
 // align-content: space-between;
 // justify-content: space-between;
+
+export { About };

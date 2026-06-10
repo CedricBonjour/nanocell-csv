@@ -1,3 +1,24 @@
+import { buildCommands, buildMenu } from './cmd.js';
+import { CsvHandle } from './CsvHandle.js';
+import { Dataframe } from './Dataframe.js';
+import { build_dom } from './dom.js';
+import { buildKeys } from './key.js';
+import { Setting } from './Setting.js';
+import { Sheet } from './Sheet.js';
+import './ui/input/TCell.js';
+import './ui/input/BoolInput.js';
+import './ui/input/ListInput.js';
+import './ui/input/NumInput.js';
+import './ui/input/Scroller.js';
+import './ui/input/Table.js';
+import './About.js';
+import './CMenu.js';
+import './Finder.js';
+import './Msg.js';
+import './Shortcuts.js';
+
+import { registerSW } from 'virtual:pwa-register';
+
 window.addEventListener('beforeunload', function (e) { if (!sheet.df.isSaved) e.preventDefault() });
 
 let sampleData = [
@@ -29,13 +50,13 @@ let sampleData = [
 let isOSX = navigator.userAgent.includes('Macintosh')
 
 // localStorage.clear();
-let is_installed = window.matchMedia('(display-mode: standalone)').matches
+let is_installed = window.matchMedia ? window.matchMedia('(display-mode: standalone)').matches : false;
 let sheet = undefined;
 let overview = undefined;
 let csvHandle = new CsvHandle()
 
-launchFileOnInitDone = function () {
-  window.launchQueue.setConsumer(async (params) => {
+let launchFileOnInitDone = function () {
+  window.launchQueue?.setConsumer(async (params) => {
     console.log(params)
     const [handle] = params.files;
     if (handle) csvHandle.launchFile(handle)
@@ -47,7 +68,7 @@ launchFileOnInitDone = function () {
   });
 }
 
-nanocell_cleanStart = function () {
+let nanocell_cleanStart = function () {
   Setting.log()
   Setting.init();
   build_dom()
@@ -58,3 +79,12 @@ nanocell_cleanStart = function () {
   Setting.runAll();
   launchFileOnInitDone();
 }
+
+window.addEventListener('DOMContentLoaded', () => {
+  nanocell_cleanStart();
+});
+registerSW({ immediate: true });
+
+export function setSheet(s) { sheet = s; }
+export function getSheet() { return sheet; }
+export { sampleData, isOSX, is_installed, sheet, overview, csvHandle, launchFileOnInitDone, nanocell_cleanStart };

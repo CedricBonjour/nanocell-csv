@@ -28,3 +28,6 @@ class BoolInput extends HTMLElement {
 }
 
 customElements.define('ui-bool', BoolInput);
+
+
+export { BoolInput };

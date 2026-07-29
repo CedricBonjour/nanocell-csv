@@ -1,8 +1,17 @@
 import { defineConfig } from 'vitest/config';
 import { VitePWA } from 'vite-plugin-pwa';
 import { resolve } from 'path';
+import { spawnSync } from 'child_process';
 
-export default defineConfig({
+const generateHtmlPlugin = () => ({
+  name: 'generate-html',
+  closeBundle() {
+    console.log('Running scripts/generate_html.js...');
+    spawnSync('node', ['scripts/generate_html.js'], { stdio: 'inherit' });
+  }
+});
+
+export default defineConfig(({ command }) => ({
   build: {
     outDir: resolve(__dirname, 'dist'),
     emptyOutDir: true,
@@ -20,8 +29,14 @@ export default defineConfig({
     exclude: ['tests/e2e/**', 'node_modules/**']
   },
   plugins: [
+    generateHtmlPlugin(),
     VitePWA({
       registerType: 'autoUpdate',
+      includeAssets: ['**/*.{png,svg,webp,ico}'],
+      workbox: {
+        navigateFallback: null,
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,ttf}']
+      },
 
       // ENABLE PWA IN DEV MODE
       devOptions: {
@@ -69,4 +84,4 @@ export default defineConfig({
       }
     })
   ]
-});
+}));

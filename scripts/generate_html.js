@@ -39,19 +39,6 @@ const template = (title, content) => `
 </html>
 `;
 
-function generateFile(inputFile, outputFile, title) {
-  if (!fs.existsSync(inputFile)) return;
-  const markdown = fs.readFileSync(inputFile, 'utf-8');
-  const html = marked.parse(markdown);
-  const finalHtml = template(title, html);
-
-  // Ensure directory exists
-  const dir = path.dirname(outputFile);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-
-  fs.writeFileSync(outputFile, finalHtml);
-  console.log(`Generated ${outputFile}`);
-}
 
 // Ensure dist/ exists (may not exist yet during prebuild)
 if (!fs.existsSync(DIST)) fs.mkdirSync(DIST, { recursive: true });
@@ -63,20 +50,8 @@ const termsHtml = `
   <hr style="margin: 2em 0;" />
   ${marked.parse(fs.existsSync(path.join(ROOT, 'LICENSE.md')) ? fs.readFileSync(path.join(ROOT, 'LICENSE.md'), 'utf-8') : '')}
 `;
+
+
 const termsOut = path.join(DIST, 'terms_of_use_and_license.html');
 fs.writeFileSync(termsOut, template('Terms of Use & License', termsHtml));
 console.log(`Generated ${termsOut}`);
-
-// 2. Generate articles
-const articleSrc = path.join(ROOT, 'article');
-if (fs.existsSync(articleSrc)) {
-  const articles = fs.readdirSync(articleSrc).filter(f => f.endsWith('.md'));
-  for (const file of articles) {
-    const name = file.replace('.md', '');
-    generateFile(
-      path.join(articleSrc, file),
-      path.join(DIST, 'article', `${name}.html`),
-      name
-    );
-  }
-}

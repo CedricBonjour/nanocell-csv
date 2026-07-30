@@ -204,19 +204,72 @@ export class SheetController {
   }
 
   /**
-   * Formats top header row cells to comply with standard SQL column naming conventions.
+   * Focuses grid on specified cell (x, y) and highlights it.
+   * @param {number} x 
+   * @param {number} y 
+   */
+  focus_cell(x, y) {
+    this.sheet.x = x;
+    this.sheet.y = y;
+    this.slctRefresh(true);
+  }
+
+  /**
+   * Retrieves validation pane component and displays validation edit proposals.
+   * @param {Array<Object>} items 
+   */
+  openValidationPaneWithItems(items = []) {
+    let pane = StateManager.getState('validationPane');
+    if (!pane && typeof document !== 'undefined') {
+      pane = document.getElementById('validation-pane') || document.querySelector('ui-validation-pane');
+    }
+    if (pane) {
+      if (typeof pane.bindSheet === 'function') pane.bindSheet(this.sheet);
+      if (typeof pane.loadItems === 'function') pane.loadItems(items);
+      if (typeof pane.show === 'function') pane.show();
+    }
+  }
+
+  /**
+   * Performs read-only scan over header row to propose standard SQL column naming fixes.
+   * @returns {Array<Object>} List of proposed header edit objects.
    */
   validate_headers() {
+    const items = [];
+    const simulatedHeaders = [];
+    let idCounter = 0;
+
     for (let x = 0; x < this.sheet.df.width; x++) {
-      let h = this.sheet.df.get(x, 0);
+      const originalH = this.sheet.df.get(x, 0);
+      let h = originalH;
       if (h === undefined || h === "") h = `col_${x + 1}`;
-      h = h.toLowerCase();
+      h = String(h).toLowerCase();
       h = h.replace(/[^a-zA-Z0-9]/g, '_');
-      for (let i = 0; i < x; i++) if (h == this.sheet.df.get(i, 0)) h = h + `_c${x + 1}`;
-      this.sheet.df.edit(x, 0, h);
+
+      for (let i = 0; i < x; i++) {
+        if (h === simulatedHeaders[i]) {
+          h = h + `_c${x + 1}`;
+        }
+      }
+      simulatedHeaders.push(h);
+
+      if (h !== originalH) {
+        items.push({
+          id: `val_hdr_${x}_${idCounter++}`,
+          x: x,
+          y: 0,
+          header: originalH || `col_${x + 1}`,
+          oldValue: originalH ?? "",
+          newValue: h,
+          category: 'DUPLICATE_FIX',
+          categoryName: 'Duplicate Fixes',
+          status: 'pending'
+        });
+      }
     }
 
-    this.view.refresh();
+    this.openValidationPaneWithItems(items);
+    return items;
   }
 
   /**
@@ -242,28 +295,90 @@ export class SheetController {
   }
 
   /**
-   * Formats matrix cell values to comply with strict CSV standards based on active settings.
+   * Performs read-only scan over dataframe matrix to propose CSV compliance edits based on active settings.
+   * @returns {Array<Object>} List of proposed edit objects.
    */
   validate_data() {
+    const items = [];
     let dot = stg.dv_comma_num;
     let dash = stg.dv_comma_txt;
     let single_quote = stg.dv_quotes;
     let line_return = stg.dv_lr;
     let lower = stg.dv_lower;
-    this.allApply((x, y) => {
-      let d = this.sheet.df.get(x, y);
-      if (d.length < 1 || !isNaN(d)) return;
-      if (dot) {
-        let numberTry = d.replace(',', '.');
-        if (!isNaN(numberTry)) return this.sheet.df.edit(x, y, numberTry);
+    let idCounter = 0;
+
+    for (let y = 0; y < this.sheet.df.height; y++) {
+      for (let x = 0; x < this.sheet.df.width; x++) {
+        const origVal = this.sheet.df.get(x, y);
+        if (origVal === undefined || origVal === null) continue;
+        let d = String(origVal);
+        if (d.length < 1) continue;
+
+        const headerName = this.sheet.df.get(x, 0) || `col_${x + 1}`;
+
+        // 1. Whitespace Trimming check
+        if (d !== d.trim()) {
+          const trimmed = d.trim();
+          items.push({
+            id: `val_data_${x}_${y}_${idCounter++}`,
+            x: x,
+            y: y,
+            header: headerName,
+            oldValue: d,
+            newValue: trimmed,
+            category: 'WHITESPACE_TRIMMING',
+            categoryName: 'Whitespace/Trimming',
+            status: 'pending'
+          });
+          d = trimmed;
+        }
+
+        if (d.length < 1 || !isNaN(d)) continue;
+
+        // 2. Data Type Coercion (e.g. comma to dot for numbers)
+        if (dot && d.includes(',')) {
+          let numberTry = d.replace(',', '.');
+          if (!isNaN(numberTry)) {
+            items.push({
+              id: `val_data_${x}_${y}_${idCounter++}`,
+              x: x,
+              y: y,
+              header: headerName,
+              oldValue: origVal,
+              newValue: numberTry,
+              category: 'DATA_TYPE_COERCION',
+              categoryName: 'Data Type Coercion',
+              status: 'pending'
+            });
+            continue;
+          }
+        }
+
+        // 3. Constraint / Range Violations (comma in text, line returns, quotes, lowercase)
+        let v = d;
+        if (dash) v = v.replaceAll(',', '-');
+        if (line_return) v = v.replaceAll('\n', '|');
+        if (single_quote) v = v.replaceAll('\"', '\'');
+        if (lower) v = v.toLowerCase();
+
+        if (v !== d) {
+          items.push({
+            id: `val_data_${x}_${y}_${idCounter++}`,
+            x: x,
+            y: y,
+            header: headerName,
+            oldValue: origVal,
+            newValue: v,
+            category: 'CONSTRAINT_RANGE_VIOLATION',
+            categoryName: 'Constraint/Range Violations',
+            status: 'pending'
+          });
+        }
       }
-      if (dash) d = d.replaceAll(',', '-');
-      if (line_return) d = d.replaceAll('\n', '|');
-      if (single_quote) d = d.replaceAll('\"', '\'');
-      if (lower) d = d.toLowerCase();
-      this.sheet.df.edit(x, y, d);
-    });
-    this.view.refresh();
+    }
+
+    this.openValidationPaneWithItems(items);
+    return items;
   }
 
   /**

@@ -176,7 +176,7 @@ export class SheetView {
     else f.left.innerHTML = (this.sheet.x + 1) + ":" + (this.sheet.y + 1);
     f.right.innerHTML = this.sheet.df.width + ":" + this.sheet.df.height;
     f.center.innerHTML = this.sheet.df.get(this.sheet.x, this.sheet.y).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('\n', '<br>').replaceAll(' ', '<span style="color:var(--dots)">&bull;</span>');
-    f.lock.src = (this.sheet.df.isSaved) ? "icn/lock.svg" : "icn/edit.svg";
+    if (f.lock) f.lock.src = (this.sheet.df.isSaved) ? "icn/lock.svg" : "icn/edit.svg";
   }
 
   /**

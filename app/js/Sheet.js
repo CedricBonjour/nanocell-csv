@@ -39,7 +39,17 @@ class Sheet extends HTMLElement {
     this.view = new SheetView(this);
     this.controller = new SheetController(this, this.view);
 
-    if (dom?.content) {
+    const container = dom?.mainContainer || document.getElementById("main-container");
+    if (container) {
+      container.querySelectorAll('ui-sheet, #sheet').forEach(el => {
+        if (el !== this) el.remove();
+      });
+      if (this.parentNode !== container) {
+        container.appendChild(this);
+      }
+      if (dom?.content?.scrollerY) container.appendChild(dom.content.scrollerY);
+      if (dom?.content?.scrollerX) container.appendChild(dom.content.scrollerX);
+    } else if (dom?.content) {
       dom.content.innerHTML = "";
       dom.content.appendChild(this);
       if (dom.content.scrollerY) dom.content.appendChild(dom.content.scrollerY);
@@ -64,6 +74,7 @@ class Sheet extends HTMLElement {
   set x(n) { this.controller.setX(n); }
   set y(n) { this.controller.setY(n); }
 
+  focus_cell(x, y) { return this.controller.focus_cell(x, y); }
   getSlctFirstValue() { return this.controller.getSlctFirstValue(); }
   deleteRows() { return this.controller.deleteRows(); }
   deleteCols() { return this.controller.deleteCols(); }

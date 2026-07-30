@@ -403,15 +403,15 @@ describe('Milestone 2 Empirical Stress & Edge Case Test Suite', () => {
       stg.dv_quotes = true;
       stg.dv_lr = true;
 
-      sheet.validate_headers();
-      expect(df.get(0, 0)).toBe('header_1_');
-      expect(df.get(1, 0)).toBe('header_2');
-      expect(df.get(2, 0)).toBe('header_1__c3');
+      const headerItems = sheet.validate_headers();
+      expect(headerItems.find(i => i.x === 0).newValue).toBe('header_1_');
+      expect(headerItems.find(i => i.x === 1).newValue).toBe('header_2');
+      expect(headerItems.find(i => i.x === 2).newValue).toBe('header_1__c3');
 
-      sheet.validate_data();
-      expect(df.get(0, 1)).toBe('12.34');
-      expect(df.get(1, 1)).toBe("SAY 'HELLO'");
-      expect(df.get(2, 1)).toBe('Line1|Line2');
+      const dataItems = sheet.validate_data();
+      expect(dataItems.find(i => i.x === 0 && i.y === 1).newValue).toBe('12.34');
+      expect(dataItems.find(i => i.x === 1 && i.y === 1).newValue).toBe("SAY 'HELLO'");
+      expect(dataItems.find(i => i.x === 2 && i.y === 1).newValue).toBe('Line1|Line2');
     });
 
     test('expand auto-fills linear series across range', () => {

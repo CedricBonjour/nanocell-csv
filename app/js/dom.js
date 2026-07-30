@@ -10,6 +10,8 @@ let build_dom = function () {
     header: document.getElementById("header"),
     body: document.getElementById("body") || document.body,
     content: document.getElementById("content"),
+    mainContainer: document.getElementById("main-container"),
+    validationPane: document.getElementById("validation-pane"),
     dialog: document.getElementById("dialog"),
     footer: document.getElementById("footer"),
     cmenu: document.createElement("ui-cmenu"),

@@ -188,12 +188,12 @@ describe('Milestone 5 Phase 2 Tier 5 White-Box Adversarial Coverage Hardening Su
         ['Name', 'Name', 'Name', 'Name!@#']
       ]);
       const sheet = new Sheet(df);
-      sheet.validate_headers();
+      const items = sheet.validate_headers();
 
-      expect(df.get(0, 0)).toBe('name');
-      expect(df.get(1, 0)).toBe('name_c2');
-      expect(df.get(2, 0)).toBe('name_c3');
-      expect(df.get(3, 0)).toBe('name___');
+      expect(items.find(i => i.x === 0).newValue).toBe('name');
+      expect(items.find(i => i.x === 1).newValue).toBe('name_c2');
+      expect(items.find(i => i.x === 2).newValue).toBe('name_c3');
+      expect(items.find(i => i.x === 3).newValue).toBe('name___');
     });
 
     test('Sheet validate_data() transforms quotes, line returns, commas, and lowercases when configured', () => {
@@ -214,12 +214,12 @@ describe('Milestone 5 Phase 2 Tier 5 White-Box Adversarial Coverage Hardening Su
           ['12,345', 'Hello, World', 'Line1\nLine2', '"Quoted"']
         ]);
         const sheet = new Sheet(df);
-        sheet.validate_data();
+        const items = sheet.validate_data();
 
-        expect(df.get(0, 0)).toBe('12.345');
-        expect(df.get(1, 0)).toBe('hello- world');
-        expect(df.get(2, 0)).toBe('line1|line2');
-        expect(df.get(3, 0)).toBe("'quoted'");
+        expect(items.find(i => i.x === 0 && i.y === 0).newValue).toBe('12.345');
+        expect(items.find(i => i.x === 1 && i.y === 0).newValue).toBe('hello- world');
+        expect(items.find(i => i.x === 2 && i.y === 0).newValue).toBe('line1|line2');
+        expect(items.find(i => i.x === 3 && i.y === 0).newValue).toBe("'quoted'");
       } finally {
         stg.dv_comma_num = origNum;
         stg.dv_comma_txt = origTxt;

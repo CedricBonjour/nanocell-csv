@@ -13,6 +13,7 @@ import './ui/input/NumInput.js';
 import './ui/input/Scroller.js';
 import './ui/input/Table.js';
 import './ui/CommandPalette.js';
+import './ui/ValidationPane.js';
 import './About.js';
 import './Finder.js';
 import './Msg.js';

@@ -58,10 +58,10 @@ describe('UI Sheet Component & Custom Element <ui-sheet>', () => {
   });
 
   test('validate_headers normalizes column headers to lowercase and underscores', () => {
-    sheet.validate_headers();
-    expect(df.get(0, 0)).toBe('header1');
-    expect(df.get(1, 0)).toBe('header2');
-    expect(df.get(2, 0)).toBe('header3');
+    const items = sheet.validate_headers();
+    expect(items.find(i => i.x === 0).newValue).toBe('header1');
+    expect(items.find(i => i.x === 1).newValue).toBe('header2');
+    expect(items.find(i => i.x === 2).newValue).toBe('header3');
   });
 
   test('sort reorders rows ascending and descending', () => {
@@ -114,9 +114,9 @@ describe('UI Sheet Component & Custom Element <ui-sheet>', () => {
     df.edit(0, 1, '12,34');
     df.edit(0, 2, 'Say "hello"');
 
-    sheet.validate_data();
-    expect(df.get(0, 1)).toBe('12.34');
-    expect(df.get(0, 2)).toBe("Say 'hello'");
+    const items = sheet.validate_data();
+    expect(items.find(i => i.x === 0 && i.y === 1).newValue).toBe('12.34');
+    expect(items.find(i => i.x === 0 && i.y === 2).newValue).toBe("Say 'hello'");
   });
 
   test('fitWidth calculates proportional column widths based on content length', () => {

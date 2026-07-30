@@ -334,6 +334,12 @@ class Dataframe {
         if (Array.isArray(changes)) {
           for (const edit of changes) {
             const val = isRevert ? edit.oldValue : edit.newValue;
+            while (this.width <= edit.x) {
+              for (const row of this.data) row.push('');
+            }
+            while (this.height <= edit.y) {
+              this.data.push(Array(this.width).fill(''));
+            }
             this.data[edit.y][edit.x] = val;
           }
         }

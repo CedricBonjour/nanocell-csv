@@ -4,6 +4,7 @@ class ListInput extends HTMLElement {
     this.list = list;
     this.hideValue = hide;
     this.idx = 0;
+    this.classList.add("ui-list");
 
     this.left = document.createElement("div");
     this.center = document.createElement("div");
@@ -26,37 +27,62 @@ class ListInput extends HTMLElement {
     this.appendChild(this.center);
     this.appendChild(this.right);
 
-    this.left.addEventListener("click", e => { this.prev() });
-    this.right.addEventListener("click", e => { this.next() });
+    this.left.addEventListener("click", () => { this.prev(true); });
+    this.right.addEventListener("click", () => { this.next(true); });
     this.setAttribute('hide', this.hideValue);
-    this.addEventListener("click", e => { this.focus() });
+    this.addEventListener("click", () => { this.focus(); });
     this.addEventListener("keydown", e => {
       const k = e.key.toUpperCase();
-      if (k === "ARROWRIGHT" || k === "ARROWDOWN") { this.next() }
-      else if (k === "ARROWLEFT" || k === "ARROWUP") { this.prev() }
+      if (k === "ARROWRIGHT" || k === "ARROWDOWN") { this.next(true); }
+      else if (k === "ARROWLEFT" || k === "ARROWUP") { this.prev(true); }
     });
 
-    for (const ele of this.list) {
+    this.renderOptions();
+  }
+
+  renderOptions() {
+    this.center.innerHTML = "";
+    for (let i = 0; i < this.list.length; i++) {
+      const ele = this.list[i];
       const td = document.createElement("span");
       td.innerHTML = ele;
-      td.addEventListener("click", e => { this.value = e.target.innerHTML });
+      td.setAttribute('selected', i === this.idx ? "true" : "false");
+      td.addEventListener("click", () => { this.setValueInternal(ele, true); });
       this.center.appendChild(td);
     }
   }
 
-  next() { this.idx = (this.idx + 1) % this.list.length; this.value = this.list[this.idx] }
-  prev() { this.idx = (this.idx + this.list.length - 1) % this.list.length; this.value = this.list[this.idx] }
+  next(isUserAction = false) {
+    const nextIdx = (this.idx + 1) % this.list.length;
+    this.setValueInternal(this.list[nextIdx], isUserAction);
+  }
 
-  get value() { return this.center.children[this.idx] ? this.center.children[this.idx].innerHTML : "" }
+  prev(isUserAction = false) {
+    const prevIdx = (this.idx + this.list.length - 1) % this.list.length;
+    this.setValueInternal(this.list[prevIdx], isUserAction);
+  }
+
+  get value() {
+    return this.list[this.idx] !== undefined ? this.list[this.idx] : "";
+  }
+
   set value(txt) {
+    this.setValueInternal(txt, false);
+  }
+
+  setValueInternal(txt, isUserAction = false) {
     for (let i = 0; i < this.list.length; i++) {
       if (this.list[i] === txt) {
         this.idx = i;
-        for (const child of this.center.children) child.setAttribute('selected', "false");
-        if (this.center.children[i]) this.center.children[i].setAttribute('selected', "true");
-        const e = new Event("change");
-        Object.defineProperty(e, 'target', { writable: false, value: this });
-        if (this.onchange) this.onchange(e);
+        if (this._initialized) {
+          for (let j = 0; j < this.center.children.length; j++) {
+            this.center.children[j].setAttribute('selected', j === i ? "true" : "false");
+          }
+        }
+        if (isUserAction) {
+          const e = new Event("change", { bubbles: true });
+          this.dispatchEvent(e);
+        }
         return;
       }
     }

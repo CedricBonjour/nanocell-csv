@@ -252,7 +252,6 @@ footer {
   text-align: center;
   flex-wrap: wrap;
   background-color: var(--fh-bg);
-  border-top: 1px solid var(--table-borders);
   transition: background-color 0.2s ease;
 }
 
@@ -313,8 +312,8 @@ section,
 img {
   cursor: pointer;
   margin-left: 0.5em;
-  height: 1.3em;
-  padding: 0.2em;
+  height: 1.7em;
+  padding: 0.3em;
   margin: 0.2em;
   border-radius: 4px;
   filter: var(--filter);
@@ -573,7 +572,6 @@ button:focus {
   width: 1em;
   cursor: pointer;
   box-shadow: 0 0 2px var(--fh-txt);
-  margin: 0 2em;
 }
 
 ui-list span {
@@ -691,7 +689,6 @@ ui-cmenu tr:hover {
   width: 100vw;
   height: 100vh;
   z-index: 99;
-  padding: 2em;
 }
 
 #closeDialog {
@@ -833,6 +830,199 @@ ui-command-palette {
 }
 
 /* --------------------------------------------------------------------------
+   8.2 Find & Replace Floating Widget (<ui-finder>)
+   -------------------------------------------------------------------------- */
+ui-finder {
+  position: fixed;
+  top: 45px;
+  right: 20px;
+  z-index: 999;
+  display: none;
+}
+
+ui-finder.visible {
+  display: block;
+}
+
+.finder-widget {
+  background-color: var(--modal-bg);
+  color: var(--txt);
+  border: 1px solid var(--table-borders);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  padding: 6px;
+  font-family: var(--font-family-ui);
+  width: 360px;
+  max-width: 90vw;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  user-select: none;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.finder-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.finder-row.hidden {
+  display: none !important;
+}
+
+.finder-toggle-btn {
+  background: transparent;
+  border: none;
+  color: var(--grey);
+  cursor: pointer;
+  padding: 4px;
+  width: 24px;
+  height: 28px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.finder-toggle-btn:hover {
+  color: var(--txt);
+  background-color: var(--btn-hover);
+}
+
+.finder-toggle-btn.expanded .caret-icon {
+  transform: rotate(90deg);
+}
+
+.finder-row-spacer {
+  width: 24px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.finder-input-wrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.finder-input {
+  width: 100%;
+  height: 28px;
+  box-sizing: border-box;
+  padding: 2px 55px 2px 8px;
+  font-family: var(--font-family-mono);
+  font-size: 12px;
+  background-color: var(--input-bg-out);
+  color: var(--input-txt);
+  border: 1px solid var(--table-borders);
+  border-radius: 4px;
+  outline: none;
+  margin: 0;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.finder-input:focus {
+  background-color: var(--input-bg);
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px var(--btn-focus-ring);
+}
+
+.replace-input {
+  padding-right: 8px;
+}
+
+.finder-count-badge {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  font-family: var(--font-family-mono);
+  color: var(--grey);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.finder-btn-group {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.finder-action-icon-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--txt);
+  cursor: pointer;
+  padding: 4px 6px;
+  height: 28px;
+  width: 28px;
+  box-sizing: border-box;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.finder-action-icon-btn:hover {
+  background-color: var(--btn-hover);
+}
+
+.finder-action-icon-btn:active {
+  background-color: var(--btn-active);
+}
+
+.finder-action-icon-btn.case-btn {
+  font-family: var(--font-family-mono);
+  font-weight: bold;
+  font-size: 11px;
+  color: var(--grey);
+}
+
+.finder-action-icon-btn.case-btn:hover {
+  color: var(--txt);
+  background-color: var(--btn-hover);
+}
+
+.finder-action-icon-btn.case-btn.active,
+.finder-action-icon-btn.case-btn[aria-pressed="true"] {
+  background-color: var(--blue);
+  color: #ffffff;
+  border-color: var(--blue);
+}
+
+.finder-btn {
+  background-color: var(--btn-bg);
+  color: var(--btn-txt);
+  border: 1px solid var(--btn-border);
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: var(--font-family-ui);
+  padding: 4px 8px;
+  height: 28px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.finder-btn:hover {
+  background-color: var(--btn-hover);
+}
+
+.finder-btn:active {
+  background-color: var(--btn-active);
+}
+
+
+/* --------------------------------------------------------------------------
    9. Sleek Custom Scrollbars
    -------------------------------------------------------------------------- */
 .scroll {
@@ -891,4 +1081,135 @@ ui-command-palette {
     background: #ffffff !important;
     color: #000000 !important;
   }
+}
+
+/* --------------------------------------------------------------------------
+   11. Modern Settings UI & Toggle Switch Styles
+   -------------------------------------------------------------------------- */
+.stg-container {
+  padding: 1.5rem;
+  max-width: 680px;
+  margin: 0 auto;
+  color: var(--txt, #2d3748);
+  font-family: var(--font-family-ui);
+}
+
+.ui-num, .ui-list{
+    width: 7em;
+}
+
+.stg-header h1,
+.stg-header h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+  color: var(--txt, #1a202c);
+  /*border-bottom: 2px solid var(--table-borders, #e2e8f0);*/
+  padding-bottom: 0.5rem;
+}
+
+.settings-section {
+  background: var(--modal-bg, var(--body-bg, #f7fafc));
+  border: 1px solid var(--table-borders, #e2e8f0);
+  border-radius: 8px;
+  margin-bottom: 3rem;
+  overflow: hidden;
+}
+
+.settings-section-header {
+  background: var(--slct-bg, var(--th-bg, #edf2f7));
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--table-borders, #e2e8f0);
+}
+
+.settings-section-header h3 {
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  color: var(--fh-txt, #4a5568);
+  margin: 0;
+}
+
+.settings-section-body {
+  padding: 0.5rem 1rem;
+}
+
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--table-borders, #edf2f7);
+}
+
+.setting-row:last-child {
+  border-bottom: none;
+}
+
+.setting-label-container {
+    width: 30em;
+    text-align:left;
+}
+
+.setting-control {
+  display: flex;
+  align-items: center;
+}
+
+/* Modern Toggle Switch */
+.ui-bool-toggle {
+  display: inline-block;
+  cursor: pointer;
+  outline: none;
+}
+
+.ui-bool-toggle .toggle-track {
+  width: 44px;
+  height: 24px;
+  background-color: var(--input-bg-out, #cbd5e0);
+  border-radius: 12px;
+  position: relative;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.ui-bool-toggle.checked .toggle-track {
+  background-color: var(--blue, #3182ce);
+}
+
+.ui-bool-toggle .toggle-thumb {
+  width: 20px;
+  height: 20px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.2s ease-in-out;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.ui-bool-toggle.checked .toggle-thumb {
+  transform: translateX(20px);
+}
+
+.stg-footer {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-reset-settings {
+  padding: 0.5rem 1rem;
+  background: var(--btn-bg, #edf2f7);
+  color: var(--btn-txt, inherit);
+  border: 1px solid var(--btn-border, #cbd5e0);
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-reset-settings:hover {
+  background: var(--btn-hover, #e2e8f0);
 }

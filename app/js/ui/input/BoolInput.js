@@ -1,34 +1,57 @@
 class BoolInput extends HTMLElement {
   constructor(start = false) {
     super();
-    this.b = true;
-    this.startValue = start;
+    this.b = Boolean(start);
   }
 
   connectedCallback() {
     if (this._initialized) return;
     this._initialized = true;
     this.setAttribute('tabindex', '0');
-    this.style.cursor = "pointer";
-    this.style.display = "flex";
-    this.style.justifyContent = "center";
-    this.value = this.startValue;
-    this.addEventListener("click", e => { this.focus(); this.toggle() });
+    this.setAttribute('role', 'switch');
+    this.classList.add('ui-bool-toggle');
+    this.render();
+
+    this.addEventListener("click", () => {
+      this.focus();
+      this.toggle();
+    });
     this.addEventListener("keydown", e => {
       const k = e.key.toUpperCase();
-      if (k.includes("ARROW") || k === "ENTER") this.toggle()
+      if (k === " " || k === "ENTER" || k.includes("ARROW")) {
+        e.preventDefault();
+        this.toggle();
+      }
     });
   }
 
-  toggle() { this.value = !this.value }
+  render() {
+    this.setAttribute('aria-checked', this.b ? 'true' : 'false');
+    this.classList.toggle('checked', this.b);
+    this.innerHTML = `<div class="toggle-track"><div class="toggle-thumb"></div></div>`;
+  }
 
-  get value() { return this.b }
+  toggle() {
+    this.setValueInternal(!this.b, true);
+  }
+
+  get value() {
+    return this.b;
+  }
+
   set value(b) {
-    this.b = b;
-    this.innerHTML = b ? "&#128504;" : "&#128473;";
-    const e = new Event("change");
-    Object.defineProperty(e, 'target', { writable: false, value: this });
-    if (this.onchange) this.onchange(e);
+    this.setValueInternal(b, false);
+  }
+
+  setValueInternal(b, isUserAction = false) {
+    const val = Boolean(b);
+    this.b = val;
+    this.render();
+
+    if (isUserAction) {
+      const e = new Event("change", { bubbles: true });
+      this.dispatchEvent(e);
+    }
   }
 }
 
@@ -37,3 +60,4 @@ if (!customElements.get('ui-bool')) {
 }
 
 export { BoolInput };
+

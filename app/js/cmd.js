@@ -7,6 +7,7 @@ import { dom } from './dom.js';
 import { StateManager } from './StateManager.js';
 import { Setting, stg } from './Setting.js';
 import { round } from './utils/misc.js';
+import { About } from './About.js';
 
 /**
  * Helper to get the active Sheet instance from StateManager.
@@ -36,14 +37,14 @@ const getCsvHandle = () => StateManager.getState('csvHandle');
  * @type {Record<string, CommandDefinition>}
  */
 const cmd = {
-  about: { k: "H", ctrl: true, run() { document.createElement('ui-about') }, description: "About" },
+  about: { k: "H", ctrl: true, run() { About.show() }, description: "About" },
   new: { k: "N", ctrl: true, run() { getCsvHandle()?.new() }, description: "New sheet" },
   deleteRow: { k: "BACKSPACE", ctrl: true, run() { getSheet()?.deleteRows() }, description: "Delete Row" },
   deleteCol: { k: "BACKSPACE", ctrl: true, shift: true, run() { getSheet()?.deleteCols() }, description: "Delete Col" },
   delete: { k: "BACKSPACE", run() { const s = getSheet(); if (s) { s.rangeEdit(''); s.refresh(); } }, description: "Delete Selection" },
   delete2: { k: "DELETE", run() { const s = getSheet(); if (s) { s.rangeEdit(''); s.refresh(); } }, description: "Delete Selection" },
   settings: { k: "G", ctrl: true, run() { Setting.show() }, description: "Display Settings" },
-  shortcuts: { k: "K", ctrl: true, run() { document.createElement('ui-shortcuts') }, description: "Display Shortcuts" },
+  shortcuts: { k: "K", ctrl: true, run() { cmd.commandPalette.run(); }, description: "Command Palette" },
   slctAll: { k: "A", ctrl: true, run() { getSheet()?.slctAll() }, description: "Select All" },
   transpose: { k: "T", ctrl: true, shift: true, run() { const s = getSheet(); if (s) { s.rangeTranspose(); s.refresh(); } }, description: "Transpose Selection" },
   trim: { k: "T", ctrl: true, shift: true, run() { const s = getSheet(); if (s) { s.df.trimAll(); s.refresh(); } }, description: "Trim : remove all empty rows/cols" },

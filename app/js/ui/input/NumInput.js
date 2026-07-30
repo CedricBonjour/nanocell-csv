@@ -4,7 +4,7 @@ class NumInput extends HTMLElement {
     this.n = start;
     this.min = min;
     this.max = max;
-
+    this.classList.add("ui-num");
     this.left = document.createElement("span");
     this.center = document.createElement("span");
     this.right = document.createElement("span");
@@ -24,27 +24,34 @@ class NumInput extends HTMLElement {
     this.appendChild(this.right);
     this.style.display = "flex";
     this.center.style.flexGrow = "2";
-    this.left.addEventListener("click", e => { this.value = this.value - 1 });
-    this.right.addEventListener("click", e => { this.value = this.value + 1 });
+    this.left.addEventListener("click", () => { this.setValueInternal(this.value - 1, true); });
+    this.right.addEventListener("click", () => { this.setValueInternal(this.value + 1, true); });
     this.setAttribute('tabindex', '0');
-    this.addEventListener("click", e => { this.focus() });
+    this.addEventListener("click", () => { this.focus(); });
     this.addEventListener("keydown", e => {
       const k = e.key.toUpperCase();
-      if (k === "ARROWRIGHT" || k === "ARROWUP") { this.value = this.value + 1 }
-      else if (k === "ARROWLEFT" || k === "ARROWDOWN") { this.value = this.value - 1 }
+      if (k === "ARROWRIGHT" || k === "ARROWUP") { this.setValueInternal(this.value + 1, true); }
+      else if (k === "ARROWLEFT" || k === "ARROWDOWN") { this.setValueInternal(this.value - 1, true); }
     });
   }
 
-  get value() { return this.n }
+  get value() { return this.n; }
+
   set value(n) {
+    this.setValueInternal(n, false);
+  }
+
+  setValueInternal(n, isUserAction = false) {
     n = Number(n);
     if (n < this.min) n = this.min;
     if (n > this.max) n = this.max;
     this.n = n;
     this.center.innerHTML = this.n;
-    const e = new Event("change");
-    Object.defineProperty(e, 'target', { writable: false, value: this });
-    if (this.onchange) this.onchange(e);
+
+    if (isUserAction) {
+      const e = new Event("change", { bubbles: true });
+      this.dispatchEvent(e);
+    }
   }
 }
 

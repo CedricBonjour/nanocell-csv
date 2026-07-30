@@ -16,7 +16,6 @@ import './ui/CommandPalette.js';
 import './About.js';
 import './Finder.js';
 import './Msg.js';
-import './Shortcuts.js';
 
 import { registerSW } from 'virtual:pwa-register';
 

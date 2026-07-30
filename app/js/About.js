@@ -3,6 +3,13 @@ import { dom } from './dom.js';
 class About extends HTMLElement {
   constructor() {
     super();
+    this.initElements();
+  }
+
+  initElements() {
+    if (this._elementsInitialized) return;
+    this._elementsInitialized = true;
+
     this.titleEl = document.createElement("h1");
     this.versionEl = document.createElement("h3");
     this.logoEl = document.createElement("img");
@@ -44,13 +51,16 @@ class About extends HTMLElement {
   connectedCallback() {
     if (this._initialized) return;
     this._initialized = true;
+
+    this.initElements();
+
     this.style.display = "flex";
     this.style.flexDirection = "column";
     this.style.height = "100vh";
     this.style.justifyContent = "center";
     this.style.alignItems = "center";
 
-    this.getVersion(e => { this.versionEl.innerHTML = e });
+    this.getVersion(e => { if (this.versionEl) this.versionEl.innerHTML = e; });
     this.appendChild(this.logoEl);
     this.appendChild(this.titleEl);
     this.appendChild(this.versionEl);
@@ -58,12 +68,25 @@ class About extends HTMLElement {
     this.aboutFooter.appendChild(this.bugLink);
     this.aboutFooter.appendChild(this.homeLink);
     this.appendChild(this.aboutFooter);
+  }
 
-    if (dom?.dialog) dom.dialog.push(this, true);
+  static show() {
+    const el = document.createElement('ui-about');
+    if (dom?.dialog) {
+      dom.dialog.push(el, true);
+    }
+    if (!el._initialized && typeof el.connectedCallback === 'function') {
+      el.connectedCallback();
+    }
+    return el;
   }
 
   getVersion(cb) {
-    caches.keys().then(cache => { cb(cache.join('<br>')) }).catch(err => { console.warn("Failed to get cache version:", err); cb("version error"); });
+    if (typeof caches !== 'undefined' && caches.keys) {
+      caches.keys().then(cache => { cb(cache.join('<br>')) }).catch(err => { console.warn("Failed to get cache version:", err); cb("version error"); });
+    } else {
+      cb("1.0.0");
+    }
   }
 }
 
@@ -72,3 +95,5 @@ if (!customElements.get('ui-about')) {
 }
 
 export { About };
+
+

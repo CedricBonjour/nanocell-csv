@@ -52,9 +52,52 @@ class Setting {
     }
   }
 
+  static set(key, val) {
+    stg[key] = val;
+  }
+
   static init(cb) {
     for (const s of Setting.list) if (!s.title) new Setting(s);
     Setting.setTheme();
+  }
+
+  static buildRow(setting) {
+    const row = document.createElement("div");
+    row.classList.add("setting-row");
+
+    const labelContainer = document.createElement("div");
+    labelContainer.classList.add("setting-label-container");
+    const name = document.createElement("span");
+    name.classList.add("setting-name");
+    name.innerHTML = setting.name;
+    labelContainer.appendChild(name);
+
+    const inputCell = document.createElement("div");
+    inputCell.classList.add("setting-control");
+
+    let input = undefined;
+    if (setting.list) input = new ListInput(setting.list, setting.hide);
+    else if (setting.max) {
+      input = new NumInput(setting.dflt, setting.min, setting.max);
+    } else if (typeof setting.dflt === "boolean") {
+      input = new BoolInput();
+    }
+
+    if (input === undefined) {
+      input = document.createElement("span");
+      input.innerText = stg[setting.key];
+    } else {
+      input.value = stg[setting.key];
+      input.onchange = e => {
+        const c = e.target.value;
+        stg[setting.key] = isNaN(c) ? c : Number(c);
+      };
+    }
+
+    inputCell.appendChild(input);
+    row.appendChild(labelContainer);
+    row.appendChild(inputCell);
+    return row;
   }
 
   static build(setting) {
@@ -93,19 +136,51 @@ class Setting {
 
   static show() {
     const content = document.createElement("div");
+    content.classList.add("stg-container", "stg");
+
+    const header = document.createElement("div");
+    header.classList.add("stg-header");
     const title = document.createElement("h1");
-    title.innerHTML = "Settings";
-    content.appendChild(title);
-    content.style.margin = "2em";
-    content.classList.add("stg");
-    const table = document.createElement("table");
-    for (const s of Setting.list) table.appendChild(Setting.build(s));
+    title.innerText = "Settings";
+    header.appendChild(title);
+    content.appendChild(header);
+
+    const body = document.createElement("div");
+    body.classList.add("stg-body");
+
+    let currentSection = null;
+    let sectionBody = null;
+
+    for (const s of Setting.list) {
+      if (s.title) {
+        currentSection = document.createElement("div");
+        currentSection.classList.add("settings-section");
+        const sectionHeader = document.createElement("div");
+        sectionHeader.classList.add("settings-section-header");
+        const titleEl = document.createElement("h3");
+        titleEl.innerText = s.title;
+        sectionHeader.appendChild(titleEl);
+        currentSection.appendChild(sectionHeader);
+
+        sectionBody = document.createElement("div");
+        sectionBody.classList.add("settings-section-body");
+        currentSection.appendChild(sectionBody);
+        body.appendChild(currentSection);
+      } else if (sectionBody) {
+        sectionBody.appendChild(Setting.buildRow(s));
+      }
+    }
+
+    const footer = document.createElement("div");
+    footer.classList.add("stg-footer");
     const b = document.createElement("button");
-    b.innerHTML = "Reset to default settings";
-    b.style.marginTop = "1em";
+    b.classList.add("btn-reset-settings");
+    b.innerText = "Reset to default settings";
     b.onclick = Setting.resetDefault;
-    content.appendChild(table);
-    content.appendChild(b);
+    footer.appendChild(b);
+
+    content.appendChild(body);
+    content.appendChild(footer);
     dom.dialog.push(content, true);
   }
 

@@ -276,8 +276,10 @@ describe('Milestone 5 Phase 2 Tier 5 White-Box Adversarial Coverage Hardening Su
       const finder = new Finder(sheet);
 
       finder.findIn.value = '[';
-      // In Finder.js, new RegExp('[', 'gi') throws a SyntaxError because regex brackets are unescaped
-      expect(() => finder.find(true)).toThrow(SyntaxError);
+      // Finder safely escapes regex metacharacters and matches item [2] without throwing SyntaxError
+      expect(() => finder.find(true)).not.toThrow();
+      expect(finder.found.length).toBe(1);
+      expect(finder.found[0].v).toBe('item [2]');
 
       finder.findIn.value = 'sum';
       expect(() => finder.find(true)).not.toThrow();

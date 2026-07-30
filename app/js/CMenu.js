@@ -1,26 +1,26 @@
-import { cmd, buildMenu } from './cmd.js';
-import { sheet } from './main.js';
+import { StateManager } from './StateManager.js';
 import { TargetType, getTargetType } from './mouse.js';
 import { Table } from './ui/input/Table.js';
+
+const getCmd = () => StateManager.getState('cmd');
 
 class CMenu extends HTMLElement {
   constructor() {
     super();
     this.table = new Table();
-    this.style.display = "none";
     this.firstBlock = document.createElement("div");
-    this.firstBlock.classList.add("cmenu_header")
+    this.firstBlock.classList.add("cmenu_header");
 
     this.list = [
-      { key: "sa", txt: "Sort", opt: "A<br>Z", run: cmd.sort.run },
-      { key: "sd", txt: "Sort", opt: "Z<br>A", run: cmd.sort_reverse.run },
-      { key: "rn", txt: "Round", opt: "N", run: cmd.integer.run },
-      { key: "rf", txt: "Round", opt: "$", run: cmd.decimal.run },
-      { key: "ic", txt: "Insert", opt: "&verbar;", run: cmd.insertLeft.run },
-      { key: "ir", txt: "Insert", opt: "&horbar;", run: cmd.insertUp.run },
-      { key: "dc", txt: "Delete", opt: "&verbar;", run: cmd.deleteCol.run },
-      { key: "dr", txt: "Delete", opt: "&horbar;", run: cmd.deleteRow.run },
-    ]
+      { key: "sa", txt: "Sort", opt: "A<br>Z", run: (e) => getCmd()?.sort?.run(e) },
+      { key: "sd", txt: "Sort", opt: "Z<br>A", run: (e) => getCmd()?.sort_reverse?.run(e) },
+      { key: "rn", txt: "Round", opt: "N", run: (e) => getCmd()?.integer?.run(e) },
+      { key: "rf", txt: "Round", opt: "$", run: (e) => getCmd()?.decimal?.run(e) },
+      { key: "ic", txt: "Insert", opt: "&verbar;", run: (e) => getCmd()?.insertLeft?.run(e) },
+      { key: "ir", txt: "Insert", opt: "&horbar;", run: (e) => getCmd()?.insertUp?.run(e) },
+      { key: "dc", txt: "Delete", opt: "&verbar;", run: (e) => getCmd()?.deleteCol?.run(e) },
+      { key: "dr", txt: "Delete", opt: "&horbar;", run: (e) => getCmd()?.deleteRow?.run(e) },
+    ];
 
     this.addEventListener('mouseout', event => {
       if (this.contains(event.relatedTarget)) return;
@@ -28,9 +28,14 @@ class CMenu extends HTMLElement {
     });
 
     this.buildMenu();
-    this.appendChild(this.firstBlock);
-    this.appendChild(this.table);
+  }
 
+  connectedCallback() {
+    this.style.display = "none";
+    if (!this.firstBlock.parentNode) {
+      this.appendChild(this.firstBlock);
+      this.appendChild(this.table);
+    }
   }
 
   showItems(show_list) {
@@ -44,32 +49,36 @@ class CMenu extends HTMLElement {
     this.event = e;
     this.ttype = getTargetType(e);
     if (!this.isValidTarget()) return;
-    this.x = e.target.tx;
-    this.y = e.target.ty;
+    const cell = e.target.closest ? (e.target.closest("td") || e.target.closest("th")) : e.target;
+    const targetCell = cell || e.target;
+    this.x = targetCell.tx;
+    this.y = targetCell.ty;
     this.reposition();
+    const sheet = StateManager.getState('sheet');
+    if (!sheet) return;
     if (this.ttype === TargetType.colH) {
       sheet.slctCol(this.x + sheet.baseX);
-      this.firstBlock.innerText = "col : " + e.target.innerText;
-      this.showItems(["sa", "sd", "rn", "rf", "ic", "dc"])
+      this.firstBlock.innerText = "col : " + targetCell.innerText;
+      this.showItems(["sa", "sd", "rn", "rf", "ic", "dc"]);
     } else if (this.ttype === TargetType.rowH) {
       sheet.slctRow(this.y + sheet.baseY);
-      this.firstBlock.innerText = "row : " + e.target.innerText;
-      this.showItems(["rn", "rf", "ir", "dr"])
-    } else if (e.target.classList.contains("slct")) {
+      this.firstBlock.innerText = "row : " + targetCell.innerText;
+      this.showItems(["rn", "rf", "ir", "dr"]);
+    } else if (targetCell.classList.contains("slct")) {
       this.firstBlock.innerText = "selection";
-      this.showItems(["rn", "rf", "dc", "dr"])
+      this.showItems(["rn", "rf", "dc", "dr"]);
     } else {
-      sheet.x = e.target.tx + sheet.baseX;
-      sheet.y = e.target.ty + sheet.baseY;
+      sheet.x = targetCell.tx + sheet.baseX;
+      sheet.y = targetCell.ty + sheet.baseY;
       sheet.slctRefresh();
       this.firstBlock.innerText = "cell";
-      this.showItems(["rn", "rf", "ic", "ir", "dc", "dr"])
+      this.showItems(["rn", "rf", "ic", "ir", "dc", "dr"]);
     }
-    this.style.display = "block"
+    this.style.display = "block";
   }
 
   buildMenu() {
-    for (var item of this.list) {
+    for (const item of this.list) {
       this.table.br();
       let div = document.createElement("div");
       div.innerHTML = item.txt;
@@ -78,7 +87,7 @@ class CMenu extends HTMLElement {
         let optDiv = document.createElement("div");
         optDiv.innerHTML = item.opt;
         this.table.push(optDiv);
-        optDiv.classList.add("cmenu_opt")
+        optDiv.classList.add("cmenu_opt");
       }
       this.table.activeRow().addEventListener('click', item.run);
     }
@@ -89,8 +98,8 @@ class CMenu extends HTMLElement {
       TargetType.cell,
       TargetType.rowH,
       TargetType.colH,
-    ]
-    return (okTargets.includes(this.ttype))
+    ];
+    return (okTargets.includes(this.ttype));
   }
 
   reposition() {
@@ -99,6 +108,7 @@ class CMenu extends HTMLElement {
     this.style.top = (e.clientY - 2) + "px";
   }
 }
+
 customElements.define('ui-cmenu', CMenu);
 
 export { CMenu };

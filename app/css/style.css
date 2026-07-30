@@ -1,0 +1,894 @@
+/* ==========================================================================
+   NanoCell CSV - Consolidated Single-File Stylesheet (app/css/style.css)
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Typography & Font Face Setup
+   -------------------------------------------------------------------------- */
+@font-face {
+  font-family: "inconsolata";
+  src: url("Inconsolata-Regular.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "inconsolata";
+  src: url("Inconsolata-Bold.ttf") format("truetype");
+  font-weight: bold;
+  font-style: normal;
+}
+
+:root {
+  --font-family-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  --font-family-mono: "inconsolata", "Courier New", Courier, monospace;
+}
+
+/* --------------------------------------------------------------------------
+   2. Theme Token Specifications (Light, Dark, Night)
+   -------------------------------------------------------------------------- */
+
+/* Default / Light Theme */
+:root,
+[data-theme="light"],
+body[data-theme="light"] {
+  /* Palette Colors */
+  --blue: #005cc5;
+  --orange: #e95f00;
+  --green: #28a745;
+  --red: #d73a49;
+  --purple: #6f42c1;
+  --yellow: #f1e05a;
+  --white: #ffffff;
+  --grey: #6a737d;
+  --black: #000000;
+
+  /* Structure & Interface Colors */
+  --th-bg: #ddd;
+  --th-txt: #616161;
+  --txt: #444;
+  --body-bg: #fff;
+  --slct-bg: #d4e3f1;
+  --fh-bg: #e7e7e7;
+  --fh-txt: #616161;
+  --table-borders: #b1b1b1;
+
+  /* Inputs & Form Controls */
+  --input-txt: #000000;
+  --input-bg: #edf6ff;
+  --input-bg-out: #f5f5f5;
+  --num-txt: var(--orange);
+
+  /* Micro-interactions & UI Components */
+  --filter: invert(40%);
+  --dots: var(--blue);
+  --scrollBar: grey;
+  --scrollbar-thumb: #cbd5e1;
+  --scrollbar-thumb-hover: #94a3b8;
+  --scrollbar-track: #f8fafc;
+  --cmenu-bg: #ffffff;
+  --cmenuHover: #fafafa;
+
+  /* Dialog / Modal Settings */
+  --modal-bg: #ffffff;
+  --modal-backdrop: rgba(15, 23, 42, 0.4);
+
+  /* Button Tokens */
+  --btn-bg: #ffffff;
+  --btn-txt: #334155;
+  --btn-border: #cbd5e1;
+  --btn-hover: #f8fafc;
+  --btn-active: #e2e8f0;
+  --btn-focus-ring: rgba(0, 92, 197, 0.35);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Dark Theme */
+[data-theme="dark"],
+body[data-theme="dark"] {
+  /* Palette Colors */
+  --blue: #8fbbf3;
+  --orange: #fd971f;
+  --green: #a6e22e;
+  --red: #f92672;
+  --purple: #ae81ff;
+  --yellow: #ffd866;
+  --white: #bbb;
+  --grey: grey;
+  --black: #000000;
+
+  /* Structure & Interface Colors */
+  --th-bg: #0d0d0d;
+  --th-txt: #888888;
+  --txt: #ccc;
+  --body-bg: #272822;
+  --slct-bg: #3b3b3b;
+  --fh-bg: #1e1e1e;
+  --fh-txt: #888888;
+  --table-borders: #5a5a5a;
+
+  /* Inputs & Form Controls */
+  --input-txt: #000000;
+  --input-bg: #aaa;
+  --input-bg-out: #555;
+  --num-txt: var(--orange);
+
+  /* Micro-interactions & UI Components */
+  --filter: invert(40%);
+  --dots: var(--orange);
+  --scrollBar: #5a5a5a;
+  --scrollbar-thumb: #49483e;
+  --scrollbar-thumb-hover: #75715e;
+  --scrollbar-track: #1e1f1c;
+  --cmenu-bg: #1e1f1c;
+  --cmenuHover: #222;
+
+  /* Dialog / Modal Settings */
+  --modal-bg: #272822;
+  --modal-backdrop: rgba(0, 0, 0, 0.65);
+
+  /* Button Tokens */
+  --btn-bg: #3e3d32;
+  --btn-txt: #f8f8f2;
+  --btn-border: #75715e;
+  --btn-hover: #49483e;
+  --btn-active: #272822;
+  --btn-focus-ring: rgba(253, 151, 31, 0.4);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+}
+
+/* Night Theme */
+[data-theme="night"],
+body[data-theme="night"] {
+  /* Palette Colors */
+  --blue: #8fbbf3;
+  --orange: #fd971f;
+  --green: #a6e22e;
+  --red: #f92672;
+  --purple: #ae81ff;
+  --yellow: #ffd866;
+  --white: #bbb;
+  --grey: grey;
+  --black: #000000;
+
+  /* Structure & Interface Colors */
+  --th-bg: #0d0d0d;
+  --th-txt: #888888;
+  --txt: #ccc;
+  --body-bg: #242424;
+  --slct-bg: #191c1e;
+  --fh-bg: #0d0d0d;
+  --fh-txt: #888888;
+  --table-borders: #5a5a5a;
+
+  /* Inputs & Form Controls */
+  --input-txt: #ccc;
+  --input-bg: #070707;
+  --input-bg-out: #555;
+  --num-txt: var(--orange);
+
+  /* Micro-interactions & UI Components */
+  --filter: invert(40%);
+  --dots: var(--orange);
+  --scrollBar: #5a5a5a;
+  --scrollbar-thumb: #3f3f46;
+  --scrollbar-thumb-hover: #52525b;
+  --scrollbar-track: #09090b;
+  --cmenu-bg: #18181b;
+  --cmenuHover: #222;
+
+  /* Dialog / Modal Settings */
+  --modal-bg: #18181b;
+  --modal-backdrop: rgba(0, 0, 0, 0.75);
+
+  /* Button Tokens */
+  --btn-bg: #27272a;
+  --btn-txt: #e2e8f0;
+  --btn-border: #3f3f46;
+  --btn-hover: #3f3f46;
+  --btn-active: #18181b;
+  --btn-focus-ring: rgba(253, 151, 31, 0.4);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.7);
+}
+
+/* --------------------------------------------------------------------------
+   3. Base Layout & Structure
+   -------------------------------------------------------------------------- */
+* {
+  box-sizing: border-box;
+}
+
+hr {
+  visibility: hidden;
+}
+
+b {
+  color: var(--red);
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-size: 12px;
+  line-height: 1.4;
+  font-family: var(--font-family-mono);
+  background-color: var(--fh-bg);
+  color: var(--fh-txt);
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  background-color: var(--fh-bg);
+  transition: background-color 0.2s ease;
+}
+
+footer {
+  padding: 0.3em;
+  text-align: center;
+  flex-wrap: wrap;
+  background-color: var(--fh-bg);
+  border-top: 1px solid var(--table-borders);
+  transition: background-color 0.2s ease;
+}
+
+.flexMain {
+  flex-grow: 1;
+  min-width: 3em;
+}
+
+.flexCol {
+  display: flex;
+  flex-flow: column;
+  font-size: inherit;
+}
+
+section,
+.flexRow {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.activeTab {
+  font-weight: bold;
+}
+
+#footerCenter {
+  margin: 0 3em;
+  line-height: 1em;
+  display: block;
+}
+
+#dragSpace {
+  min-width: 1em;
+  -webkit-app-region: drag;
+  flex-grow: 1;
+  height: 100%;
+}
+
+#menu {
+  flex-wrap: wrap;
+  margin: 0.4em;
+}
+
+#content {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0%;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--body-bg);
+}
+
+/* --------------------------------------------------------------------------
+   4. Icon & Interactive Elements (Micro-interactions)
+   -------------------------------------------------------------------------- */
+img {
+  cursor: pointer;
+  margin-left: 0.5em;
+  height: 1.3em;
+  padding: 0.2em;
+  margin: 0.2em;
+  border-radius: 4px;
+  filter: var(--filter);
+  transition: background-color 0.15s ease, transform 0.15s ease, filter 0.2s ease;
+}
+
+header img:hover,
+#menu img:hover {
+  background-color: rgba(148, 163, 184, 0.25);
+  transform: scale(1.06);
+}
+
+header img:active,
+#menu img:active {
+  transform: scale(0.95);
+}
+
+footer img {
+  height: 1em;
+  padding: 0;
+}
+
+#appIcon {
+  border-radius: 0;
+}
+
+/* --------------------------------------------------------------------------
+   5. Sheet Component (<ui-sheet>, .sheet, Table Grid)
+   -------------------------------------------------------------------------- */
+ui-sheet,
+.sheet {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  flex: 1 1 0%;
+  min-height: 0;
+  position: relative;
+  background: var(--table-borders);
+  font-family: var(--font-family-mono);
+  user-select: none;
+}
+
+.sheet table {
+  width: 100%;
+  height: 100%;
+  flex: 1 1 0%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 1px;
+}
+
+.sheet td {
+  color: var(--txt);
+  overflow: hidden;
+  white-space: nowrap;
+  box-sizing: border-box;
+  position: relative;
+  max-width: 0;
+  background-color: var(--body-bg);
+  padding: 0;
+  font-weight: normal;
+  transition: background-color 0.1s ease;
+}
+
+.sheet .tHeader {
+  color: var(--th-txt);
+  background-color: var(--th-bg);
+  font-weight: 600;
+  font-family: var(--font-family-ui);
+}
+
+.sheet .tColHeader {
+  height: 1.8em;
+  text-align: center;
+  position: relative;
+  min-width: 3em !important;
+}
+
+.headerHandle {
+  height: 100%;
+  width: 0.6em;
+  position: absolute;
+  right: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: col-resize;
+  transition: background-color 0.15s ease;
+}
+
+.headerHandle:hover {
+  background-color: var(--blue);
+  opacity: 0.6;
+}
+
+.noclick {
+  pointer-events: none;
+}
+
+.sheet .tRowHeader {
+text-align: end;
+width: 3em;
+padding: 0 .5em;
+}
+
+.sheet td div {
+  margin: 0 0.5em;
+  line-height: 1em;
+  height: 0;
+  display: flex;
+  align-items: center;
+}
+
+.sheet div {
+  pointer-events: none;
+}
+
+.sheet input,
+.sheet input:focus {
+  box-sizing: border-box;
+  position: absolute;
+  padding: 0 0.5em;
+  font-size: inherit;
+  font-family: var(--font-family-mono);
+  top: 0;
+  left: 0;
+  width: 100%;
+  border-radius: 0;
+  height: 100%;
+  color: var(--input-txt);
+  background-color: var(--input-bg);
+  z-index: 1;
+  margin: 0;
+  border: 2px solid var(--blue);
+  box-shadow: 0 0 4px rgba(37, 99, 235, 0.4);
+}
+
+.slct {
+  color: inherit;
+  background-color: var(--slct-bg) !important;
+}
+
+/* Data Type Formats */
+.date {
+  color: var(--blue);
+  text-align: center;
+  justify-content: center;
+}
+
+.url {
+  color: var(--blue);
+  text-decoration: underline;
+}
+
+.num {
+  text-align: right;
+  color: var(--num-txt);
+  justify-content: flex-end;
+}
+
+.error {
+  color: var(--red);
+  text-align: center;
+  justify-content: center;
+}
+
+.noComply {
+  color: var(--purple);
+}
+
+.sheet td div:nth-child(2) {
+  color: var(--blue);
+  float: left;
+  text-align: left;
+  margin-top: 1em;
+}
+
+.sheet td div:nth-child(3) {
+  float: right;
+  margin-top: 1em;
+}
+
+/* --------------------------------------------------------------------------
+   6. Form Inputs, Buttons & UI Controls
+   -------------------------------------------------------------------------- */
+::selection {
+  background-color: var(--slct-bg);
+  color: var(--txt);
+}
+
+:focus {
+  outline: 2px solid var(--btn-focus-ring);
+  outline-offset: 1px;
+}
+
+input {
+  background-color: var(--input-bg-out);
+  color: var(--input-txt);
+  border: 1px solid var(--table-borders);
+  padding: 0.3em 0.6em;
+  text-align: inherit;
+  font-family: var(--font-family-ui);
+  border-radius: 6px;
+  height: 1.8em;
+  margin: 0.3em;
+  font-size: inherit;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+input:focus {
+  color: var(--input-txt);
+  background-color: var(--input-bg);
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px var(--btn-focus-ring);
+}
+
+button {
+  cursor: pointer;
+  background-color: var(--btn-bg);
+  color: var(--btn-txt);
+  border: 1px solid var(--btn-border);
+  border-radius: 6px;
+  font-size: inherit;
+  font-family: var(--font-family-ui);
+  font-weight: 500;
+  margin: 0.3em;
+  padding: 0.4em 1.2em;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.15s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+button:hover {
+  background-color: var(--btn-hover);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+button:active {
+  background-color: var(--btn-active);
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+button:focus {
+  outline: 2px solid var(--btn-focus-ring);
+  outline-offset: 2px;
+}
+
+.slctLeft,
+.slctRight {
+  width: 1em;
+  cursor: pointer;
+  box-shadow: 0 0 2px var(--fh-txt);
+  margin: 0 2em;
+}
+
+ui-list span {
+  padding: 0 0.5em;
+}
+
+ui-list:focus [selected="true"] {
+  color: var(--orange);
+}
+
+ui-list[hide="true"] [selected="false"] {
+  display: none;
+}
+
+ui-msg {
+  width: 100%;
+  padding: 1em;
+}
+
+ui-calendar table:focus {
+  color: inherit;
+}
+
+ui-calendar td div {
+  min-width: 3em;
+  cursor: pointer;
+}
+
+ui-calendar .picked {
+  border-radius: 6px;
+  box-shadow: inset 0 0 2px;
+}
+
+ui-calendar table:focus .picked {
+  color: var(--orange);
+}
+
+/* --------------------------------------------------------------------------
+   7. Context Menus (ui-cmenu)
+   -------------------------------------------------------------------------- */
+ui-cmenu {
+  display: block;
+  position: fixed;
+  width: 11em;
+  top: 0;
+  left: 0;
+  background-color: var(--cmenu-bg);
+  color: var(--txt);
+  line-height: 1.4;
+  border: 1px solid var(--table-borders);
+  box-shadow: var(--shadow-lg);
+  border-radius: 8px;
+  overflow: hidden;
+  padding: 0.3em 0;
+  z-index: 1000;
+  font-family: var(--font-family-ui);
+}
+
+.cmenu_header {
+  text-align: center;
+  font-weight: 600;
+  margin: 0.4em;
+  color: var(--fh-txt);
+  border-bottom: 1px solid var(--table-borders);
+  padding-bottom: 0.4em;
+}
+
+.cmenu_opt {
+  text-align: right;
+}
+
+ui-cmenu div {
+  margin: 0.4em 0.8em;
+}
+
+ui-cmenu table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 0.4em;
+}
+
+ui-cmenu tr {
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+ui-cmenu tr:hover {
+  background-color: var(--cmenuHover);
+}
+
+/* --------------------------------------------------------------------------
+   8. Modals & Dialogs (#dialog)
+   -------------------------------------------------------------------------- */
+.dialog_small {
+  line-height: normal;
+  max-height: 50vh;
+  align-items: start;
+  position: relative;
+  background-color: var(--modal-bg);
+  color: var(--txt);
+  border: 1px solid var(--table-borders);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  padding: 1em;
+}
+
+.dialog_large {
+  line-height: normal;
+  align-items: start;
+  position: fixed;
+  background-color: var(--modal-bg);
+  color: var(--txt);
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 99;
+  padding: 2em;
+}
+
+#closeDialog {
+  right: 1em;
+  top: 1em;
+  margin-top: 0;
+  height: 2em;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+#closeDialog:hover {
+  transform: rotate(90deg) scale(1.1);
+}
+
+.stg table tr td:first-child {
+  text-align: left;
+  font-weight: 500;
+}
+
+/* --------------------------------------------------------------------------
+   8.1 Command Palette (<ui-command-palette>)
+   -------------------------------------------------------------------------- */
+ui-command-palette {
+  display: none;
+}
+
+.cmd_palette_backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: var(--modal-backdrop);
+  z-index: 9999;
+}
+
+.cmd_palette_modal {
+  position: fixed;
+  top: 15%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 500px;
+  max-width: 90vw;
+  background-color: var(--modal-bg);
+  color: var(--txt);
+  border: 1px solid var(--table-borders);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  z-index: 10000;
+  font-family: var(--font-family-ui);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.cmd_palette_header {
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--table-borders);
+}
+
+.cmd_palette_input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--txt);
+  font-size: 14px;
+  font-family: var(--font-family-ui);
+  outline: none;
+  margin: 0;
+  padding: 4px 8px;
+}
+
+.cmd_palette_input:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.cmd_palette_close {
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--grey);
+  padding: 0 4px;
+}
+
+.cmd_palette_list {
+  max-height: 320px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+}
+
+.cmd_palette_item {
+  padding: 10px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background-color 0.1s ease;
+}
+
+.cmd_palette_item:hover,
+.cmd_palette_item.selected {
+  background-color: var(--slct-bg);
+}
+
+.cmd_palette_item_shortcut {
+  font-family: var(--font-family-mono);
+  font-size: 11px;
+  opacity: 0.8;
+  background: var(--btn-bg);
+  color: var(--btn-txt);
+  border: 1px solid var(--btn-border);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.cmd_palette_footer {
+  display: flex;
+  justify-content: space-around;
+  padding: 8px 16px;
+  border-top: 1px solid var(--table-borders);
+  font-size: 11px;
+  color: var(--grey);
+  background-color: var(--fh-bg);
+}
+
+.cmd_palette_footer kbd {
+  font-family: var(--font-family-mono);
+  background: var(--btn-bg);
+  border: 1px solid var(--btn-border);
+  border-radius: 3px;
+  padding: 1px 4px;
+  margin: 0 2px;
+}
+
+/* --------------------------------------------------------------------------
+   9. Sleek Custom Scrollbars
+   -------------------------------------------------------------------------- */
+.scroll {
+  overflow: auto;
+  white-space: nowrap;
+}
+
+/* Custom WebKit Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* Firefox Scrollbar Styling */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+/* --------------------------------------------------------------------------
+   10. Print Styles Integration
+   -------------------------------------------------------------------------- */
+@media print {
+  header,
+  footer,
+  ui-cmenu,
+  #dialog {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .sheet {
+    width: 100% !important;
+    height: auto !important;
+    background: #000000 !important;
+  }
+
+  .sheet td {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+}

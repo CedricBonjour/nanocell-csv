@@ -8,19 +8,28 @@
   <meta name="robots" content="noindex, nofollow, noarchive">
   <title>csv</title>
   <link rel="icon" href="logo/nanocell.svg">
-  <link rel="stylesheet" href="css/palettes/light.css" id="palette">
-  <link rel="stylesheet" href="css/themes/light.css" id="theme">
-  <link rel="stylesheet" href="css/Inputs.css">
-  <link rel="stylesheet" href="css/print.css" media="print" />
-  <link rel="stylesheet" href="css/styles.css">
-  <link rel="stylesheet" href="css/sheet.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/palettes/light.css" id="palette" style="display:none">
+  <link rel="stylesheet" href="css/themes/light.css" id="theme" style="display:none">
+  <script>
+    (function() {
+      try {
+        const t = localStorage.getItem('theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'night' : 'light');
+        document.documentElement.setAttribute('data-theme', t);
+        if (document.body) document.body.setAttribute('data-theme', t);
+        else document.addEventListener('DOMContentLoaded', function() { if (document.body) document.body.setAttribute('data-theme', t); });
+      } catch(e) { console.warn('Theme preference init failed:', e); }
+    })();
+  </script>
 
 
 </head>
 
 <body id="body" class="flexCol">
   <header id="header"></header>
-  <div id="content" class="flexMain"></div>
+  <div id="content" class="flexMain">
+    <ui-sheet id="sheet"></ui-sheet>
+  </div>
   <footer>
     <section id="dialog" class="scroll"></section>
     <section id="footer">
@@ -30,6 +39,7 @@
       <img id="lock" src="icn/edit.svg" alt="editing file">
     </section>
   </footer>
+  <ui-command-palette></ui-command-palette>
   <script type="module" src="js/main.js"></script>
 </body>
 

@@ -1,7 +1,7 @@
 function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 function qid(id) { return document.querySelector(id).click(); }
 
-var time_start = Date.now(); // Point A
+const time_start = Date.now(); // Point A
 
 
 
@@ -93,6 +93,6 @@ qid('#closeDialog');
 
 
 
-var time_end = Date.now();   // Point B
+const time_end = Date.now();   // Point B
 console.log(`Time elapsed: ${time_end - time_start} ms`);
 

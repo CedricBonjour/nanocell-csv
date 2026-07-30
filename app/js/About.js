@@ -3,67 +3,72 @@ import { dom } from './dom.js';
 class About extends HTMLElement {
   constructor() {
     super();
-    var title = document.createElement("h1")
-    var version = document.createElement("h3")
-    var logo = document.createElement("img")
-    var homeLink = document.createElement("a")
-    var bugLink = document.createElement("a")
-    var buttonBugReport = document.createElement("button")
-    var aboutFooter = document.createElement("div")
-    title.innerHTML = "Nanocell CSV Editor";
-    buttonBugReport.innerHTML = "Bug Report"
-    logo.src = "./logo/nanocell.svg"
-    homeLink.href = "https://nanocell-csv.com/"
-    homeLink.innerHTML = "https://nanocell-csv.com/"
-    homeLink.target = "_blank"
-    bugLink.href = "https://github.com/CedricBonjour/nanocell-csv/issues/new"
-    bugLink.target = "_blank"
-    this.style.display = "flex"
-    this.style.flexDirection = "column"
-    this.style.height = "100vh"
-    this.style.justifyContent = "center"
-    this.style.alignItems = "center"
-    logo.style.filter = "none";
-    logo.style.height = "auto";
-    logo.style.width = "10em";
-    logo.style.borderRadius = "0";
-    aboutFooter.style.position = "absolute"
-    aboutFooter.style.bottom = "3em"
-    aboutFooter.style.left = "0"
-    aboutFooter.style.width = "100%"
-    aboutFooter.style.display = "flex"
-    aboutFooter.style.flexDirection = "column"
-    aboutFooter.style.height = "7vh"
-    aboutFooter.style.justifyContent = "space-between"
+    this.titleEl = document.createElement("h1");
+    this.versionEl = document.createElement("h3");
+    this.logoEl = document.createElement("img");
+    this.homeLink = document.createElement("a");
+    this.bugLink = document.createElement("a");
+    this.buttonBugReport = document.createElement("button");
+    this.aboutFooter = document.createElement("div");
 
-    homeLink.style.textDecoration = "none"
-    homeLink.style.color = "royalblue"
-    buttonBugReport.style.color =  "royalblue"
-    buttonBugReport.style.opacity = 1
-    buttonBugReport.style.setProperty("box-shadow", "none", "important");
-    this.getVersion(e => { version.innerHTML = e });
-    this.appendChild(logo)
-    this.appendChild(title);
-    this.appendChild(version)
-    bugLink.appendChild(buttonBugReport)
-    aboutFooter.appendChild(bugLink)
-    aboutFooter.appendChild(homeLink)
-    this.appendChild(aboutFooter)
-    dom.dialog.push(this, true);
+    this.titleEl.innerHTML = "Nanocell CSV Editor";
+    this.buttonBugReport.innerHTML = "Bug Report";
+    this.logoEl.src = "./logo/nanocell.svg";
+    this.homeLink.href = "https://nanocell-csv.com/";
+    this.homeLink.innerHTML = "https://nanocell-csv.com/";
+    this.homeLink.target = "_blank";
+    this.bugLink.href = "https://github.com/CedricBonjour/nanocell-csv/issues/new";
+    this.bugLink.target = "_blank";
+
+    this.logoEl.style.filter = "none";
+    this.logoEl.style.height = "auto";
+    this.logoEl.style.width = "10em";
+    this.logoEl.style.borderRadius = "0";
+
+    this.aboutFooter.style.position = "absolute";
+    this.aboutFooter.style.bottom = "3em";
+    this.aboutFooter.style.left = "0";
+    this.aboutFooter.style.width = "100%";
+    this.aboutFooter.style.display = "flex";
+    this.aboutFooter.style.flexDirection = "column";
+    this.aboutFooter.style.height = "7vh";
+    this.aboutFooter.style.justifyContent = "space-between";
+
+    this.homeLink.style.textDecoration = "none";
+    this.homeLink.style.color = "royalblue";
+    this.buttonBugReport.style.color = "royalblue";
+    this.buttonBugReport.style.opacity = "1";
+    this.buttonBugReport.style.setProperty("box-shadow", "none", "important");
   }
-  getVersion(cb) { caches.keys().then(cache => { cb(cache.join('<br>')) }).catch(() => { cb("version error") }) }
-}
-customElements.define('ui-about', About);
 
-// position: absolute;
-// bottom: 3em;
-// left: 0px;
-// width: 100%;
-// flex-direction: column;
-// display: flex
-// ;
-// height: 7vh;
-// align-content: space-between;
-// justify-content: space-between;
+  connectedCallback() {
+    if (this._initialized) return;
+    this._initialized = true;
+    this.style.display = "flex";
+    this.style.flexDirection = "column";
+    this.style.height = "100vh";
+    this.style.justifyContent = "center";
+    this.style.alignItems = "center";
+
+    this.getVersion(e => { this.versionEl.innerHTML = e });
+    this.appendChild(this.logoEl);
+    this.appendChild(this.titleEl);
+    this.appendChild(this.versionEl);
+    this.bugLink.appendChild(this.buttonBugReport);
+    this.aboutFooter.appendChild(this.bugLink);
+    this.aboutFooter.appendChild(this.homeLink);
+    this.appendChild(this.aboutFooter);
+
+    if (dom?.dialog) dom.dialog.push(this, true);
+  }
+
+  getVersion(cb) {
+    caches.keys().then(cache => { cb(cache.join('<br>')) }).catch(err => { console.warn("Failed to get cache version:", err); cb("version error"); });
+  }
+}
+
+if (!customElements.get('ui-about')) {
+  customElements.define('ui-about', About);
+}
 
 export { About };

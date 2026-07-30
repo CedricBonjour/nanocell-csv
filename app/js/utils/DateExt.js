@@ -6,31 +6,30 @@ Date.prototype.parser = {
   month: ["mm", "MMM", "Mmm", "mmm", "month", "Month", "MONTH", "month"],
   year: ["YY", "yyyy"],
   epoch: ["UNIX", "epoch"],
-}
+};
 
-Date.prototype.addDays = function (n) { this.setDate(this.getDate() + n); return this; }
+Date.prototype.addDays = function (n) { this.setDate(this.getDate() + n); return this; };
 
 Date.prototype.build = function (txt, f) {
-  for (var e of this.parser.epoch) if (f === e) { this.setTime(txt); return this; }
-  var match = txt.match(/\d+/g);
+  for (const e of this.parser.epoch) if (f === e) { this.setTime(txt); return this; }
+  const match = txt.match(/\d+/g);
   if (match === null) return undefined;
-  var nums = match.map(Number);
+  const nums = match.map(Number);
   if (nums.length > 3 || nums.length < 2) return undefined;
 
-  var y = 0, m = 0, d = 0;
-  var yp = -1, mp = -1, dp = -1;
-  var fullYear = true;
-  for (var i = 0; i < this.monthList.length; i++)if (new RegExp(this.monthList[i].substring(0, 3), 'i').test(txt)) m = i + 1;
+  let y = 0, m = 0, d = 0;
+  let yp = -1, mp = -1, dp = -1;
+  let fullYear = true;
+  for (let i = 0; i < this.monthList.length; i++) if (new RegExp(this.monthList[i].substring(0, 3), 'i').test(txt)) m = i + 1;
   if (m < 1 && nums.length != 3) return undefined;
   if (m > 0 && nums.length != 2) return undefined;
 
-  for (var month of this.parser.month) mp = Math.max(mp, f.search(month));
-  for (var date of this.parser.date) dp = Math.max(dp, f.search(date));
-  for (var year of this.parser.year) {
-    var n = f.search(year);
+  for (const month of this.parser.month) mp = Math.max(mp, f.search(month));
+  for (const date of this.parser.date) dp = Math.max(dp, f.search(date));
+  for (const year of this.parser.year) {
+    const n = f.search(year);
     if (n > -1 && year == "YY") fullYear = false;
     yp = Math.max(yp, n);
-
   }
   if (m < 1) {
     if (mp < yp && mp < dp) m = nums.shift();
@@ -47,16 +46,16 @@ Date.prototype.build = function (txt, f) {
   this.setFullYear(y);
   if (this.getFormated(f) === txt) return this;
   return undefined;
-}
+};
 
 Date.prototype.getFormated = function (f) {
-  largen = function (n, d) { n = String(n); while (n.length < d) n = "0" + n; return n };
-  suffix = function (n) {
+  const largen = function (n, d) { n = String(n); while (n.length < d) n = "0" + n; return n };
+  const suffix = function (n) {
     if (n % 10 === 1 && n !== 11) return n + "st";
     if (n % 10 === 2 && n !== 12) return n + "nd";
     if (n % 10 === 3 && n !== 13) return n + "rd";
     return n + 'th';
-  }
+  };
   if (isNaN(this.getTime())) return undefined;
   f = f.replace("epoch", this.getTime());
   f = f.replace("UNIX", this.getTime());
@@ -81,19 +80,15 @@ Date.prototype.getFormated = function (f) {
   f = f.replace("dth", suffix(this.getDate()));
   f = f.replace("d1", this.getDate());
   return f;
-}
-
+};
 
 Date.prototype.isValidFormat = function (f) {
-  var d = new Date(1999, 1, 1);
-  var n = new Date(2222, 2, 2).build(d.getFormated(f), f);
+  const d = new Date(1999, 1, 1);
+  const n = new Date(2222, 2, 2).build(d.getFormated(f), f);
   return Boolean(n && d.getTime() === n.getTime());
-}
-
+};
 
 Date.isDate = function (t) {
-  // const regex = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
   const regex = /^\d{4}-[01]\d-[0123]\d$/;
-  return regex.test(t)
-}
-
+  return regex.test(t);
+};

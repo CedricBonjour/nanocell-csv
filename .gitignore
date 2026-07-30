@@ -1,3 +1,4 @@
+.agents/
 app/test/
 test/csv_files/
 test/
@@ -28,5 +29,4 @@ coverage/
 
 # Misc
 .DS_Store
-
 dev-dist/

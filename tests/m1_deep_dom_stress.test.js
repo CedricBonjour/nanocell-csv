@@ -245,8 +245,10 @@ describe('Milestone 1 — Deep DOM Stress & Target Element Resolution', () => {
       const dblclickEvent = new MouseEvent('dblclick', { bubbles: true, cancelable: true });
       Object.defineProperty(dblclickEvent, 'target', { value: colLeaf, enumerable: true });
       sheet.dispatchEvent(dblclickEvent);
+      for (let x = 0; x < sheet.nViewCols; x++) sheet.loadTopHeader(x);
 
-      expect(colHeaderTd.style.width).toBe('auto');
+      expect(sheet.expandedCol).toBe(0);
+      expect(colHeaderTd.style.width).toBe('100%');
     });
   });
 

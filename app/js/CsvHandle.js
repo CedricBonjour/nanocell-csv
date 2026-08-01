@@ -130,7 +130,6 @@ class CsvHandle {
     if (s) {
       if (stg.trim) s.df.trimAll();
       s.fixTop = stg.set_headers;
-      if (stg.fit_col_width) s.fitWidth();
       s.df.isSaved = true;
     }
     StateManager.setState('fileLoadingState', 'complete');

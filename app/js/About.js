@@ -41,11 +41,7 @@ class About extends HTMLElement {
     this.aboutFooter.style.height = "7vh";
     this.aboutFooter.style.justifyContent = "space-between";
 
-    this.homeLink.style.textDecoration = "none";
-    this.homeLink.style.color = "royalblue";
-    this.buttonBugReport.style.color = "royalblue";
-    this.buttonBugReport.style.opacity = "1";
-    this.buttonBugReport.style.setProperty("box-shadow", "none", "important");
+
   }
 
   connectedCallback() {
@@ -95,5 +91,3 @@ if (!customElements.get('ui-about')) {
 }
 
 export { About };
-
-

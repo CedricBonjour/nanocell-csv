@@ -34,7 +34,6 @@ describe('Settings Management & Input Components Test Suite', () => {
     expect(localStorage.length).toBe(initialStorageLength);
     expect(localStorage.getItem('purple')).toBe(initialStoragePurple);
     expect(localStorage.getItem('save_strict')).toBeNull();
-    expect(localStorage.getItem('fit_col_width')).toBeNull();
   });
 
   test('Clearing localStorage and calling Setting.init() restores all defined defaults', () => {
@@ -58,9 +57,9 @@ describe('Settings Management & Input Components Test Suite', () => {
     expect(stg.font).toBe(18);
     expect(localStorage.getItem('font')).toBe('18');
 
-    stg.fit_col_width = true;
-    expect(stg.fit_col_width).toBe(true);
-    expect(localStorage.getItem('fit_col_width')).toBe('true');
+    stg.save_strict = true;
+    expect(stg.save_strict).toBe(true);
+    expect(localStorage.getItem('save_strict')).toBe('true');
   });
 
   test('Setting.set(key, val) updates stg property and persists to localStorage', () => {

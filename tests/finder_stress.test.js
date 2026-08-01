@@ -64,7 +64,6 @@ describe('Challenger M1/M3 Comprehensive Empirical Stress Test Suite', () => {
       stg.cols = 20;
       stg.purple = false;
       stg.save_strict = true;
-      stg.fit_col_width = true;
 
       localStorage.clear();
       Setting.init();

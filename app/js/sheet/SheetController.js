@@ -82,7 +82,15 @@ export class SheetController {
       if (tx === undefined || ty === undefined) return;
       
       if (tx >= 0 && ty >= 0) this.input();
-      if (ty < 0) td.style.width = "auto";
+      if (ty < 0 && tx >= 0) {
+        const colIdx = this.sheet.baseX + tx;
+        if (this.sheet.expandedCol === colIdx) {
+          this.sheet.expandedCol = null;
+        } else {
+          this.sheet.expandedCol = colIdx;
+        }
+        this.sheet.refresh();
+      }
     });
   }
 

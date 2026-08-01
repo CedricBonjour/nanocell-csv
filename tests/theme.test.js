@@ -85,9 +85,9 @@ describe('Theming & UI Settings Operations', () => {
   });
 
   test('Setting loads stored boolean values correctly from localStorage', () => {
-    localStorage.setItem('fit_col_width', 'true');
+    localStorage.setItem('save_strict', 'true');
     Setting.init();
-    expect(stg.fit_col_width).toBe(true);
+    expect(stg.save_strict).toBe(true);
   });
 
   test('Setting.runAll triggers callbacks for all active setting keys', () => {

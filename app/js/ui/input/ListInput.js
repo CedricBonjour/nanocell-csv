@@ -6,13 +6,11 @@ class ListInput extends HTMLElement {
     this.idx = 0;
     this.classList.add("ui-list");
 
-    this.left = document.createElement("div");
-    this.center = document.createElement("div");
-    this.right = document.createElement("div");
+    this.left = document.createElement("button");
+    this.center = document.createElement("section");
+    this.right = document.createElement("button");
     this.left.innerHTML = "<";
     this.right.innerHTML = ">";
-    this.left.classList.add("slctLeft");
-    this.right.classList.add("slctRight");
     this.center.style.flexGrow = "2";
   }
 

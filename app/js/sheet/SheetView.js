@@ -53,11 +53,8 @@ export class SheetView {
         
         if (y === 0 && x > 0) {
           const hdrTxt = document.createElement("span");
-          const hdrHandle = document.createElement("span");
           hdrTxt.classList.add("noclick");
-          hdrHandle.classList.add("headerHandle");
           cell.append(hdrTxt);
-          cell.append(hdrHandle);
         } else if (x > 0 && y > 0) {
           const div = document.createElement("div");
           cell.appendChild(div);
@@ -129,8 +126,16 @@ export class SheetView {
       this.rows[0].cells[x + 1].firstChild.innerHTML = this.sheet.df.get(this.sheet.baseX + x, 0);
     else this.rows[0].cells[x + 1].firstChild.innerHTML = this.sheet.baseX + x + 1;
 
-    const w = this.sheet.colWidthList.find(obj => obj.idx === this.sheet.baseX + x);
-    this.rows[0].cells[x + 1].style.width = w ? w.width : String(100.0 / this.sheet.nViewCols) + "%";
+    const matrixX = this.sheet.baseX + x;
+    if (this.sheet.expandedCol !== null && this.sheet.expandedCol !== undefined) {
+      if (matrixX === this.sheet.expandedCol) {
+        this.rows[0].cells[x + 1].style.width = "100%";
+      } else {
+        this.rows[0].cells[x + 1].style.width = "0%";
+      }
+    } else {
+      this.rows[0].cells[x + 1].style.width = String(100.0 / this.sheet.nViewCols) + "%";
+    }
   }
 
   /**
@@ -139,8 +144,7 @@ export class SheetView {
    */
   loadLeftHeader(y) {
     if (!this.rows[y + 1] || !this.rows[y + 1].cells[0]) return;
-    if (this.sheet.fixLeft && this.sheet.df.get(0, this.sheet.baseY + y).length > 0) this.rows[y + 1].cells[0].innerHTML = "<div>" + this.sheet.df.get(0, this.sheet.baseY + y) + "</div>";
-    else this.rows[y + 1].cells[0].innerHTML = this.sheet.baseY + y + 1;
+    this.rows[y + 1].cells[0].innerHTML = "<div>" + (this.sheet.baseY + y + 1) + "</div>";
   }
 
   /**
@@ -212,28 +216,5 @@ export class SheetView {
     }
   }
 
-  /**
-   * Automatically calculates optimal column widths based on cell text content length and reloads table layout.
-   */
-  fitWidth() {
-    const wl = [];
-    this.sheet.colWidthList = [];
-    this.sheet.nViewCols = Math.max(5, this.sheet.df.width + 1);
-    this.sheet.baseX = 0;
-
-    for (let x = 0; x < this.sheet.nViewCols; x++) {
-      let maxWidth = 6;
-      for (let y = 0; y < this.sheet.height; y++) {
-        const w = this.sheet.df.get(x, this.sheet.baseY + y).length;
-        if (w > maxWidth) maxWidth = w;
-      }
-      wl.push(maxWidth);
-    }
-    const totalWidth = wl.reduce((acc, val) => acc + val, 0);
-    for (let i = 0; i < wl.length; i++) {
-      this.sheet.colWidthList.push({ idx: i, width: (100 * wl[i] / totalWidth).toString() + "%" });
-    }
-    this.reload();
-  }
 }
 

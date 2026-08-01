@@ -15,7 +15,6 @@ stg.rows = 15;
 stg.cols = 10;
 sheet.nViewCols = stg.cols;
 sheet.nViewRows = stg.rows;
-sheet.colWidthList = [];
 sheet.reload();
 sheet.slctRefresh();
 
@@ -27,10 +26,6 @@ for (i = 0; i < 6; i++) { sheet.nViewRows++; sheet.reload(); await sleep(7); }
 await sleep(260);
 sheet.fixTop = true; 
 sheet.reload();
-await sleep(440);
-
-await sleep(440);
-sheet.fitWidth();
 await sleep(440);
 
 

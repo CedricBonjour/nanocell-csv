@@ -23,15 +23,13 @@ class Sheet extends HTMLElement {
     this.nViewRows = stg.rows;
     this.escape = false;
     this.fixTop = false;
-    this.fixLeft = false;
     this.slctRange = false;
     this.rangeEnd = undefined;
-    this.colWidthList = [];
+    this.expandedCol = null;
     this.xx = 0;
     this.yy = 0;
     this.bx = 0;
     this.by = 0;
-    this.colResize = undefined;
 
     this.id = 'sheet';
     this.classList.add('sheet');
@@ -103,7 +101,6 @@ class Sheet extends HTMLElement {
   rangeApply(cb) { return this.controller.rangeApply(cb); }
   rangeTranspose() { return this.controller.rangeTranspose(); }
   round(integer) { return this.controller.round(integer); }
-  fitWidth() { return this.view.fitWidth(); }
   paste(mat) { return this.controller.paste(mat); }
   scroll(e) { return this.controller.scroll(e); }
   loadCell(c, x, y) { return this.view.loadCell(c, x, y); }

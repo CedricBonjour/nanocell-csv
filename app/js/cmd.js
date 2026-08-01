@@ -51,8 +51,6 @@ const cmd = {
   integer: { k: "I", ctrl: true, run() { const s = getSheet(); if (s) { s.round(true); s.refresh(); } }, description: "Round selection to integer" },
   decimal: { k: "$", ctrl: true, run() { const s = getSheet(); if (s) { s.round(false); s.refresh(); } }, description: "Round selection to decimal" },
   fixTop: { k: "B", ctrl: true, run() { const s = getSheet(); if (s) { s.fixTop = !s.fixTop; s.refresh(); } }, description: "Fix Header Top" },
-  fixLeft: { k: "B", ctrl: true, shift: true, run() { const s = getSheet(); if (s) { s.fixLeft = !s.fixLeft; s.refresh(); } }, description: "Fix Header Left" },
-  fit_width: { k: "W", ctrl: true, run() { const s = getSheet(); if (s) { s.fitWidth(); s.refresh(); } }, description: "Fit Column Width" },
   undo: { k: "Z", ctrl: true, run() { const s = getSheet(); if (s) { s.df.undo(); s.refresh(); } }, description: "Undo" },
   redo: { k: "Z", ctrl: true, shift: true, run() { const s = getSheet(); if (s) { s.df.redo(); s.refresh(); } }, description: "Redo" },
   redo2: { k: "Y", ctrl: true, run() { const s = getSheet(); if (s) { s.df.redo(); s.refresh(); } }, description: "Redo" },
@@ -107,7 +105,7 @@ function buildCommands() {
 function buildMenu() {
   const menuItems = [
     "new", "open", "save", "reloadFile", "",
-    "undo", "redo", "fixLeft", "fixTop", "fit_width", "sort", "sort_reverse", "transpose", "trim", "date", "integer", "decimal", "validate_headers", "validate_data",
+    "undo", "redo", "fixTop", "sort", "sort_reverse", "transpose", "trim", "date", "integer", "decimal", "validate_headers", "validate_data",
     "", "find", "about", "settings", "shortcuts"];
   function buildMenuItem(item) {
     if (item === "") return dom.header.appendChild(document.createElement("hr"));

@@ -135,20 +135,37 @@ describe('Milestone 2 Empirical Stress & Edge Case Test Suite', () => {
       expect(sheet.rows[0].cells.length).toBe(stg.cols + 2); // nViewCols + 1 header col
     });
 
-    test('fitWidth calculates correct column width proportions across wide content', () => {
+    test('equal-width rendering and expandedCol double-click toggle under stress', () => {
       df = new Dataframe([
         ['Short', 'VeryVeryVeryLongColumnHeaderNameHere', 'Med'],
         ['1', '2', '3']
       ]);
       sheet = new Sheet(df);
-      sheet.fitWidth();
+      sheet.reload();
+      for (let x = 0; x < sheet.nViewCols; x++) sheet.loadTopHeader(x);
 
-      expect(sheet.colWidthList).toHaveLength(sheet.nViewCols);
-      const width0 = parseFloat(sheet.colWidthList[0].width);
-      const width1 = parseFloat(sheet.colWidthList[1].width);
+      // Equal width verification
+      const expectedWidth = `${100.0 / sheet.nViewCols}%`;
+      expect(sheet.rows[0].cells[1].style.width).toBe(expectedWidth);
+      expect(sheet.rows[0].cells[2].style.width).toBe(expectedWidth);
+      expect(sheet.expandedCol).toBeNull();
 
-      // Width of col 1 should be significantly larger than col 0 due to text length
-      expect(width1).toBeGreaterThan(width0);
+      // Double-click column 1 header under stress
+      const colHeader1 = sheet.rows[0].cells[2]; // tx: 1
+      const dblclickEvent = new MouseEvent('dblclick', { bubbles: true, cancelable: true });
+      Object.defineProperty(dblclickEvent, 'target', { value: colHeader1, enumerable: true });
+      sheet.dispatchEvent(dblclickEvent);
+      for (let x = 0; x < sheet.nViewCols; x++) sheet.loadTopHeader(x);
+
+      expect(sheet.expandedCol).toBe(1);
+      expect(colHeader1.style.width).toBe('100%');
+      expect(sheet.rows[0].cells[1].style.width).toBe('0%');
+
+      // Double-click column 1 header again to restore equal width
+      sheet.dispatchEvent(dblclickEvent);
+      for (let x = 0; x < sheet.nViewCols; x++) sheet.loadTopHeader(x);
+      expect(sheet.expandedCol).toBeNull();
+      expect(colHeader1.style.width).toBe(expectedWidth);
     });
 
     test('cellInView and bestInputCell accurately calculate visibility during viewport shift', () => {

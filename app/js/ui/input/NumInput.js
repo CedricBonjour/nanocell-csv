@@ -5,14 +5,12 @@ class NumInput extends HTMLElement {
     this.min = min;
     this.max = max;
     this.classList.add("ui-num");
-    this.left = document.createElement("span");
-    this.center = document.createElement("span");
-    this.right = document.createElement("span");
+    this.left = document.createElement("button");
+    this.center = document.createElement("section");
+    this.right = document.createElement("button");
     this.left.innerHTML = "-";
     this.center.innerHTML = this.n;
     this.right.innerHTML = "+";
-    this.left.classList.add("slctLeft");
-    this.right.classList.add("slctRight");
   }
 
   connectedCallback() {

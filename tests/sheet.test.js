@@ -119,10 +119,31 @@ describe('UI Sheet Component & Custom Element <ui-sheet>', () => {
     expect(items.find(i => i.x === 0 && i.y === 2).newValue).toBe("Say 'hello'");
   });
 
-  test('fitWidth calculates proportional column widths based on content length', () => {
-    sheet.fitWidth();
-    expect(sheet.colWidthList.length).toBeGreaterThan(0);
-    expect(sheet.colWidthList[0].width).toContain('%');
+  test('Table columns render with uniform equal widths by default', () => {
+    sheet.reload();
+    for (let x = 0; x < sheet.nViewCols; x++) sheet.loadTopHeader(x);
+    const expectedWidth = `${100.0 / sheet.nViewCols}%`;
+    expect(sheet.rows[0].cells[1].style.width).toBe(expectedWidth);
+    expect(sheet.expandedCol).toBeNull();
+  });
+
+  test('Double-clicking column header toggles expandedCol to 100% width and back', () => {
+    const colHeaderTd = sheet.rows[0].cells[1]; // tx: 0, ty: -1
+    const dblclickEvent = new MouseEvent('dblclick', { bubbles: true, cancelable: true });
+    Object.defineProperty(dblclickEvent, 'target', { value: colHeaderTd, enumerable: true });
+    sheet.dispatchEvent(dblclickEvent);
+    for (let x = 0; x < sheet.nViewCols; x++) sheet.loadTopHeader(x);
+
+    expect(sheet.expandedCol).toBe(0);
+    expect(colHeaderTd.style.width).toBe('100%');
+    expect(sheet.rows[0].cells[2].style.width).toBe('0%');
+
+    // Double-click again to restore equal widths
+    sheet.dispatchEvent(dblclickEvent);
+    for (let x = 0; x < sheet.nViewCols; x++) sheet.loadTopHeader(x);
+    expect(sheet.expandedCol).toBeNull();
+    const expectedWidth = `${100.0 / sheet.nViewCols}%`;
+    expect(colHeaderTd.style.width).toBe(expectedWidth);
   });
 
   test('round rounds floating point numeric values in active selection', () => {

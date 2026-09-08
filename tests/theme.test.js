@@ -13,7 +13,6 @@ describe('Theming & UI Settings Operations', () => {
       <header id="header"></header>
       <div id="content" class="flexMain"></div>
       <footer>
-        <section id="dialog" class="scroll"></section>
         <section id="footer">
           <section id="footerLeft">Left</section>
           <section id="footerCenter" class="flexMain">Center</section>
@@ -21,6 +20,7 @@ describe('Theming & UI Settings Operations', () => {
           <img id="lock" src="icn/edit.svg" alt="editing file">
         </section>
       </footer>
+      <section id="dialog" class="scroll"></section>
     `;
     build_dom();
     Setting.init();
@@ -106,6 +106,18 @@ describe('Theming & UI Settings Operations', () => {
     expect(dom.dialog.querySelector('h1').innerText).toBe('Settings');
   });
 
+  test('Settings pane close button (#closeDialog) has pointer-events: auto and closes dialog on click', () => {
+    Setting.show();
+    expect(dom.dialog.children.length).toBeGreaterThan(0);
+    const closeBtn = dom.dialog.querySelector('#closeDialog');
+    expect(closeBtn).not.toBeNull();
+    expect(closeBtn.style.pointerEvents).toBe('auto');
+    expect(closeBtn.style.cursor).toBe('pointer');
+
+    closeBtn.click();
+    expect(dom.dialog.children.length).toBe(0);
+  });
+
   test('Setting.setTheme automatically updates data-theme attribute on document.body and documentElement', () => {
     stg.theme = 'night';
     expect(document.body.getAttribute('data-theme')).toBe('night');
@@ -158,5 +170,67 @@ describe('Theming & UI Settings Operations', () => {
     unsubscribe();
     stg.theme = 'night';
     expect(receivedThemes).toEqual(['night', 'dark', 'light']);
+  });
+
+  test('Footer icons do not have hover effect and style.css excludes footer img:hover', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const cssContent = fs.readFileSync(path.resolve(__dirname, '../app/css/style.css'), 'utf-8');
+
+    // Ensure footer img is not in the clickable header/menu hover group
+    expect(cssContent).not.toMatch(/#menu\s+img:hover\s*,\s*footer\s+img:hover/);
+    expect(cssContent).toMatch(/footer\s+img\s*\{[^}]*pointer-events:\s*none/);
+    expect(cssContent).toMatch(/footer\s+img:hover[\s\S]*?transform:\s*none/);
+  });
+
+  test('Footer text and space dots use inherit/var(--fh-txt) to prevent color shifting on cell selection', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const cssContent = fs.readFileSync(path.resolve(__dirname, '../app/css/style.css'), 'utf-8');
+
+    // Ensure all themes define --dots as inherit rather than var(--active)
+    const dotMatches = [...cssContent.matchAll(/--dots:\s*([^;]+);/g)];
+    expect(dotMatches.length).toBeGreaterThanOrEqual(6);
+    dotMatches.forEach((m) => {
+      expect(m[1].trim()).toBe('inherit');
+    });
+
+    // Ensure footer elements are styled with var(--fh-txt)
+    expect(cssContent).toMatch(/#footer,\s*#footerLeft,\s*#footerCenter,\s*#footerRight\s*\{[^}]*color:\s*var\(--fh-txt\)/);
+  });
+
+  test('Icons default color matches table header text color across all themes', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const cssContent = fs.readFileSync(path.resolve(__dirname, '../app/css/style.css'), 'utf-8');
+
+    // Verify each theme defines calibrated --icon-filter for table header color
+    expect(cssContent).toMatch(/\[data-theme="light"\][\s\S]*?--icon-filter:\s*brightness\(0\)\s*saturate\(100%\)\s*invert\(38%\)/);
+    expect(cssContent).toMatch(/\[data-theme="solarized"\][\s\S]*?--icon-filter:\s*brightness\(0\)\s*saturate\(100%\)\s*invert\(69%\)/);
+    expect(cssContent).toMatch(/body\[data-theme="dark"\][\s\S]*?--icon-filter:\s*brightness\(0\)\s*saturate\(100%\)\s*invert\(53%\)/);
+    expect(cssContent).toMatch(/\[data-theme="night"\][\s\S]*?--icon-filter:\s*brightness\(0\)\s*saturate\(100%\)\s*invert\(53%\)/);
+    expect(cssContent).toMatch(/\[data-theme="nord"\][\s\S]*?--icon-filter:\s*brightness\(0\)\s*saturate\(100%\)\s*invert\(77%\)/);
+    expect(cssContent).toMatch(/\[data-theme="dracula"\][\s\S]*?--icon-filter:\s*brightness\(0\)\s*saturate\(100%\)\s*invert\(49%\)/);
+  });
+
+  test('Header and menu icons suppress text selection and caret cursor during navigation', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const cssContent = fs.readFileSync(path.resolve(__dirname, '../app/css/style.css'), 'utf-8');
+
+    // Verify header, menu and img suppress caret and user selection
+    expect(cssContent).toMatch(/header\s*\{[\s\S]*?caret-color:\s*transparent;/);
+    expect(cssContent).toMatch(/#menu\s*\{[\s\S]*?caret-color:\s*transparent;/);
+    expect(cssContent).toMatch(/img\s*\{[\s\S]*?caret-color:\s*transparent;/);
+    expect(cssContent).toMatch(/img\s*\{[\s\S]*?user-select:\s*none;/);
+  });
+
+  test('#closeDialog has pointer-events: auto !important and cursor: pointer in style.css', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const cssContent = fs.readFileSync(path.resolve(__dirname, '../app/css/style.css'), 'utf-8');
+
+    expect(cssContent).toMatch(/#closeDialog\s*\{[^}]*pointer-events:\s*auto\s*!important;/);
+    expect(cssContent).toMatch(/#closeDialog\s*\{[^}]*cursor:\s*pointer\s*!important;/);
   });
 });

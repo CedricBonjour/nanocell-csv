@@ -27,8 +27,135 @@
 }
 
 /* --------------------------------------------------------------------------
-   2. Theme Token Specifications (Light, Dark, Night)
+   2. Theme Token Specifications (Light, Solarized, Dark, Night, Nord, Dracula)
    -------------------------------------------------------------------------- */
+
+/* Light Theme */
+:root,
+[data-theme="light"],
+body[data-theme="light"] {
+  /* Palette Colors */
+  --blue: #005cc5;
+  --orange: #e95f00;
+  --green: #28a745;
+  --red: #d73a49;
+  --purple: #6f42c1;
+  --yellow: #f1e05a;
+  --white: #ffffff;
+  --grey: #6a737d;
+  --black: #000000;
+
+  --bg1: #e7e7e7;
+  --bg2: #ffffff;
+  --txt: #444;
+  --txt-soft: #616161;
+  --border: #b1b1b1;
+  --active: var(--blue);
+
+  --th-bg: var(--bg1);
+  --th-txt: var(--txt-soft);
+  --body-bg: var(--bg2);
+  --slct-bg: var(--bg1);
+  --fh-bg: var(--bg1);
+  --fh-txt: var(--txt-soft);
+  --table-borders: var(--border);
+  --input-txt: var(--txt);
+  --input-bg: var(--bg1);
+  --input-bg-out: var(--bg2);
+  --dots: var(--active, inherit);
+  --cmenu-bg: var(--bg1);
+  --cmenuHover: var(--bg2);
+  --modal-bg: var(--bg1);
+  --btn-bg: var(--bg2);
+  --btn-txt: var(--txt);
+  --btn-border: var(--border);
+  --btn-hover: var(--border);
+  --btn-active: var(--bg1);
+  --btn-focus-ring: var(--active);
+  --toggle-btn-bg: var(--active);
+  --num-txt: var(--orange);
+
+  /* Icon Filter System */
+  --icon-filter: brightness(0) saturate(100%) invert(38%);
+  --icon-filter-hover: brightness(0) saturate(100%) invert(22%) sepia(95%) saturate(3000%) hue-rotate(205deg);
+  --icon-hover-bg: rgba(0, 0, 0, 0.092);
+  --filter: var(--icon-filter);
+
+  /* */
+  --modal-backdrop: rgba(15, 23, 42, 0.4);
+  /* Scrollbar */
+  --scrollBar: grey;
+  --scrollbar-thumb: #cbd5e1;
+  --scrollbar-thumb-hover: #94a3b8;
+  --scrollbar-track: #f8fafc;
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* Solarized Theme (Modern Warm Light) */
+[data-theme="solarized"],
+body[data-theme="solarized"] {
+  /* Palette Colors */
+  --blue: #268bd2;
+  --orange: #cb4b16;
+  --green: #859900;
+  --red: #dc322f;
+  --purple: #6c71c4;
+  --yellow: #b58900;
+  --white: #fdf6e3;
+  --grey: #93a1a1;
+  --black: #073642;
+
+  --bg1: #eee8d5;
+  --bg2: #fdf6e3;
+  --txt: #586e75;
+  --txt-soft: #839496;
+  --border: #d5cdc0;
+  --active: var(--yellow);
+
+  --th-bg: var(--bg1);
+  --th-txt: var(--txt-soft);
+  --body-bg: var(--bg2);
+  --slct-bg: #e5ded0;
+  --fh-bg: var(--bg1);
+  --fh-txt: var(--txt-soft);
+  --table-borders: var(--border);
+  --input-txt: var(--txt);
+  --input-bg: var(--bg1);
+  --input-bg-out: var(--bg2);
+  --dots: var(--active, inherit);
+  --cmenu-bg: var(--bg1);
+  --cmenuHover: var(--bg2);
+  --modal-bg: var(--bg1);
+  --btn-bg: var(--bg2);
+  --btn-txt: var(--txt);
+  --btn-border: var(--border);
+  --btn-hover: var(--border);
+  --btn-active: var(--bg1);
+  --btn-focus-ring: var(--active);
+  --toggle-btn-bg: var(--active);
+  --num-txt: var(--orange);
+
+  /* Icon Filter System */
+  --icon-filter: brightness(0) saturate(100%) invert(69%) sepia(13%) saturate(260%) hue-rotate(138deg) brightness(80%) contrast(99%);
+  --icon-filter-hover: brightness(0) saturate(100%) invert(52%) sepia(85%) saturate(1600%) hue-rotate(10deg) brightness(95%) contrast(105%);
+  --icon-hover-bg: rgba(7, 54, 66, 0.05);
+  --filter: var(--icon-filter);
+
+  /* */
+  --modal-backdrop: rgba(7, 54, 66, 0.4);
+  /* Scrollbar */
+  --scrollBar: #93a1a1;
+  --scrollbar-thumb: #d5cdc0;
+  --scrollbar-thumb-hover: #93a1a1;
+  --scrollbar-track: #eee8d5;
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(7, 54, 66, 0.08);
+  --shadow-md: 0 4px 6px -1px rgba(7, 54, 66, 0.12);
+  --shadow-lg: 0 10px 15px -3px rgba(7, 54, 66, 0.15);
+}
 
 /* Dark Theme */
 [data-theme="dark"],
@@ -61,8 +188,7 @@ body[data-theme="dark"] {
   --input-txt: var(--txt);
   --input-bg: var(--bg1);
   --input-bg-out: var(--bg2);
-  --filter: invert(40%);
-  --dots: var(--active);
+  --dots: var(--active, inherit);
   --cmenu-bg: var(--bg1);
   --cmenuHover: var(--bg2);
   --modal-bg: var(--bg1);
@@ -75,6 +201,12 @@ body[data-theme="dark"] {
   --toggle-btn-bg: var(--active);
   --num-txt: var(--orange);
 
+  /* Icon Filter System */
+  --icon-filter: brightness(0) saturate(100%) invert(53%);
+  --icon-filter-hover: brightness(0) saturate(100%) invert(75%) sepia(40%) saturate(800%) hue-rotate(185deg);
+  --icon-hover-bg: rgba(255, 255, 255, 0.092);
+  --filter: var(--icon-filter);
+
   /* */
   --modal-backdrop: rgba(0, 0, 0, 0.75);
   /* Scrollbar */
@@ -86,6 +218,195 @@ body[data-theme="dark"] {
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+}
+
+/* Night Theme */
+[data-theme="night"],
+body[data-theme="night"] {
+  /* Palette Colors */
+  --blue: #8fbbf3;
+  --orange: #fd971f;
+  --green: #a6e22e;
+  --red: #f92672;
+  --purple: #ae81ff;
+  --yellow: #ffd866;
+  --white: #bbb;
+  --grey: grey;
+  --black: #000000;
+
+  --bg1: #0d0d0d;
+  --bg2: #242424;
+  --txt: #ccc;
+  --txt-soft: #888888;
+  --border: #5a5a5a;
+  --active: var(--orange);
+
+  --th-bg: var(--bg1);
+  --th-txt: var(--txt-soft);
+  --body-bg: var(--bg2);
+  --slct-bg: var(--bg1);
+  --fh-bg: var(--bg1);
+  --fh-txt: var(--txt-soft);
+  --table-borders: var(--border);
+  --input-txt: var(--txt);
+  --input-bg: var(--bg1);
+  --input-bg-out: var(--bg2);
+  --dots: var(--active, inherit);
+  --cmenu-bg: var(--bg1);
+  --cmenuHover: var(--bg2);
+  --modal-bg: var(--bg1);
+  --btn-bg: var(--bg2);
+  --btn-txt: var(--txt);
+  --btn-border: var(--border);
+  --btn-hover: var(--border);
+  --btn-active: var(--bg1);
+  --btn-focus-ring: var(--active);
+  --toggle-btn-bg: var(--active);
+  --num-txt: var(--orange);
+
+  /* Icon Filter System */
+  --icon-filter: brightness(0) saturate(100%) invert(53%);
+  --icon-filter-hover: brightness(0) saturate(100%) invert(65%) sepia(90%) saturate(1500%) hue-rotate(350deg);
+  --icon-hover-bg: rgba(255, 255, 255, 0.092);
+  --filter: var(--icon-filter);
+
+  /* */
+  --modal-backdrop: rgba(0, 0, 0, 0.75);
+  /* Scrollbar */
+  --scrollBar: #5a5a5a;
+  --scrollbar-thumb: #3f3f46;
+  --scrollbar-thumb-hover: #52525b;
+  --scrollbar-track: #09090b;
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.7);
+}
+
+/* Nord Theme */
+[data-theme="nord"],
+body[data-theme="nord"] {
+  /* Palette Colors */
+  --blue: #88c0d0;
+  --orange: #d08770;
+  --green: #a3be8c;
+  --red: #bf616a;
+  --purple: #b48ead;
+  --yellow: #ebcb8b;
+  --white: #eceff4;
+  --grey: #4c566a;
+  --black: #1e222a;
+
+  --bg1: #242933;
+  --bg2: #2e3440;
+  --txt: #eceff4;
+  --txt-soft: #d8dee9;
+  --border: #434c5e;
+  --active: var(--blue);
+
+  --th-bg: var(--bg1);
+  --th-txt: var(--txt-soft);
+  --body-bg: var(--bg2);
+  --slct-bg: var(--bg1);
+  --fh-bg: var(--bg1);
+  --fh-txt: var(--txt-soft);
+  --table-borders: var(--border);
+  --input-txt: var(--txt);
+  --input-bg: var(--bg1);
+  --input-bg-out: var(--bg2);
+  --dots: var(--active, inherit);
+  --cmenu-bg: var(--bg1);
+  --cmenuHover: var(--bg2);
+  --modal-bg: var(--bg1);
+  --btn-bg: var(--bg2);
+  --btn-txt: var(--txt);
+  --btn-border: var(--border);
+  --btn-hover: var(--border);
+  --btn-active: var(--bg1);
+  --btn-focus-ring: var(--active);
+  --toggle-btn-bg: var(--active);
+  --num-txt: var(--orange);
+
+  /* Icon Filter System */
+  --icon-filter: brightness(0) saturate(100%) invert(77%) sepia(46%) saturate(45%) hue-rotate(180deg) brightness(104%) contrast(97%);
+  --icon-filter-hover: brightness(0) saturate(100%) invert(76%) sepia(21%) saturate(718%) hue-rotate(146deg);
+  --icon-hover-bg: rgba(236, 239, 244, 0.092);
+  --filter: var(--icon-filter);
+
+  /* */
+  --modal-backdrop: rgba(15, 17, 23, 0.7);
+  /* Scrollbar */
+  --scrollBar: #4c566a;
+  --scrollbar-thumb: #3b4252;
+  --scrollbar-thumb-hover: #4c566a;
+  --scrollbar-track: #242933;
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.55);
+}
+
+/* Dracula Theme */
+[data-theme="dracula"],
+body[data-theme="dracula"] {
+  /* Palette Colors */
+  --blue: #8be9fd;
+  --orange: #ffb86c;
+  --green: #50fa7b;
+  --red: #ff5555;
+  --purple: #bd93f9;
+  --yellow: #f1fa8c;
+  --white: #f8f8f2;
+  --grey: #6272a4;
+  --black: #191a21;
+
+  --bg1: #21222c;
+  --bg2: #282a36;
+  --txt: #f8f8f2;
+  --txt-soft: #6272a4;
+  --border: #44475a;
+  --active: var(--purple);
+
+  --th-bg: var(--bg1);
+  --th-txt: var(--txt-soft);
+  --body-bg: var(--bg2);
+  --slct-bg: var(--bg1);
+  --fh-bg: var(--bg1);
+  --fh-txt: var(--txt-soft);
+  --table-borders: var(--border);
+  --input-txt: var(--txt);
+  --input-bg: var(--bg1);
+  --input-bg-out: var(--bg2);
+  --dots: var(--active, inherit);
+  --cmenu-bg: var(--bg1);
+  --cmenuHover: var(--bg2);
+  --modal-bg: var(--bg1);
+  --btn-bg: var(--bg2);
+  --btn-txt: var(--txt);
+  --btn-border: var(--border);
+  --btn-hover: var(--border);
+  --btn-active: var(--bg1);
+  --btn-focus-ring: var(--active);
+  --toggle-btn-bg: var(--active);
+  --num-txt: var(--orange);
+
+  /* Icon Filter System */
+  --icon-filter: brightness(0) saturate(100%) invert(49%) sepia(19%) saturate(975%) hue-rotate(188deg) brightness(86%) contrast(85%);
+  --icon-filter-hover: brightness(0) saturate(100%) invert(68%) sepia(35%) saturate(1464%) hue-rotate(214deg);
+  --icon-hover-bg: rgba(248, 248, 242, 0.092);
+  --filter: var(--icon-filter);
+
+  /* */
+  --modal-backdrop: rgba(10, 10, 15, 0.75);
+  /* Scrollbar */
+  --scrollBar: #6272a4;
+  --scrollbar-thumb: #44475a;
+  --scrollbar-thumb-hover: #6272a4;
+  --scrollbar-track: #21222c;
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6);
 }
 
 /* --------------------------------------------------------------------------
@@ -125,6 +446,7 @@ body {
   font-family: var(--font-family-ui);
   background-color: var(--fh-bg);
   color: var(--fh-txt);
+  caret-color: transparent;
   position: absolute;
   top: 0;
   bottom: 0;
@@ -142,6 +464,9 @@ header {
   align-items: center;
   flex-wrap: wrap;
   background-color: var(--fh-bg);
+  user-select: none;
+  -webkit-user-select: none;
+  caret-color: transparent;
   transition: background-color 0.2s ease;
 }
 
@@ -150,7 +475,18 @@ footer {
   text-align: center;
   flex-wrap: wrap;
   background-color: var(--fh-bg);
-  transition: background-color 0.2s ease;
+  color: var(--fh-txt);
+  user-select: none;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+#footer,
+#footerLeft,
+#footerCenter,
+#footerRight {
+  color: var(--fh-txt);
 }
 
 .flexMain {
@@ -174,6 +510,9 @@ section {
 #menu {
   flex-wrap: wrap;
   margin: 0.4em;
+  user-select: none;
+  -webkit-user-select: none;
+  caret-color: transparent;
 }
 
 #content {
@@ -357,31 +696,60 @@ img {
   padding: 0.3em;
   margin: 0.2em;
   border-radius: 4px;
-  filter: var(--filter);
+  user-select: none;
+  -webkit-user-select: none;
+  caret-color: transparent;
+  filter: var(--icon-filter, var(--filter));
+  opacity: var(--icon-opacity, 1);
   transition:
     background-color 0.15s ease,
     transform 0.15s ease,
-    filter 0.2s ease;
+    opacity 0.15s ease;
 }
 
 header img:hover,
-#menu img:hover {
-  background-color: rgba(148, 163, 184, 0.25);
+#menu img:hover,
+#dialog img:hover,
+dialog img:hover {
+  background-color: var(--icon-hover-bg, rgba(148, 163, 184, 0.05));
   transform: scale(1.06);
+  opacity: 1;
+  filter: var(--icon-filter-hover, var(--icon-filter, var(--filter)));
 }
 
 header img:active,
-#menu img:active {
+#menu img:active,
+#dialog img:active,
+dialog img:active {
+  background-color: var(--icon-hover-bg, rgba(148, 163, 184, 0.1));
   transform: scale(0.95);
 }
 
+#footer img,
+footer #lock,
 footer img {
   height: 1em;
   padding: 0;
+  cursor: default;
+  pointer-events: none;
+}
+
+#footer img:hover,
+#footer img:active,
+footer #lock:hover,
+footer #lock:active,
+footer img:hover,
+footer img:active {
+  background-color: transparent !important;
+  transform: none !important;
+  filter: var(--icon-filter, var(--filter)) !important;
+  opacity: var(--icon-opacity, 0.85) !important;
 }
 
 #appIcon {
   border-radius: 0;
+  filter: none !important;
+  opacity: 1 !important;
 }
 
 /* --------------------------------------------------------------------------
@@ -523,7 +891,10 @@ ui-sheet,
   outline-offset: 1px;
 }
 
-input {
+input,
+textarea,
+[contenteditable="true"] {
+  caret-color: auto;
   background-color: var(--input-bg-out);
   color: var(--input-txt);
   border: 1px solid var(--table-borders);
@@ -726,7 +1097,8 @@ ui-cmenu tr:hover {
   top: 1em;
   margin-top: 0;
   height: 2em;
-  cursor: pointer;
+  cursor: pointer !important;
+  pointer-events: auto !important;
   transition: transform 0.15s ease;
 }
 

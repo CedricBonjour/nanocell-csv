@@ -220,7 +220,7 @@ class Setting {
 Object.defineProperty(Setting, 'list', {
   value: [
     { title: "Appearance" },
-    { key: "theme", dflt: "light", name: "Theme", list: ["light", "night", "dark"], hide: true, cb: Setting.setTheme },
+    { key: "theme", dflt: "light", name: "Theme", list: ["light", "dark", "solarized", "night", "nord", "dracula"], hide: true, cb: Setting.setTheme },
     { key: "font", dflt: 13, name: "Font Size", min: 7, max: 24, cb: n => { if (dom?.body) dom.body.style.fontSize = n + "px"; } },
     { key: "rows", dflt: 25, name: "Rows", min: 10, max: 60, cb: n => { const s = StateManager.getState('sheet'); if (s) s.reload(); } },
     { key: "cols", dflt: 7, name: "Cols", min: 3, max: 30, cb: n => { const s = StateManager.getState('sheet'); if (s) s.reload(); } },

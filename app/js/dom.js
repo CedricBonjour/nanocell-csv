@@ -46,6 +46,7 @@ let build_dom = function () {
       img.setAttribute("id", "closeDialog");
       img.addEventListener("click", function () { dom.dialog.clear() });
       img.style.cursor = "pointer";
+      img.style.pointerEvents = "auto";
       if (!fullscreen) {
         img.style.height = "1.3em";
         img.style.marginTop = ".5em";

@@ -35,15 +35,15 @@ let buildKeys = function () {
     if (k === "TAB") { e.preventDefault(); }
     if (inputting && !(ctrlDown && (k === "F" || k === 'S' || k === 'O'))) return;
     if (e.code === "Space") k = "SPACE";
-    if (k === "PAGEUP") { k = "ARROWUP"; alt = true; }
-    if (k === "PAGEDOWN") { k = "ARROWDOWN"; alt = true; }
+    if (k === "PAGEUP") { e.preventDefault(); k = "ARROWUP"; alt = true; }
+    if (k === "PAGEDOWN") { e.preventDefault(); k = "ARROWDOWN"; alt = true; }
 
     if (ctrlDown && activeSheet) {
       switch (k) {
-        case "ARROWUP": activeSheet.y = 0; activeSheet.slctRefresh(); return;
-        case "ARROWRIGHT": activeSheet.x = activeSheet.df.width - 1; activeSheet.slctRefresh(); return;
-        case "ARROWDOWN": activeSheet.y = activeSheet.df.height - 1; activeSheet.slctRefresh(); return;
-        case "ARROWLEFT": activeSheet.x = 0; activeSheet.slctRefresh(); return;
+        case "ARROWUP": e.preventDefault(); activeSheet.y = 0; activeSheet.slctRefresh(); return;
+        case "ARROWRIGHT": e.preventDefault(); activeSheet.x = activeSheet.df.width - 1; activeSheet.slctRefresh(); return;
+        case "ARROWDOWN": e.preventDefault(); activeSheet.y = activeSheet.df.height - 1; activeSheet.slctRefresh(); return;
+        case "ARROWLEFT": e.preventDefault(); activeSheet.x = 0; activeSheet.slctRefresh(); return;
       }
     }
 
@@ -54,13 +54,13 @@ let buildKeys = function () {
 
     if (activeSheet) {
       switch (k) {
-        case "ARROWUP": activeSheet.y--; activeSheet.slctRefresh(); return;
-        case "ARROWDOWN": activeSheet.y++; activeSheet.slctRefresh(); return;
-        case "ARROWLEFT": activeSheet.x--; activeSheet.slctRefresh(); return;
-        case "ARROWRIGHT": activeSheet.x++; activeSheet.slctRefresh(); return;
-        case "TAB": activeSheet.x++; activeSheet.slctRefresh(); return;
-        case "ENTER": activeSheet.input(); return;
-        case "BACKSPACE": activeSheet.delete(); return;
+        case "ARROWUP": e.preventDefault(); activeSheet.y--; activeSheet.slctRefresh(); return;
+        case "ARROWDOWN": e.preventDefault(); activeSheet.y++; activeSheet.slctRefresh(); return;
+        case "ARROWLEFT": e.preventDefault(); activeSheet.x--; activeSheet.slctRefresh(); return;
+        case "ARROWRIGHT": e.preventDefault(); activeSheet.x++; activeSheet.slctRefresh(); return;
+        case "TAB": e.preventDefault(); activeSheet.x++; activeSheet.slctRefresh(); return;
+        case "ENTER": e.preventDefault(); activeSheet.input(); return;
+        case "BACKSPACE": e.preventDefault(); activeSheet.delete(); return;
       }
     }
   };

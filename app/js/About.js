@@ -20,7 +20,7 @@ class About extends HTMLElement {
 
     this.titleEl.innerHTML = "Nanocell CSV Editor";
     this.buttonBugReport.innerHTML = "Bug Report";
-    this.logoEl.src = "./logo/nanocell.svg";
+    this.logoEl.src = "/logo.svg";
     this.homeLink.href = "https://nanocell-csv.com/";
     this.homeLink.innerHTML = "https://nanocell-csv.com/";
     this.homeLink.target = "_blank";

@@ -177,7 +177,7 @@ describe('Theming & UI Settings Operations', () => {
   test('Footer icons do not have hover effect and style.css excludes footer img:hover', async () => {
     const fs = await import('fs');
     const path = await import('path');
-    const cssContent = fs.readFileSync(path.resolve(__dirname, '../app/css/style.css'), 'utf-8');
+    const cssContent = fs.readFileSync(path.resolve(__dirname, '../app/style.css'), 'utf-8');
 
     // Ensure footer img is not in the clickable header/menu hover group
     expect(cssContent).not.toMatch(/#menu\s+img:hover\s*,\s*footer\s+img:hover/);
@@ -188,7 +188,7 @@ describe('Theming & UI Settings Operations', () => {
   test('Icons default color matches table header text color across all themes', async () => {
     const fs = await import('fs');
     const path = await import('path');
-    const cssContent = fs.readFileSync(path.resolve(__dirname, '../app/css/style.css'), 'utf-8');
+    const cssContent = fs.readFileSync(path.resolve(__dirname, '../app/style.css'), 'utf-8');
 
     // Verify each theme defines clean hex --icon-color and --icon-hover-color
     expect(cssContent).toMatch(/\[data-theme="light"\][\s\S]*?--icon-color:\s*#616161;/);
@@ -202,7 +202,7 @@ describe('Theming & UI Settings Operations', () => {
   test('CSS mask-image system uses --icon-color defaulting to #000000', async () => {
     const fs = await import('fs');
     const path = await import('path');
-    const cssContent = fs.readFileSync(path.resolve(__dirname, '../app/css/style.css'), 'utf-8');
+    const cssContent = fs.readFileSync(path.resolve(__dirname, '../app/style.css'), 'utf-8');
 
     expect(cssContent).toMatch(/\.icon::before\s*\{[^}]*mask-image:\s*var\(--icon-url\);/);
     expect(cssContent).toMatch(/\.icon::before\s*\{[^}]*background-color:\s*var\(--icon-color,\s*#000000\);/);
@@ -211,7 +211,7 @@ describe('Theming & UI Settings Operations', () => {
   test('Header and menu icons suppress text selection and caret cursor during navigation', async () => {
     const fs = await import('fs');
     const path = await import('path');
-    const cssContent = fs.readFileSync(path.resolve(__dirname, '../app/css/style.css'), 'utf-8');
+    const cssContent = fs.readFileSync(path.resolve(__dirname, '../app/style.css'), 'utf-8');
 
     // Verify header, menu and icon suppress caret and user selection
     expect(cssContent).toMatch(/header\s*\{[\s\S]*?caret-color:\s*transparent;/);
@@ -223,7 +223,7 @@ describe('Theming & UI Settings Operations', () => {
   test('#closeDialog has pointer-events: auto !important and cursor: pointer in style.css', async () => {
     const fs = await import('fs');
     const path = await import('path');
-    const cssContent = fs.readFileSync(path.resolve(__dirname, '../app/css/style.css'), 'utf-8');
+    const cssContent = fs.readFileSync(path.resolve(__dirname, '../app/style.css'), 'utf-8');
 
     expect(cssContent).toMatch(/#closeDialog\s*\{[^}]*pointer-events:\s*auto\s*!important;/);
     expect(cssContent).toMatch(/#closeDialog\s*\{[^}]*cursor:\s*pointer\s*!important;/);
@@ -232,10 +232,12 @@ describe('Theming & UI Settings Operations', () => {
   test('Footer lock element updates --icon-url on src property changes', () => {
     const lock = dom.footerDiv.lock;
     expect(lock).toBeDefined();
-    lock.src = 'icn/lock.svg';
-    expect(lock.style.getPropertyValue('--icon-url')).toContain('icn/lock.svg');
-    lock.src = 'icn/edit.svg';
-    expect(lock.style.getPropertyValue('--icon-url')).toContain('icn/edit.svg');
+    lock.src = 'lock';
+    expect(lock.style.getPropertyValue('--icon-url')).toContain('data:image/svg+xml');
+    const lockUrl = lock.style.getPropertyValue('--icon-url');
+    lock.src = 'edit';
+    expect(lock.style.getPropertyValue('--icon-url')).toContain('data:image/svg+xml');
+    expect(lock.style.getPropertyValue('--icon-url')).not.toBe(lockUrl);
   });
 
   test('buildMenu populates header with user-friendly tooltips and keyboard shortcuts', () => {
@@ -249,13 +251,13 @@ describe('Theming & UI Settings Operations', () => {
     expect(newIcon.getAttribute('title')).toContain('N');
 
     // Verify 'Freeze Header Row' icon has readable title and shortcut
-    const fixTopIcon = Array.from(icons).find(el => el.style.getPropertyValue('--icon-url').includes('fixTop'));
+    const fixTopIcon = Array.from(icons).find(el => el.getAttribute('data-icon') === 'fixTop');
     expect(fixTopIcon).toBeDefined();
     expect(fixTopIcon.getAttribute('title')).toContain('Freeze Header Row');
     expect(fixTopIcon.getAttribute('title')).toContain('B');
 
     // Verify 'Reload File'
-    const reloadIcon = Array.from(icons).find(el => el.style.getPropertyValue('--icon-url').includes('reloadFile'));
+    const reloadIcon = Array.from(icons).find(el => el.getAttribute('data-icon') === 'reloadFile');
     expect(reloadIcon).toBeDefined();
     expect(reloadIcon.getAttribute('title')).toContain('Reload File');
     expect(reloadIcon.getAttribute('title')).toContain('R');
@@ -269,18 +271,18 @@ describe('Theming & UI Settings Operations', () => {
     expect(getCommandTooltip(null, 'fallback')).toBe('fallback');
   });
 
-  test('Menu and lock icons resolve to absolute URLs under http/https to prevent mask 404s', () => {
+  test('Menu and lock icons resolve to inlined data URIs to prevent mask 404s', () => {
     buildMenu();
     const icons = dom.header.querySelectorAll('.icon');
-    const undoIcon = Array.from(icons).find(el => el.style.getPropertyValue('--icon-url').includes('undo'));
+    const undoIcon = Array.from(icons).find(el => el.getAttribute('data-icon') === 'undo');
     expect(undoIcon).toBeDefined();
-    expect(undoIcon.style.getPropertyValue('--icon-url')).toMatch(/^url\("http:\/\/localhost:\d+\/icn\/menu\/undo\.svg"\)$/);
+    expect(undoIcon.style.getPropertyValue('--icon-url')).toMatch(/^url\("data:image\/svg\+xml/);
   });
 
   test('All icons throughout the app share standard --icon-size and footer lock has spacing', async () => {
     const fs = await import('fs');
     const path = await import('path');
-    const cssContent = fs.readFileSync(path.resolve(__dirname, '../app/css/style.css'), 'utf-8');
+    const cssContent = fs.readFileSync(path.resolve(__dirname, '../app/style.css'), 'utf-8');
 
     expect(cssContent).toMatch(/--icon-size:\s*1\.25em;/);
     expect(cssContent).toMatch(/\.icon\s*\{[^}]*height:\s*var\(--icon-size,\s*1\.25em\);/);
@@ -296,15 +298,50 @@ describe('Theming & UI Settings Operations', () => {
     const closeBtn = palette.querySelector('.cmd_palette_close');
     expect(closeBtn).not.toBeNull();
     expect(closeBtn.classList.contains('icon')).toBe(true);
-    expect(closeBtn.style.getPropertyValue('--icon-url')).toContain('off.svg');
+    expect(closeBtn.style.getPropertyValue('--icon-url')).toContain('data:image/svg+xml');
     expect(closeBtn.getAttribute('role')).toBe('button');
     expect(closeBtn.getAttribute('aria-label')).toBe('Close');
+  });
+
+  test('CommandPalette list items update selection on mouseenter and keyboard navigation without blocking inline styles', () => {
+    const palette = document.createElement('ui-command-palette');
+    document.body.appendChild(palette);
+    palette.connectedCallback();
+    palette.open();
+
+    const items = palette.querySelectorAll('.cmd_palette_item');
+    expect(items.length).toBeGreaterThan(1);
+
+    // Initial state: first item selected
+    expect(items[0].classList.contains('selected')).toBe(true);
+    expect(items[0].getAttribute('aria-selected')).toBe('true');
+    // Ensure no hardcoded inline background color overrides CSS :hover
+    expect(items[0].style.backgroundColor).toBe('');
+
+    // Hover over second item
+    items[1].dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+    expect(items[0].classList.contains('selected')).toBe(false);
+    expect(items[0].getAttribute('aria-selected')).toBe('false');
+    expect(items[1].classList.contains('selected')).toBe(true);
+    expect(items[1].getAttribute('aria-selected')).toBe('true');
+
+    // Hover back over first item
+    items[0].dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+    expect(items[0].classList.contains('selected')).toBe(true);
+    expect(items[0].getAttribute('aria-selected')).toBe('true');
+    expect(items[1].classList.contains('selected')).toBe(false);
+
+    // Keyboard navigation (ArrowDown)
+    const input = palette.querySelector('input');
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    expect(items[1].classList.contains('selected')).toBe(true);
+    expect(items[0].classList.contains('selected')).toBe(false);
   });
 
   test('Modal dialogs (.dialog_large, #dialog) have higher z-index than ui-finder in style.css', async () => {
     const fs = await import('fs');
     const path = await import('path');
-    const cssContent = fs.readFileSync(path.resolve(__dirname, '../app/css/style.css'), 'utf-8');
+    const cssContent = fs.readFileSync(path.resolve(__dirname, '../app/style.css'), 'utf-8');
 
     const dialogLargeMatch = cssContent.match(/\.dialog_large\s*\{[^}]*z-index:\s*(\d+);/);
     const finderMatch = cssContent.match(/ui-finder\s*\{[^}]*z-index:\s*(\d+);/);

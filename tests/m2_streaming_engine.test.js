@@ -5,7 +5,7 @@ import { Sheet } from '../app/js/Sheet.js';
 import { Setting, stg } from '../app/js/Setting.js';
 import { build_dom, dom } from '../app/js/dom.js';
 import { CsvHandle } from '../app/js/CsvHandle.js';
-import { csv_parse, separatorDetection, loadcsv } from '../app/sw_read_write_csv.js';
+import { csv_parse, separatorDetection, loadcsv } from '../app/js/csv_worker.js';
 
 describe('Milestone 2 (R2) — Streaming File Loading Engine Test Suite', () => {
   beforeEach(() => {
@@ -206,5 +206,60 @@ describe('Milestone 2 (R2) — Streaming File Loading Engine Test Suite', () => 
     expect(matrix[0]).toEqual(['id', 'description', 'status']);
     expect(matrix[1]).toEqual(['1', 'Line 1\nLine 2\nLine 3', 'Active']);
     expect(matrix[2]).toEqual(['2', 'Normal', 'Pending']);
+  });
+
+  test('loadcsv parses classic Mac CR-only line endings correctly', async () => {
+    let emittedMessages = [];
+    const messageHandler = (e) => {
+      if (e.data && e.data.cmd === 'chunk_loaded') {
+        emittedMessages.push(e.data);
+      }
+    };
+    window.addEventListener('message', messageHandler);
+
+    const crCsv = 'A,B\r1,2\r3,4\r';
+    const mockFile = new File([crCsv], 'cr.csv', { type: 'text/csv' });
+
+    loadcsv({ file: mockFile, viewOnly: false });
+
+    for (let i = 0; i < 20 && emittedMessages.length === 0; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    window.removeEventListener('message', messageHandler);
+
+    expect(emittedMessages.length).toBeGreaterThan(0);
+    const matrix = emittedMessages[0].chunk;
+    expect(matrix.length).toBe(3);
+    expect(matrix[0]).toEqual(['A', 'B']);
+    expect(matrix[1]).toEqual(['1', '2']);
+    expect(matrix[2]).toEqual(['3', '4']);
+  });
+
+  test('loadcsv preserves multi-byte UTF-8 characters across chunks', async () => {
+    let emittedMessages = [];
+    const messageHandler = (e) => {
+      if (e.data && e.data.cmd === 'chunk_loaded') {
+        emittedMessages.push(e.data);
+      }
+    };
+    window.addEventListener('message', messageHandler);
+
+    const unicodeCsv = 'id,word,symbol\n1,Café,☕\n2,Naïve,🎉\n';
+    const mockFile = new File([unicodeCsv], 'utf8.csv', { type: 'text/csv' });
+
+    loadcsv({ file: mockFile, viewOnly: false });
+
+    for (let i = 0; i < 20 && emittedMessages.length === 0; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    window.removeEventListener('message', messageHandler);
+
+    expect(emittedMessages.length).toBeGreaterThan(0);
+    const matrix = emittedMessages[0].chunk;
+    expect(matrix.length).toBe(3);
+    expect(matrix[1][1]).toBe('Café');
+    expect(matrix[1][2]).toBe('☕');
+    expect(matrix[2][1]).toBe('Naïve');
+    expect(matrix[2][2]).toBe('🎉');
   });
 });

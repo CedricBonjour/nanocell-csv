@@ -1,6 +1,6 @@
 import { StateManager } from './StateManager.js';
 import { Scroller } from './ui/input/Scroller.js';
-import { resolveIconUrl } from './utils/misc.js';
+import { setIcon } from './icons.js';
 
 let dom = undefined;
 
@@ -25,17 +25,17 @@ let build_dom = function () {
   };
   const lockEl = dom.footerDiv.lock;
   if (lockEl) {
-    let currentSrc = lockEl.getAttribute("src") || lockEl.getAttribute("data-src") || "icn/edit.svg";
+    let currentSrc = lockEl.getAttribute("src") || lockEl.getAttribute("data-src") || "edit";
     Object.defineProperty(lockEl, 'src', {
       get() { return currentSrc; },
       set(v) {
         currentSrc = v;
-        lockEl.style.setProperty("--icon-url", `url("${resolveIconUrl(v)}")`);
+        setIcon(lockEl, v);
         if (lockEl.tagName === "IMG") lockEl.setAttribute("src", v);
       },
       configurable: true
     });
-    lockEl.style.setProperty("--icon-url", `url("${resolveIconUrl(currentSrc)}")`);
+    setIcon(lockEl, currentSrc);
   }
   StateManager.setState('dom', dom);
 
@@ -72,7 +72,7 @@ let build_dom = function () {
     if (closeButton) {
       const btn = document.createElement("span");
       btn.className = "icon";
-      btn.style.setProperty("--icon-url", `url("${resolveIconUrl('icn/off.svg')}")`);
+      setIcon(btn, 'off');
       btn.style.position = (fullscreen) ? "fixed" : "absolute";
       btn.setAttribute("title", "Close (Esc)");
       btn.setAttribute("aria-label", "Close");

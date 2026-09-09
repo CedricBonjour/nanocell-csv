@@ -7,7 +7,7 @@ import { build_dom, dom } from '../app/js/dom.js';
 import { getTargetType, TargetType } from '../app/js/mouse.js';
 import { CMenu } from '../app/js/CMenu.js';
 import { CsvHandle } from '../app/js/CsvHandle.js';
-import { csv_parse, separatorDetection, loadcsv } from '../app/sw_read_write_csv.js';
+import { csv_parse, separatorDetection, loadcsv } from '../app/js/csv_worker.js';
 import { CommandPalette } from '../app/js/ui/CommandPalette.js';
 import { buildKeys } from '../app/js/key.js';
 import { cmd, buildCommands } from '../app/js/cmd.js';
@@ -143,7 +143,7 @@ describe('Phase 2 Requirements (R1-R4) - Comprehensive Test Suite', () => {
   // =========================================================================
   describe('Tier 2: CSS Flexbox Layout Rules (R1)', () => {
     test('style.css defines flexbox container layout rules for #content, ui-sheet, and .sheet', () => {
-      const styleCssPath = path.resolve(__dirname, '../app/css/style.css');
+      const styleCssPath = path.resolve(__dirname, '../app/style.css');
       const cssContent = fs.readFileSync(styleCssPath, 'utf-8');
 
       expect(cssContent).toContain('#content');

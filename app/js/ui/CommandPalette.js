@@ -1,6 +1,6 @@
 import { cmd } from '../cmd.js';
 import { StateManager } from '../StateManager.js';
-import { resolveIconUrl } from '../utils/misc.js';
+import { setIcon } from '../icons.js';
 
 /**
  * Weighted fuzzy scoring function for search matching.
@@ -80,7 +80,7 @@ class CommandPalette extends HTMLElement {
       <div class="cmd_palette_modal palette-container" style="position: fixed; top: 15%; left: 50%; transform: translateX(-50%); width: 500px; max-width: 90vw; background-color: var(--modal-bg, #ffffff); color: var(--txt, #333333); border: 1px solid var(--table-borders, #ccc); border-radius: 8px; box-shadow: var(--shadow-lg, 0 10px 25px rgba(0,0,0,0.3)); z-index: 10000; font-family: var(--font-family-ui, sans-serif); overflow: hidden; display: flex; flex-direction: column;">
         <div class="cmd_palette_header" style="display: flex; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--table-borders, #ccc);">
           <input type="text" class="cmd_palette_input palette-input" placeholder="Type a command or search..." style="flex: 1; border: none; background: transparent; color: inherit; font-size: 14px; font-family: var(--font-family-ui, sans-serif); outline: none; margin: 0; padding: 4px 8px; box-sizing: border-box;" autofocus />
-          <span class="cmd_palette_close icon" role="button" title="Close (Esc)" aria-label="Close" style="--icon-url: url('${resolveIconUrl('icn/off.svg')}'); cursor: pointer;"></span>
+          <span class="cmd_palette_close icon" role="button" title="Close (Esc)" aria-label="Close" style="cursor: pointer;"></span>
         </div>
         <ul class="cmd_palette_list command-list" role="listbox" style="max-height: 320px; overflow-y: auto; margin: 0; padding: 4px 0; list-style: none;"></ul>
         <div class="cmd_palette_footer" style="display: flex; justify-content: space-around; padding: 8px 16px; border-top: 1px solid var(--table-borders, #ccc); font-size: 11px; color: var(--grey, #666); background-color: var(--fh-bg, #f5f5f5);">
@@ -102,6 +102,7 @@ class CommandPalette extends HTMLElement {
       this.backdropEl.addEventListener('click', () => this.close());
     }
     if (this.closeBtn) {
+      setIcon(this.closeBtn, 'off');
       this.closeBtn.addEventListener('click', () => this.close());
     }
 
@@ -155,6 +156,34 @@ class CommandPalette extends HTMLElement {
     this.renderList();
   }
 
+  setSelectedIndex(idx, scrollIntoView = true) {
+    if (idx < 0 || idx >= this.filteredCommands.length) return;
+    if (this.listEl && this.listEl.children.length > 0) {
+      const prev = this.listEl.children[this.selectedIndex];
+      if (prev) {
+        prev.classList.remove('selected');
+        prev.setAttribute('aria-selected', 'false');
+      }
+      this.selectedIndex = idx;
+      const current = this.listEl.children[this.selectedIndex];
+      if (current) {
+        current.classList.add('selected');
+        current.setAttribute('aria-selected', 'true');
+        if (scrollIntoView) {
+          try {
+            if (typeof current.scrollIntoView === 'function') {
+              current.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+            }
+          } catch (e) {
+            console.debug?.(e);
+          }
+        }
+      }
+    } else {
+      this.selectedIndex = idx;
+    }
+  }
+
   renderList() {
     this.init();
     if (!this.listEl) return;
@@ -165,19 +194,11 @@ class CommandPalette extends HTMLElement {
       li.setAttribute('role', 'option');
       li.setAttribute('aria-selected', idx === this.selectedIndex ? 'true' : 'false');
       li.setAttribute('data-index', idx);
-      li.style.padding = '10px 16px';
-      li.style.display = 'flex';
-      li.style.justifyContent = 'space-between';
-      li.style.alignItems = 'center';
-      li.style.cursor = 'pointer';
-      li.style.fontSize = '13px';
-      if (idx === this.selectedIndex) {
-        li.style.backgroundColor = 'var(--slct-bg, #d4e3f1)';
-      }
       li.innerHTML = `
         <span class="cmd_palette_item_label">${cmdItem.description}</span>
-        ${cmdItem.key ? `<span class="cmd_palette_item_shortcut command-key" style="font-family: var(--font-family-mono, monospace); font-size: 11px; opacity: 0.8; background: var(--btn-bg, #eee); color: var(--btn-txt, #333); border: 1px solid var(--btn-border, #ccc); padding: 2px 6px; border-radius: 4px;">${cmdItem.key}</span>` : ''}
+        ${cmdItem.key ? `<span class="cmd_palette_item_shortcut command-key">${cmdItem.key}</span>` : ''}
       `;
+      li.addEventListener('mouseenter', () => this.setSelectedIndex(idx, false));
       li.addEventListener('click', () => this.executeIndex(idx));
       this.listEl.appendChild(li);
     });
@@ -199,14 +220,14 @@ class CommandPalette extends HTMLElement {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       if (this.filteredCommands.length > 0) {
-        this.selectedIndex = (this.selectedIndex + 1) % this.filteredCommands.length;
-        this.renderList();
+        const nextIdx = (this.selectedIndex + 1) % this.filteredCommands.length;
+        this.setSelectedIndex(nextIdx, true);
       }
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       if (this.filteredCommands.length > 0) {
-        this.selectedIndex = (this.selectedIndex - 1 + this.filteredCommands.length) % this.filteredCommands.length;
-        this.renderList();
+        const prevIdx = (this.selectedIndex - 1 + this.filteredCommands.length) % this.filteredCommands.length;
+        this.setSelectedIndex(prevIdx, true);
       }
     } else if (e.key === 'Enter') {
       e.preventDefault();

@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach } from 'vitest';
-import { csv_parse, csv_parse1, separatorDetection } from '../app/sw_read_write_csv.js';
+import { csv_parse, separatorDetection, load_csv_view_only } from '../app/js/csv_worker.js';
 import { CsvHandle } from '../app/js/CsvHandle.js';
 import { stg } from '../app/js/Setting.js';
 
@@ -121,5 +121,37 @@ describe('CSV Parser & Serializer Core Operations', () => {
     expect(parsed[1][0]).toEqual(original[1][0]);
     expect(parsed[1][1]).toEqual(original[1][1]);
     expect(parsed[2]).toEqual(original[2]);
+  });
+
+  test('separatorDetection ignores delimiters inside quoted fields', () => {
+    const textWithQuotedDelimiters = '"Item: 1, with commas; and colons";"Data A";"Data B"\n"Item: 2, more commas";"Data C";"Data D"';
+    expect(separatorDetection(textWithQuotedDelimiters)).toBe(';');
+  });
+
+  test('csv_parse does not append nested array [[""]] when string ends with newline', () => {
+    const raw = 'col1,col2\nval1,val2\n';
+    const res = csv_parse(raw, ',');
+    expect(res).toHaveLength(2);
+    expect(res[0]).toEqual(['col1', 'col2']);
+    expect(res[1]).toEqual(['val1', 'val2']);
+  });
+
+  test('load_csv_view_only handles short or single-row files without crashing on matrix[1]', async () => {
+    const mockFile = new File(['HeaderOnly'], 'single.csv', { type: 'text/csv' });
+    let emitted = [];
+    const handler = (e) => {
+      if (e.data && e.data.cmd === 'chunk_loaded') emitted.push(e.data);
+    };
+    window.addEventListener('message', handler);
+
+    load_csv_view_only({ file: mockFile, n_chunks: 2, n_rows: 5 });
+
+    for (let i = 0; i < 10 && emitted.length < 2; i++) {
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    window.removeEventListener('message', handler);
+
+    expect(emitted.length).toBeGreaterThan(0);
+    expect(emitted[0].chunk).toBeDefined();
   });
 });

@@ -181,7 +181,7 @@ export class SheetView {
     f.right.innerHTML = this.sheet.df.width + ":" + this.sheet.df.height;
     f.center.innerHTML = this.sheet.df.get(this.sheet.x, this.sheet.y).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('\n', '<br>').replaceAll(' ', '<span style="color:var(--dots, inherit)">&bull;</span>');
     if (f.lock) {
-      f.lock.src = (this.sheet.df.isSaved) ? "icn/lock.svg" : "icn/edit.svg";
+      f.lock.src = (this.sheet.df.isSaved) ? "lock" : "edit";
       const lockTitle = this.sheet.df.isSaved ? "Saved file" : "Unsaved changes";
       f.lock.setAttribute("title", lockTitle);
       f.lock.setAttribute("aria-label", lockTitle);

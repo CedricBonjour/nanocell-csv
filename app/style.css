@@ -7,16 +7,18 @@
    -------------------------------------------------------------------------- */
 @font-face {
   font-family: "inconsolata";
-  src: url("Inconsolata-Regular.ttf") format("truetype");
+  src: url("fonts/Inconsolata-Regular.ttf") format("truetype");
   font-weight: normal;
   font-style: normal;
+  font-display: swap;
 }
 
 @font-face {
   font-family: "inconsolata";
-  src: url("Inconsolata-Bold.ttf") format("truetype");
+  src: url("fonts/Inconsolata-Bold.ttf") format("truetype");
   font-weight: bold;
   font-style: normal;
+  font-display: swap;
 }
 
 :root {
@@ -1235,6 +1237,9 @@ ui-cmenu tr:hover {
 }
 
 .cmd_palette_close.icon {
+  flex-shrink: 0;
+  width: var(--icon-size, 1.25em);
+  height: var(--icon-size, 1.25em);
   cursor: pointer !important;
   pointer-events: auto !important;
   padding: 0.2em;
@@ -1312,7 +1317,7 @@ ui-command-palette {
   box-shadow: none;
 }
 
-.cmd_palette_close {
+.cmd_palette_close:not(.icon) {
   cursor: pointer;
   font-size: 1em;
   color: var(--grey);
@@ -1334,12 +1339,17 @@ ui-command-palette {
   align-items: center;
   cursor: pointer;
   font-size: 13px;
-  transition: background-color 0.1s ease;
+  border-left: 3px solid transparent;
+  transition: background-color 0.1s ease, border-color 0.1s ease;
 }
 
 .cmd_palette_item:hover,
 .cmd_palette_item.selected {
   background-color: var(--bg2);
+}
+
+.cmd_palette_item.selected {
+  border-left-color: var(--active);
 }
 
 .cmd_palette_item_shortcut {
@@ -1648,24 +1658,36 @@ ui-finder.visible {
 }
 
 .settings-section-body {
-  padding: 0.5rem 1rem;
+  padding: 0;
 }
 
 .setting-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.75rem 0;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid transparent;
   border-bottom: 1px solid var(--table-borders, #edf2f7);
+  transition: background-color 0.1s ease, border-color 0.1s ease;
+  cursor: pointer;
 }
 
 .setting-row:last-child {
   border-bottom: none;
 }
 
+.setting-row:hover,
+.setting-row:focus-within,
+.setting-row.active {
+  background-color: var(--bg2);
+  border-left-color: var(--active);
+}
+
 .setting-label-container {
   width: 30em;
+  max-width: 65%;
   text-align: left;
+  user-select: none;
 }
 
 .setting-control {
@@ -1678,6 +1700,15 @@ ui-finder.visible {
   display: inline-block;
   cursor: pointer;
   outline: none;
+}
+
+.ui-bool-toggle:focus {
+  outline: none;
+}
+
+.ui-bool-toggle:focus .toggle-track,
+.ui-bool-toggle:focus-visible .toggle-track {
+  box-shadow: 0 0 0 2px var(--modal-bg, #ffffff), 0 0 0 4px var(--active, #3182ce);
 }
 
 .ui-bool-toggle .toggle-track {
@@ -1723,11 +1754,18 @@ ui-finder.visible {
   border-radius: 6px;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, box-shadow 0.15s, border-color 0.15s;
 }
 
 .btn-reset-settings:hover {
   background: var(--btn-hover, #e2e8f0);
+}
+
+.btn-reset-settings:focus,
+.btn-reset-settings:focus-visible {
+  outline: none;
+  border-color: var(--active);
+  box-shadow: 0 0 0 2px var(--active);
 }
 
 /* --------------------------------------------------------------------------

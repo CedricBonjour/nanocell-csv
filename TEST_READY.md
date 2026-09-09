@@ -15,7 +15,7 @@ npx vitest run
 |---|---|---|---|---|
 | Tier 1 | R1 | Context Menu Target Element Resolution (`mouse.js` `closest("td, th")`, `CMenu.js` child element pop) | 5 | PASS |
 | Tier 2 | R1 | CSS Flexbox Layout & Height Styling Rules (`#content`, `ui-sheet`, `.sheet` viewport height) | 2 | PASS |
-| Tier 3 | R2 | Streaming CSV File Loading Engine & Pub/Sub Event Cycle (`CsvHandle.js`, `sw_read_write_csv.js`) | 4 | PASS |
+| Tier 3 | R2 | Streaming CSV File Loading Engine & Pub/Sub Event Cycle (`CsvHandle.js`, `csv_worker.js`) | 4 | PASS |
 | Tier 4 | R3 | Command Palette Component `<ui-command-palette>`, Ctrl+P shortcut, fuzzy search & action execution | 6 | PASS |
 | Tier 5 / Hygiene | R4 | JSDoc verification & module interface integrity checks | 1 | PASS |
 | **Phase 2 Total** | **R1-R4** | **New E2E & Integration Test Suite (`tests/phase2_r1_r4.test.js`)** | **18** | **PASS** |

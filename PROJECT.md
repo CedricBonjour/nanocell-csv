@@ -18,11 +18,13 @@
 ```
 app/
 ├── home.html
-├── sw_read_write_csv.js      # Web Worker for streaming CSV chunk parsing
 ├── css/
 │   └── style.css            # Flexbox container layout & data-theme styles
+├── fonts/                   # Bundled monospace webfonts
+├── icons/                   # Auto-inlined SVG icon assets
 └── js/
     ├── main.js              # Application bootstrap & event bus registration
+    ├── csv_worker.js        # Web Worker for streaming CSV chunk parsing
     ├── StateManager.js      # Central Pub/Sub State Manager
     ├── Dataframe.js         # Core data model & Command Pattern Undo/Redo
     ├── Sheet.js             # Autonomous custom element <ui-sheet>

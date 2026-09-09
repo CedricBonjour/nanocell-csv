@@ -1,4 +1,4 @@
-import { resolveIconUrl } from '../../utils/misc.js';
+import { setIcon } from '../../icons.js';
 
 class NumInput extends HTMLElement {
   constructor(start = 0, min = 0, max = 999) {
@@ -12,7 +12,8 @@ class NumInput extends HTMLElement {
     this.left.type = "button";
     this.left.setAttribute("aria-label", "Decrease");
     this.left.setAttribute("title", "Decrease");
-    this.left.style.setProperty("--icon-url", `url("${resolveIconUrl('icn/remove.svg')}")`);
+    this.left.setAttribute("tabindex", "-1");
+    setIcon(this.left, 'remove');
 
     this.center = document.createElement("section");
     this.center.innerHTML = this.n;
@@ -22,7 +23,8 @@ class NumInput extends HTMLElement {
     this.right.type = "button";
     this.right.setAttribute("aria-label", "Increase");
     this.right.setAttribute("title", "Increase");
-    this.right.style.setProperty("--icon-url", `url("${resolveIconUrl('icn/add.svg')}")`);
+    this.right.setAttribute("tabindex", "-1");
+    setIcon(this.right, 'add');
   }
 
   updateButtonStates() {
@@ -45,8 +47,13 @@ class NumInput extends HTMLElement {
     this.addEventListener("click", () => { this.focus(); });
     this.addEventListener("keydown", e => {
       const k = e.key.toUpperCase();
-      if (k === "ARROWRIGHT" || k === "ARROWUP") { this.setValueInternal(this.value + 1, true); }
-      else if (k === "ARROWLEFT" || k === "ARROWDOWN") { this.setValueInternal(this.value - 1, true); }
+      if (k === "ARROWRIGHT") {
+        e.preventDefault();
+        this.setValueInternal(this.value + 1, true);
+      } else if (k === "ARROWLEFT") {
+        e.preventDefault();
+        this.setValueInternal(this.value - 1, true);
+      }
     });
     this.updateButtonStates();
   }

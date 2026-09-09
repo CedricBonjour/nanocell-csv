@@ -97,6 +97,21 @@ class Setting {
     inputCell.appendChild(input);
     row.appendChild(labelContainer);
     row.appendChild(inputCell);
+
+    row.addEventListener("focusin", () => {
+      row.classList.add("active");
+    });
+    row.addEventListener("focusout", (e) => {
+      if (!row.contains(e.relatedTarget)) {
+        row.classList.remove("active");
+      }
+    });
+    row.addEventListener("click", (e) => {
+      if (input && typeof input.focus === "function" && !input.contains(e.target)) {
+        input.focus();
+      }
+    });
+
     return row;
   }
 
@@ -182,6 +197,17 @@ class Setting {
     content.appendChild(body);
     content.appendChild(footer);
     dom.dialog.push(content, true);
+
+    const firstInput = content.querySelector('.ui-list, .ui-num, .ui-bool-toggle');
+    if (firstInput && typeof firstInput.focus === 'function') {
+      setTimeout(() => {
+        try {
+          firstInput.focus();
+        } catch (e) {
+          console.debug?.(e);
+        }
+      }, 0);
+    }
   }
 
   static setTheme() {

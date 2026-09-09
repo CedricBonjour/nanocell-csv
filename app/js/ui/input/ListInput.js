@@ -1,4 +1,4 @@
-import { resolveIconUrl } from '../../utils/misc.js';
+import { setIcon } from '../../icons.js';
 
 class ListInput extends HTMLElement {
   constructor(list = [], hide = false) {
@@ -13,7 +13,8 @@ class ListInput extends HTMLElement {
     this.left.type = "button";
     this.left.setAttribute("aria-label", "Previous");
     this.left.setAttribute("title", "Previous");
-    this.left.style.setProperty("--icon-url", `url("${resolveIconUrl('icn/arrow_left.svg')}")`);
+    this.left.setAttribute("tabindex", "-1");
+    setIcon(this.left, 'arrow_left');
 
     this.center = document.createElement("section");
     this.center.style.flexGrow = "2";
@@ -23,7 +24,8 @@ class ListInput extends HTMLElement {
     this.right.type = "button";
     this.right.setAttribute("aria-label", "Next");
     this.right.setAttribute("title", "Next");
-    this.right.style.setProperty("--icon-url", `url("${resolveIconUrl('icn/arrow_right.svg')}")`);
+    this.right.setAttribute("tabindex", "-1");
+    setIcon(this.right, 'arrow_right');
   }
 
   connectedCallback() {
@@ -43,8 +45,13 @@ class ListInput extends HTMLElement {
     this.addEventListener("click", () => { this.focus(); });
     this.addEventListener("keydown", e => {
       const k = e.key.toUpperCase();
-      if (k === "ARROWRIGHT" || k === "ARROWDOWN") { this.next(true); }
-      else if (k === "ARROWLEFT" || k === "ARROWUP") { this.prev(true); }
+      if (k === "ARROWRIGHT") {
+        e.preventDefault();
+        this.next(true);
+      } else if (k === "ARROWLEFT") {
+        e.preventDefault();
+        this.prev(true);
+      }
     });
 
     this.renderOptions();

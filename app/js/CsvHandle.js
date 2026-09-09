@@ -9,7 +9,7 @@ import { Msg } from './Msg.js';
 import { stg } from './Setting.js';
 import { Sheet } from './Sheet.js';
 
-import SwWorker from '../sw_read_write_csv.js?worker';
+import CsvWorker from './csv_worker.js?worker';
 
 /**
  * Handles CSV file lifecycle operations including opening, worker-based streaming, saving, and CSV serialization.
@@ -24,9 +24,9 @@ class CsvHandle {
     this.file_chunks = [];
     this.isFirstChunkLoaded = false;
     this.viewOnly = false;
-    this.sw = typeof Worker !== 'undefined' ? new SwWorker() : null;
-    if (this.sw) {
-      this.sw.addEventListener("message", e => {
+    this.worker = typeof Worker !== 'undefined' ? new CsvWorker() : null;
+    if (this.worker) {
+      this.worker.addEventListener("message", e => {
         let d = e.data;
         switch (d.cmd) {
           case "chunk_loaded": this.file_chunk_loaded(d);
@@ -186,7 +186,7 @@ class CsvHandle {
    * @param {string} cmd - Command identifier for worker.
    * @param {Object} data - Command payload data.
    */
-  pipe(cmd, data) { this.sw.postMessage({ cmd: cmd, data: data }); }
+  pipe(cmd, data) { if (this.worker) this.worker.postMessage({ cmd: cmd, data: data }); }
 
   /**
    * Prompts the user with a file picker to open a new CSV file in a new window.

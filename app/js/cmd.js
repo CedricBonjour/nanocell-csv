@@ -6,7 +6,8 @@
 import { dom } from './dom.js';
 import { StateManager } from './StateManager.js';
 import { Setting, stg } from './Setting.js';
-import { round, resolveIconUrl } from './utils/misc.js';
+import { round } from './utils/misc.js';
+import { setIcon } from './icons.js';
 import { About } from './About.js';
 import './utils/DateExt.js';
 
@@ -158,8 +159,8 @@ function buildMenu() {
     const tooltip = getCommandTooltip(c, item);
     const icon = document.createElement("span");
     icon.className = "icon";
-    const iconUrl = resolveIconUrl(`icn/menu/${item}.svg`);
-    icon.style.setProperty("--icon-url", `url("${iconUrl}")`);
+    icon.setAttribute("data-icon", item);
+    setIcon(icon, item);
     icon.setAttribute("title", tooltip);
     icon.setAttribute("aria-label", tooltip);
     icon.setAttribute("role", "button");

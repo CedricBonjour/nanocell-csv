@@ -48,15 +48,5 @@ let round = function (n, integer = true) {
   return n;
 };
 
-function resolveIconUrl(path) {
-  if (typeof document !== 'undefined' && document.baseURI && !document.baseURI.startsWith('about:')) {
-    try {
-      return new URL(path, document.baseURI).href;
-    } catch {
-      return path;
-    }
-  }
-  return path;
-}
+export { signOf, isAlphanumeric, Timer, rndStr, isValidUrl, round };
 
-export { signOf, isAlphanumeric, Timer, rndStr, isValidUrl, round, resolveIconUrl };

@@ -18,7 +18,7 @@ class BoolInput extends HTMLElement {
     });
     this.addEventListener("keydown", e => {
       const k = e.key.toUpperCase();
-      if (k === " " || k === "ENTER" || k.includes("ARROW")) {
+      if (k === " " || k === "ENTER" || k === "ARROWLEFT" || k === "ARROWRIGHT") {
         e.preventDefault();
         this.toggle();
       }

@@ -178,8 +178,9 @@ describe('Settings Management & Input Components Test Suite', () => {
 
     expect(listInput.left.classList.contains('icon')).toBe(true);
     expect(listInput.right.classList.contains('icon')).toBe(true);
-    expect(listInput.left.style.getPropertyValue('--icon-url')).toContain('arrow_left.svg');
-    expect(listInput.right.style.getPropertyValue('--icon-url')).toContain('arrow_right.svg');
+    expect(listInput.left.style.getPropertyValue('--icon-url')).toContain('data:image/svg+xml');
+    expect(listInput.right.style.getPropertyValue('--icon-url')).toContain('data:image/svg+xml');
+    expect(listInput.left.style.getPropertyValue('--icon-url')).not.toBe(listInput.right.style.getPropertyValue('--icon-url'));
     expect(listInput.left.getAttribute('aria-label')).toBe('Previous');
     expect(listInput.right.getAttribute('aria-label')).toBe('Next');
 
@@ -189,8 +190,9 @@ describe('Settings Management & Input Components Test Suite', () => {
 
     expect(numInput.left.classList.contains('icon')).toBe(true);
     expect(numInput.right.classList.contains('icon')).toBe(true);
-    expect(numInput.left.style.getPropertyValue('--icon-url')).toContain('remove.svg');
-    expect(numInput.right.style.getPropertyValue('--icon-url')).toContain('add.svg');
+    expect(numInput.left.style.getPropertyValue('--icon-url')).toContain('data:image/svg+xml');
+    expect(numInput.right.style.getPropertyValue('--icon-url')).toContain('data:image/svg+xml');
+    expect(numInput.left.style.getPropertyValue('--icon-url')).not.toBe(numInput.right.style.getPropertyValue('--icon-url'));
     expect(numInput.left.getAttribute('aria-label')).toBe('Decrease');
     expect(numInput.right.getAttribute('aria-label')).toBe('Increase');
   });
@@ -235,6 +237,107 @@ describe('Settings Management & Input Components Test Suite', () => {
     const homeLink = aboutFooter.querySelector('a[href*="nanocell-csv.com"]');
     expect(homeLink).not.toBeNull();
     expect(homeLink.style.textAlign).toBe('center');
+  });
+
+  test('Stepper buttons have tabindex="-1" to enable single-tab keyboard navigation across setting items', () => {
+    const numInput = new NumInput(10, 0, 20);
+    const listInput = new ListInput(['a', 'b', 'c']);
+    const boolInput = new BoolInput(false);
+
+    document.body.appendChild(numInput);
+    document.body.appendChild(listInput);
+    document.body.appendChild(boolInput);
+
+    numInput.connectedCallback();
+    listInput.connectedCallback();
+    boolInput.connectedCallback();
+
+    expect(numInput.getAttribute('tabindex')).toBe('0');
+    expect(numInput.left.getAttribute('tabindex')).toBe('-1');
+    expect(numInput.right.getAttribute('tabindex')).toBe('-1');
+
+    expect(String(listInput.getAttribute('tabindex'))).toBe('0');
+    expect(listInput.left.getAttribute('tabindex')).toBe('-1');
+    expect(listInput.right.getAttribute('tabindex')).toBe('-1');
+
+    expect(boolInput.getAttribute('tabindex')).toBe('0');
+  });
+
+  test('ArrowUp and ArrowDown keys do not affect NumInput, ListInput, or BoolInput values', () => {
+    const numInput = new NumInput(15, 0, 30);
+    const listInput = new ListInput(['first', 'second', 'third']);
+    const boolInput = new BoolInput(false);
+
+    document.body.appendChild(numInput);
+    document.body.appendChild(listInput);
+    document.body.appendChild(boolInput);
+
+    numInput.connectedCallback();
+    listInput.connectedCallback();
+    boolInput.connectedCallback();
+
+    // NumInput: Up and Down must not change value
+    numInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+    expect(numInput.value).toBe(15);
+    numInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    expect(numInput.value).toBe(15);
+
+    // NumInput: Left and Right behave as expected
+    numInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    expect(numInput.value).toBe(16);
+    numInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+    expect(numInput.value).toBe(15);
+
+    // ListInput: Up and Down must not change value
+    listInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    expect(listInput.value).toBe('first');
+    listInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+    expect(listInput.value).toBe('first');
+
+    // ListInput: Left and Right behave as expected
+    listInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    expect(listInput.value).toBe('second');
+    listInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+    expect(listInput.value).toBe('first');
+
+    // BoolInput: Up and Down must not change value
+    boolInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+    expect(boolInput.value).toBe(false);
+    boolInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    expect(boolInput.value).toBe(false);
+
+    // BoolInput: Left and Right toggle value as expected
+    boolInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    expect(boolInput.value).toBe(true);
+    boolInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+    expect(boolInput.value).toBe(false);
+  });
+
+  test('Setting row adds active class on focusin and removes on focusout, and clicking row focuses control', () => {
+    const settingDef = { key: 'font', dflt: 13, name: 'Font Size', min: 7, max: 24 };
+    const row = Setting.buildRow(settingDef);
+    document.body.appendChild(row);
+
+    const input = row.querySelector('.ui-num');
+    expect(input).not.toBeNull();
+    expect(row.classList.contains('active')).toBe(false);
+
+    // Focusin triggers active visual class
+    input.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+    expect(row.classList.contains('active')).toBe(true);
+
+    // Focusout triggers removal of active class
+    const outsideEl = document.createElement('div');
+    document.body.appendChild(outsideEl);
+    input.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: outsideEl }));
+    expect(row.classList.contains('active')).toBe(false);
+
+    // Clicking row focuses the input control
+    let focusCalled = false;
+    input.focus = () => { focusCalled = true; };
+    const label = row.querySelector('.setting-name');
+    label.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(focusCalled).toBe(true);
   });
 });
 

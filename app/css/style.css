@@ -24,6 +24,7 @@
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
     Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
   --font-family-mono: "inconsolata", "Courier New", Courier, monospace;
+  --icon-size: 1.25em;
 }
 
 /* --------------------------------------------------------------------------
@@ -75,11 +76,12 @@ body[data-theme="light"] {
   --toggle-btn-bg: var(--active);
   --num-txt: var(--orange);
 
-  /* Icon Filter System */
-  --icon-filter: brightness(0) saturate(100%) invert(38%);
-  --icon-filter-hover: brightness(0) saturate(100%) invert(22%) sepia(95%) saturate(3000%) hue-rotate(205deg);
+  /* Icon Color System */
+  --icon-color: #616161;
+  --icon-hover-color: #0066cc;
   --icon-hover-bg: rgba(0, 0, 0, 0.092);
-  --filter: var(--icon-filter);
+  --icon-filter: none;
+  --filter: none;
 
   /* */
   --modal-backdrop: rgba(15, 23, 42, 0.4);
@@ -138,11 +140,12 @@ body[data-theme="solarized"] {
   --toggle-btn-bg: var(--active);
   --num-txt: var(--orange);
 
-  /* Icon Filter System */
-  --icon-filter: brightness(0) saturate(100%) invert(69%) sepia(13%) saturate(260%) hue-rotate(138deg) brightness(80%) contrast(99%);
-  --icon-filter-hover: brightness(0) saturate(100%) invert(52%) sepia(85%) saturate(1600%) hue-rotate(10deg) brightness(95%) contrast(105%);
+  /* Icon Color System */
+  --icon-color: #93a1a1;
+  --icon-hover-color: #268bd2;
   --icon-hover-bg: rgba(7, 54, 66, 0.05);
-  --filter: var(--icon-filter);
+  --icon-filter: none;
+  --filter: none;
 
   /* */
   --modal-backdrop: rgba(7, 54, 66, 0.4);
@@ -201,11 +204,12 @@ body[data-theme="dark"] {
   --toggle-btn-bg: var(--active);
   --num-txt: var(--orange);
 
-  /* Icon Filter System */
-  --icon-filter: brightness(0) saturate(100%) invert(53%);
-  --icon-filter-hover: brightness(0) saturate(100%) invert(75%) sepia(40%) saturate(800%) hue-rotate(185deg);
+  /* Icon Color System */
+  --icon-color: #858585;
+  --icon-hover-color: #007acc;
   --icon-hover-bg: rgba(255, 255, 255, 0.092);
-  --filter: var(--icon-filter);
+  --icon-filter: none;
+  --filter: none;
 
   /* */
   --modal-backdrop: rgba(0, 0, 0, 0.75);
@@ -264,11 +268,12 @@ body[data-theme="night"] {
   --toggle-btn-bg: var(--active);
   --num-txt: var(--orange);
 
-  /* Icon Filter System */
-  --icon-filter: brightness(0) saturate(100%) invert(53%);
-  --icon-filter-hover: brightness(0) saturate(100%) invert(65%) sepia(90%) saturate(1500%) hue-rotate(350deg);
+  /* Icon Color System */
+  --icon-color: #858585;
+  --icon-hover-color: #e05555;
   --icon-hover-bg: rgba(255, 255, 255, 0.092);
-  --filter: var(--icon-filter);
+  --icon-filter: none;
+  --filter: none;
 
   /* */
   --modal-backdrop: rgba(0, 0, 0, 0.75);
@@ -327,11 +332,12 @@ body[data-theme="nord"] {
   --toggle-btn-bg: var(--active);
   --num-txt: var(--orange);
 
-  /* Icon Filter System */
-  --icon-filter: brightness(0) saturate(100%) invert(77%) sepia(46%) saturate(45%) hue-rotate(180deg) brightness(104%) contrast(97%);
-  --icon-filter-hover: brightness(0) saturate(100%) invert(76%) sepia(21%) saturate(718%) hue-rotate(146deg);
+  /* Icon Color System */
+  --icon-color: #d8dee9;
+  --icon-hover-color: #88c0d0;
   --icon-hover-bg: rgba(236, 239, 244, 0.092);
-  --filter: var(--icon-filter);
+  --icon-filter: none;
+  --filter: none;
 
   /* */
   --modal-backdrop: rgba(15, 17, 23, 0.7);
@@ -390,11 +396,12 @@ body[data-theme="dracula"] {
   --toggle-btn-bg: var(--active);
   --num-txt: var(--orange);
 
-  /* Icon Filter System */
-  --icon-filter: brightness(0) saturate(100%) invert(49%) sepia(19%) saturate(975%) hue-rotate(188deg) brightness(86%) contrast(85%);
-  --icon-filter-hover: brightness(0) saturate(100%) invert(68%) sepia(35%) saturate(1464%) hue-rotate(214deg);
+  /* Icon Color System */
+  --icon-color: #6272a4;
+  --icon-hover-color: #bd93f9;
   --icon-hover-bg: rgba(248, 248, 242, 0.092);
-  --filter: var(--icon-filter);
+  --icon-filter: none;
+  --filter: none;
 
   /* */
   --modal-backdrop: rgba(10, 10, 15, 0.75);
@@ -689,6 +696,102 @@ section {
 /* --------------------------------------------------------------------------
    4. Icon & Interactive Elements (Micro-interactions)
    -------------------------------------------------------------------------- */
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: content-box;
+  border-radius: 4px;
+  margin: 0.15em 0.1em;
+  padding: 0.25em;
+  height: var(--icon-size, 1.25em);
+  width: var(--icon-size, 1.25em);
+  cursor: pointer;
+  background-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  caret-color: transparent;
+  position: relative;
+  transition:
+    background-color 0.15s ease,
+    transform 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.icon::before {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 100%;
+  background-color: var(--icon-color, #000000);
+  -webkit-mask-image: var(--icon-url);
+  mask-image: var(--icon-url);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  mask-mode: alpha;
+  transition: background-color 0.15s ease;
+  pointer-events: none;
+}
+
+.icon:not(#footer .icon):not(footer #lock):hover,
+header .icon:hover,
+#menu .icon:hover,
+#dialog .icon:hover,
+dialog .icon:hover {
+  background-color: var(--icon-hover-bg, rgba(148, 163, 184, 0.05));
+  transform: scale(1.06);
+}
+
+.icon:not(#footer .icon):not(footer #lock):hover::before,
+header .icon:hover::before,
+#menu .icon:hover::before,
+#dialog .icon:hover::before,
+dialog .icon:hover::before {
+  background-color: var(--icon-hover-color, var(--active, #0066cc));
+}
+
+.icon:not(#footer .icon):not(footer #lock):active,
+header .icon:active,
+#menu .icon:active,
+#dialog .icon:active,
+dialog .icon:active {
+  background-color: var(--icon-hover-bg, rgba(148, 163, 184, 0.1));
+  transform: scale(0.95);
+}
+
+button.icon {
+  border: none;
+  background-color: transparent;
+  box-shadow: none;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0.25em;
+  font-size: inherit;
+  color: inherit;
+  line-height: 1;
+}
+
+button.icon:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none !important;
+  pointer-events: none;
+}
+
+button.icon:disabled:hover {
+  background-color: transparent !important;
+  transform: none !important;
+}
+
+button.icon:disabled:hover::before {
+  background-color: var(--icon-color, #000000) !important;
+}
+
 img {
   cursor: pointer;
   margin-left: 0.5em;
@@ -699,7 +802,6 @@ img {
   user-select: none;
   -webkit-user-select: none;
   caret-color: transparent;
-  filter: var(--icon-filter, var(--filter));
   opacity: var(--icon-opacity, 1);
   transition:
     background-color 0.15s ease,
@@ -714,7 +816,6 @@ dialog img:hover {
   background-color: var(--icon-hover-bg, rgba(148, 163, 184, 0.05));
   transform: scale(1.06);
   opacity: 1;
-  filter: var(--icon-filter-hover, var(--icon-filter, var(--filter)));
 }
 
 header img:active,
@@ -725,25 +826,41 @@ dialog img:active {
   transform: scale(0.95);
 }
 
-#footer img,
+#footer .icon,
 footer #lock,
+#footer img,
 footer img {
-  height: 1em;
+  height: var(--icon-size, 1.25em);
+  width: var(--icon-size, 1.25em);
   padding: 0;
+  margin: 0 0.3em 0 0.8em;
   cursor: default;
   pointer-events: none;
 }
 
-#footer img:hover,
-#footer img:active,
+#footer .icon::before,
+footer #lock::before {
+  background-color: var(--icon-color, #000000);
+}
+
+#footer .icon:hover,
+#footer .icon:active,
 footer #lock:hover,
 footer #lock:active,
+#footer img:hover,
+#footer img:active,
 footer img:hover,
 footer img:active {
   background-color: transparent !important;
   transform: none !important;
-  filter: var(--icon-filter, var(--filter)) !important;
   opacity: var(--icon-opacity, 0.85) !important;
+}
+
+#footer .icon:hover::before,
+#footer .icon:active::before,
+footer #lock:hover::before,
+footer #lock:active::before {
+  background-color: var(--icon-color, var(--fh-txt, #000000)) !important;
 }
 
 #appIcon {
@@ -794,7 +911,6 @@ ui-sheet,
 .sheet .tHeader {
   color: var(--th-txt);
   background-color: var(--th-bg);
-  font-weight: 600;
 }
 
 .sheet .tColHeader {
@@ -1066,6 +1182,10 @@ ui-cmenu tr:hover {
 /* --------------------------------------------------------------------------
    8. Modals & Dialogs (#dialog)
    -------------------------------------------------------------------------- */
+#dialog {
+  z-index: 2000;
+}
+
 .dialog_small {
   line-height: normal;
   max-height: 50vh;
@@ -1077,6 +1197,7 @@ ui-cmenu tr:hover {
   border-radius: 8px;
   box-shadow: var(--shadow-lg);
   padding: 1em;
+  z-index: 2000;
 }
 
 .dialog_large {
@@ -1089,21 +1210,44 @@ ui-cmenu tr:hover {
   left: 0;
   width: 100vw;
   height: 100vh;
-  z-index: 99;
+  z-index: 2000;
 }
 
 #closeDialog {
   right: 1em;
   top: 1em;
   margin-top: 0;
-  height: 2em;
+  height: var(--icon-size, 1.25em);
+  width: var(--icon-size, 1.25em);
+  padding: 0.25em;
   cursor: pointer !important;
   pointer-events: auto !important;
-  transition: transform 0.15s ease;
+  transition: transform 0.15s ease, background-color 0.15s ease;
 }
 
 #closeDialog:hover {
   transform: rotate(90deg) scale(1.1);
+  background-color: var(--icon-hover-bg, rgba(148, 163, 184, 0.1));
+}
+
+#closeDialog:hover::before {
+  background-color: var(--icon-hover-color, var(--active, #0066cc));
+}
+
+.cmd_palette_close.icon {
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  padding: 0.2em;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.cmd_palette_close.icon:hover {
+  transform: rotate(90deg) scale(1.1);
+  background-color: var(--icon-hover-bg, rgba(148, 163, 184, 0.1));
+}
+
+.cmd_palette_close.icon:hover::before {
+  background-color: var(--icon-hover-color, var(--active, #0066cc));
 }
 
 
@@ -1170,9 +1314,9 @@ ui-command-palette {
 
 .cmd_palette_close {
   cursor: pointer;
-  font-size: 18px;
+  font-size: 1em;
   color: var(--grey);
-  padding: 0 4px;
+  padding: 0.25em;
 }
 
 .cmd_palette_list {
@@ -1428,8 +1572,46 @@ ui-finder.visible {
 
 .ui-num,
 .ui-list {
-  width: 10em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 11em;
   border-radius: 6px;
+  background-color: var(--input-bg, var(--bg1));
+  border: 1px solid var(--border);
+  box-sizing: border-box;
+  padding: 0.15em 0.25em;
+  color: var(--input-txt, var(--txt));
+}
+
+.ui-num section,
+.ui-list section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-grow: 1;
+  text-align: center;
+  color: var(--input-txt, var(--txt));
+  font-family: var(--font-family-mono);
+  user-select: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ui-num button.icon,
+.ui-list button.icon {
+  margin: 0;
+  padding: 0.2em;
+  flex-shrink: 0;
+}
+
+.ui-num:focus,
+.ui-list:focus,
+.ui-num:focus-within,
+.ui-list:focus-within {
+  border-color: var(--active, var(--blue));
+  box-shadow: 0 0 0 1px var(--active, var(--blue));
 }
 
 .stg-header h1,

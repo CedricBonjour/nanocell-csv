@@ -1,5 +1,6 @@
 import { StateManager } from './StateManager.js';
 import { Scroller } from './ui/input/Scroller.js';
+import { resolveIconUrl } from './utils/misc.js';
 
 let dom = undefined;
 
@@ -22,6 +23,20 @@ let build_dom = function () {
       lock: document.getElementById("lock"),
     },
   };
+  const lockEl = dom.footerDiv.lock;
+  if (lockEl) {
+    let currentSrc = lockEl.getAttribute("src") || lockEl.getAttribute("data-src") || "icn/edit.svg";
+    Object.defineProperty(lockEl, 'src', {
+      get() { return currentSrc; },
+      set(v) {
+        currentSrc = v;
+        lockEl.style.setProperty("--icon-url", `url("${resolveIconUrl(v)}")`);
+        if (lockEl.tagName === "IMG") lockEl.setAttribute("src", v);
+      },
+      configurable: true
+    });
+    lockEl.style.setProperty("--icon-url", `url("${resolveIconUrl(currentSrc)}")`);
+  }
   StateManager.setState('dom', dom);
 
   dom.dialog.clear = function (e) {
@@ -33,25 +48,43 @@ let build_dom = function () {
 
   dom.dialog.push = function (e, fullscreen = false, closeButton = true) {
     this.clear();
+    if (typeof document !== 'undefined' && document.activeElement && typeof document.activeElement.blur === 'function') {
+      document.activeElement.blur();
+    }
+    const s = StateManager.getState('sheet');
+    if (s?.finder && typeof s.finder.close === 'function') {
+      s.finder.close();
+    }
+    if (typeof document !== 'undefined') {
+      const finders = document.querySelectorAll('ui-finder, .finder-widget');
+      for (const f of finders) {
+        const target = (typeof f.close === 'function') ? f : f.parentElement;
+        if (target && typeof target.close === 'function') {
+          target.close();
+        }
+      }
+    }
     if (fullscreen) dom.dialog.classList.add("dialog_large");
     else dom.dialog.classList.add("dialog_small");
     dom.dialog.classList.add("scroll");
     dom.dialog.appendChild(e);
 
     if (closeButton) {
-      const img = document.createElement("img");
-      img.src = "icn/off.svg";
-      img.style.position = (fullscreen) ? "fixed" : "absolute";
-      img.setAttribute("title", "close");
-      img.setAttribute("id", "closeDialog");
-      img.addEventListener("click", function () { dom.dialog.clear() });
-      img.style.cursor = "pointer";
-      img.style.pointerEvents = "auto";
+      const btn = document.createElement("span");
+      btn.className = "icon";
+      btn.style.setProperty("--icon-url", `url("${resolveIconUrl('icn/off.svg')}")`);
+      btn.style.position = (fullscreen) ? "fixed" : "absolute";
+      btn.setAttribute("title", "Close (Esc)");
+      btn.setAttribute("aria-label", "Close");
+      btn.setAttribute("id", "closeDialog");
+      btn.setAttribute("role", "button");
+      btn.addEventListener("click", function () { dom.dialog.clear() });
+      btn.style.cursor = "pointer";
+      btn.style.pointerEvents = "auto";
       if (!fullscreen) {
-        img.style.height = "1.3em";
-        img.style.marginTop = ".5em";
+        btn.style.marginTop = ".5em";
       }
-      dom.dialog.appendChild(img);
+      dom.dialog.appendChild(btn);
     }
   };
   Object.defineProperty(dom.dialog, 'isBusy', { get: function () { return dom.dialog.children.length > 0 }, configurable: true });

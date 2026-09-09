@@ -1,5 +1,6 @@
 import { cmd } from '../cmd.js';
 import { StateManager } from '../StateManager.js';
+import { resolveIconUrl } from '../utils/misc.js';
 
 /**
  * Weighted fuzzy scoring function for search matching.
@@ -79,7 +80,7 @@ class CommandPalette extends HTMLElement {
       <div class="cmd_palette_modal palette-container" style="position: fixed; top: 15%; left: 50%; transform: translateX(-50%); width: 500px; max-width: 90vw; background-color: var(--modal-bg, #ffffff); color: var(--txt, #333333); border: 1px solid var(--table-borders, #ccc); border-radius: 8px; box-shadow: var(--shadow-lg, 0 10px 25px rgba(0,0,0,0.3)); z-index: 10000; font-family: var(--font-family-ui, sans-serif); overflow: hidden; display: flex; flex-direction: column;">
         <div class="cmd_palette_header" style="display: flex; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--table-borders, #ccc);">
           <input type="text" class="cmd_palette_input palette-input" placeholder="Type a command or search..." style="flex: 1; border: none; background: transparent; color: inherit; font-size: 14px; font-family: var(--font-family-ui, sans-serif); outline: none; margin: 0; padding: 4px 8px; box-sizing: border-box;" autofocus />
-          <span class="cmd_palette_close" title="Close (Esc)" style="cursor: pointer; font-size: 18px; color: var(--grey, #888); padding: 0 4px;">&times;</span>
+          <span class="cmd_palette_close icon" role="button" title="Close (Esc)" aria-label="Close" style="--icon-url: url('${resolveIconUrl('icn/off.svg')}'); cursor: pointer;"></span>
         </div>
         <ul class="cmd_palette_list command-list" role="listbox" style="max-height: 320px; overflow-y: auto; margin: 0; padding: 4px 0; list-style: none;"></ul>
         <div class="cmd_palette_footer" style="display: flex; justify-content: space-around; padding: 8px 16px; border-top: 1px solid var(--table-borders, #ccc); font-size: 11px; color: var(--grey, #666); background-color: var(--fh-bg, #f5f5f5);">
@@ -123,7 +124,8 @@ class CommandPalette extends HTMLElement {
     const commandMap = StateManager.getState('cmd') || cmd;
     return Object.entries(commandMap).map(([id, c]) => ({
       id,
-      description: c.description || id,
+      label: c.label || id,
+      description: c.description || c.label || id,
       key: c.k ? `${c.ctrl ? 'Ctrl+' : ''}${c.shift ? 'Shift+' : ''}${c.alt ? 'Alt+' : ''}${c.k}` : '',
       run: c.run
     }));
@@ -138,10 +140,11 @@ class CommandPalette extends HTMLElement {
     } else {
       const scored = all.map(c => {
         const descScore = fuzzyScore(query, c.description);
+        const labelScore = fuzzyScore(query, c.label || '') * 0.95;
         const idScore = fuzzyScore(query, c.id) * 0.9;
         return {
           cmd: c,
-          score: Math.max(descScore, idScore)
+          score: Math.max(descScore, labelScore, idScore)
         };
       }).filter(item => item.score > 0);
 

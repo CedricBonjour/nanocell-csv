@@ -170,7 +170,7 @@ export class SheetView {
    * Updates status text in application footer elements (selection info, matrix size, active cell content, save status).
    */
   footerUpdate() {
-    const f = dom.footerDiv;
+    const f = dom?.footerDiv;
     if (!f || !f.left) return;
     if (this.sheet.rangeEnd) {
       const deltaX = Math.abs((this.sheet.rangeEnd.x) - (this.sheet.x)) + 1;
@@ -180,7 +180,12 @@ export class SheetView {
     else f.left.innerHTML = (this.sheet.x + 1) + ":" + (this.sheet.y + 1);
     f.right.innerHTML = this.sheet.df.width + ":" + this.sheet.df.height;
     f.center.innerHTML = this.sheet.df.get(this.sheet.x, this.sheet.y).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('\n', '<br>').replaceAll(' ', '<span style="color:var(--dots, inherit)">&bull;</span>');
-    if (f.lock) f.lock.src = (this.sheet.df.isSaved) ? "icn/lock.svg" : "icn/edit.svg";
+    if (f.lock) {
+      f.lock.src = (this.sheet.df.isSaved) ? "icn/lock.svg" : "icn/edit.svg";
+      const lockTitle = this.sheet.df.isSaved ? "Saved file" : "Unsaved changes";
+      f.lock.setAttribute("title", lockTitle);
+      f.lock.setAttribute("aria-label", lockTitle);
+    }
   }
 
   /**
@@ -191,8 +196,8 @@ export class SheetView {
     let dfw = this.sheet.df.width;
     let visible_minY = this.sheet.nViewRows / 2;
     let visible_minX = this.sheet.nViewCols - 2;
-    let dsy = dom.content?.scrollerY;
-    let dsx = dom.content?.scrollerX;
+    let dsy = dom?.content?.scrollerY;
+    let dsx = dom?.content?.scrollerX;
     if (!dsy || !dsx) return;
     dsy.style.display = (dfh < visible_minY) ? "none" : "block";
     dsx.style.display = (dfw < visible_minX) ? "none" : "block";

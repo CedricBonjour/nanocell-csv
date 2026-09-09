@@ -162,5 +162,79 @@ describe('Settings Management & Input Components Test Suite', () => {
     expect(dialog.children.length).toBeGreaterThan(0);
     expect(dialog.querySelector('ui-about')).not.toBeNull();
   });
+
+  test('cmd.settings.run() invokes Setting.show() without ReferenceError', () => {
+    dom.dialog.clear();
+    expect(dom.dialog.children.length).toBe(0);
+    expect(() => cmd.settings.run()).not.toThrow();
+    expect(dom.dialog.children.length).toBeGreaterThan(0);
+    expect(dom.dialog.querySelector('.stg-container')).not.toBeNull();
+  });
+
+  test('ListInput and NumInput stepper buttons use standard icons and proper accessibility labels', () => {
+    const listInput = new ListInput(['alpha', 'beta', 'gamma']);
+    document.body.appendChild(listInput);
+    listInput.connectedCallback();
+
+    expect(listInput.left.classList.contains('icon')).toBe(true);
+    expect(listInput.right.classList.contains('icon')).toBe(true);
+    expect(listInput.left.style.getPropertyValue('--icon-url')).toContain('arrow_left.svg');
+    expect(listInput.right.style.getPropertyValue('--icon-url')).toContain('arrow_right.svg');
+    expect(listInput.left.getAttribute('aria-label')).toBe('Previous');
+    expect(listInput.right.getAttribute('aria-label')).toBe('Next');
+
+    const numInput = new NumInput(5, 1, 10);
+    document.body.appendChild(numInput);
+    numInput.connectedCallback();
+
+    expect(numInput.left.classList.contains('icon')).toBe(true);
+    expect(numInput.right.classList.contains('icon')).toBe(true);
+    expect(numInput.left.style.getPropertyValue('--icon-url')).toContain('remove.svg');
+    expect(numInput.right.style.getPropertyValue('--icon-url')).toContain('add.svg');
+    expect(numInput.left.getAttribute('aria-label')).toBe('Decrease');
+    expect(numInput.right.getAttribute('aria-label')).toBe('Increase');
+  });
+
+  test('NumInput stepper disables decrement at minimum and disables increment at maximum', () => {
+    const numInput = new NumInput(2, 2, 4);
+    document.body.appendChild(numInput);
+    numInput.connectedCallback();
+
+    // At min (2), left should be disabled
+    expect(numInput.left.disabled).toBe(true);
+    expect(numInput.right.disabled).toBe(false);
+
+    // Increase to 3
+    numInput.right.click();
+    expect(numInput.value).toBe(3);
+    expect(numInput.left.disabled).toBe(false);
+    expect(numInput.right.disabled).toBe(false);
+
+    // Increase to max (4)
+    numInput.right.click();
+    expect(numInput.value).toBe(4);
+    expect(numInput.left.disabled).toBe(false);
+    expect(numInput.right.disabled).toBe(true);
+  });
+
+  test('About pane footer centers the bug report button and website url', () => {
+    const el = About.show();
+    if (!el._initialized && typeof el.connectedCallback === 'function') {
+      el.connectedCallback();
+    }
+    const aboutFooter = el.querySelector('div[style*="bottom"]');
+    expect(aboutFooter).not.toBeNull();
+    expect(aboutFooter.style.alignItems).toBe('center');
+    expect(aboutFooter.style.textAlign).toBe('center');
+
+    const bugLink = aboutFooter.querySelector('a[href*="issues"]');
+    expect(bugLink).not.toBeNull();
+    expect(bugLink.style.display).toBe('flex');
+    expect(bugLink.style.justifyContent).toBe('center');
+
+    const homeLink = aboutFooter.querySelector('a[href*="nanocell-csv.com"]');
+    expect(homeLink).not.toBeNull();
+    expect(homeLink.style.textAlign).toBe('center');
+  });
 });
 

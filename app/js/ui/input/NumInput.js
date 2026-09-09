@@ -1,3 +1,5 @@
+import { resolveIconUrl } from '../../utils/misc.js';
+
 class NumInput extends HTMLElement {
   constructor(start = 0, min = 0, max = 999) {
     super();
@@ -6,11 +8,26 @@ class NumInput extends HTMLElement {
     this.max = max;
     this.classList.add("ui-num");
     this.left = document.createElement("button");
+    this.left.className = "icon";
+    this.left.type = "button";
+    this.left.setAttribute("aria-label", "Decrease");
+    this.left.setAttribute("title", "Decrease");
+    this.left.style.setProperty("--icon-url", `url("${resolveIconUrl('icn/remove.svg')}")`);
+
     this.center = document.createElement("section");
-    this.right = document.createElement("button");
-    this.left.innerHTML = "-";
     this.center.innerHTML = this.n;
-    this.right.innerHTML = "+";
+
+    this.right = document.createElement("button");
+    this.right.className = "icon";
+    this.right.type = "button";
+    this.right.setAttribute("aria-label", "Increase");
+    this.right.setAttribute("title", "Increase");
+    this.right.style.setProperty("--icon-url", `url("${resolveIconUrl('icn/add.svg')}")`);
+  }
+
+  updateButtonStates() {
+    if (this.left) this.left.disabled = (this.n <= this.min);
+    if (this.right) this.right.disabled = (this.n >= this.max);
   }
 
   connectedCallback() {
@@ -31,6 +48,7 @@ class NumInput extends HTMLElement {
       if (k === "ARROWRIGHT" || k === "ARROWUP") { this.setValueInternal(this.value + 1, true); }
       else if (k === "ARROWLEFT" || k === "ARROWDOWN") { this.setValueInternal(this.value - 1, true); }
     });
+    this.updateButtonStates();
   }
 
   get value() { return this.n; }
@@ -45,6 +63,7 @@ class NumInput extends HTMLElement {
     if (n > this.max) n = this.max;
     this.n = n;
     this.center.innerHTML = this.n;
+    this.updateButtonStates();
 
     if (isUserAction) {
       const e = new Event("change", { bubbles: true });

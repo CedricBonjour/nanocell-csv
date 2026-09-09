@@ -339,6 +339,287 @@ describe('Phase 2 Requirements (R1-R4) - Comprehensive Test Suite', () => {
 
       expect(palette.style.display).toBe('none');
     });
+
+    test('Toggle action bar display via cmd.menubar.run() toggles stg.actionBar and header visibility', () => {
+      stg.actionBar = true;
+      expect(dom.header.style.display).not.toBe('none');
+
+      cmd.menubar.run();
+      expect(stg.actionBar).toBe(false);
+      expect(dom.header.style.display).toBe('none');
+
+      cmd.menubar.run();
+      expect(stg.actionBar).toBe(true);
+      expect(dom.header.style.display).toBe('flex');
+    });
+
+    test('Ctrl+M triggers action bar display toggle via keyboard listener', () => {
+      buildKeys();
+      stg.actionBar = true;
+      expect(dom.header.style.display).not.toBe('none');
+
+      const ctrlMEvent = new KeyboardEvent('keydown', {
+        key: 'm',
+        code: 'KeyM',
+        ctrlKey: true,
+        bubbles: true,
+        cancelable: true
+      });
+      document.dispatchEvent(ctrlMEvent);
+
+      expect(stg.actionBar).toBe(false);
+      expect(dom.header.style.display).toBe('none');
+
+      document.dispatchEvent(ctrlMEvent);
+      expect(stg.actionBar).toBe(true);
+      expect(dom.header.style.display).toBe('flex');
+    });
+
+    test('Command Palette fuzzy search matches action bar / menu bar and executes toggle', () => {
+      stg.actionBar = true;
+      palette.open();
+      palette.inputEl.value = 'action bar';
+      palette.filterCommands();
+
+      const menubarCmd = palette.filteredCommands.find(c => c.id === 'menubar');
+      expect(menubarCmd).toBeDefined();
+
+      const idx = palette.filteredCommands.indexOf(menubarCmd);
+      palette.executeIndex(idx);
+
+      expect(stg.actionBar).toBe(false);
+      expect(dom.header.style.display).toBe('none');
+      expect(palette.style.display).toBe('none');
+    });
+  });
+
+  // =========================================================================
+  // TIER 5: Context-Independent Keyboard Navigation & Date Insertion
+  // =========================================================================
+  describe('Tier 5: Context-Independent Keyboard Navigation & Date Insertion', () => {
+    beforeEach(() => {
+      buildKeys();
+    });
+
+    test('cmd.date inserts today\'s date into selected cell on the grid', () => {
+      sheet.x = 1;
+      sheet.y = 1;
+      const initialVal = df.get(1, 1);
+      expect(initialVal).toBe('Row1Col1');
+
+      cmd.date.run();
+
+      const updatedVal = df.get(1, 1);
+      expect(updatedVal).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    });
+
+    test('cmd.date inserts today\'s date directly into active cell input when editing', () => {
+      sheet.x = 0;
+      sheet.y = 1;
+      sheet.input('Prefix-');
+
+      expect(sheet.inputing).toBe(true);
+      expect(sheet.inputField.value).toBe('Prefix-');
+
+      cmd.date.run();
+
+      expect(sheet.inputField.value).toMatch(/^Prefix-\d{4}-\d{2}-\d{2}$/);
+      sheet.controller.inputBlur();
+      expect(df.get(0, 1)).toMatch(/^Prefix-\d{4}-\d{2}-\d{2}$/);
+    });
+
+    test('Ctrl+; and Ctrl+T key events trigger date insertion on the grid', () => {
+      sheet.x = 2;
+      sheet.y = 1;
+      expect(df.get(2, 1)).toBe('Row1Col2');
+
+      // Ctrl + ;
+      const ctrlSemicolon = new KeyboardEvent('keydown', {
+        key: ';',
+        code: 'Semicolon',
+        ctrlKey: true,
+        bubbles: true,
+        cancelable: true
+      });
+      document.dispatchEvent(ctrlSemicolon);
+      expect(df.get(2, 1)).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+
+      // Ctrl + T fallback
+      sheet.x = 0;
+      sheet.y = 2;
+      const ctrlT = new KeyboardEvent('keydown', {
+        key: 't',
+        code: 'KeyT',
+        ctrlKey: true,
+        bubbles: true,
+        cancelable: true
+      });
+      document.dispatchEvent(ctrlT);
+      expect(df.get(0, 2)).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    });
+
+    test('Ctrl+; inside cell editor inserts date at cursor position', () => {
+      sheet.x = 1;
+      sheet.y = 2;
+      sheet.input('');
+      sheet.inputField.value = '';
+      expect(sheet.inputing).toBe(true);
+
+      const ctrlSemicolon = new KeyboardEvent('keydown', {
+        key: ';',
+        code: 'Semicolon',
+        ctrlKey: true,
+        bubbles: true,
+        cancelable: true
+      });
+      sheet.inputField.dispatchEvent(ctrlSemicolon);
+
+      expect(sheet.inputField.value).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      sheet.controller.inputBlur();
+    });
+
+    test('Shift+Tab navigates left in grid mode and commits edit & navigates left in cell editor', () => {
+      // 1. Grid mode Shift+Tab
+      sheet.x = 2;
+      sheet.y = 1;
+      const shiftTabGrid = new KeyboardEvent('keydown', {
+        key: 'Tab',
+        code: 'Tab',
+        shiftKey: true,
+        bubbles: true,
+        cancelable: true
+      });
+      document.dispatchEvent(shiftTabGrid);
+      expect(sheet.x).toBe(1);
+
+      // 2. Cell editor Shift+Tab
+      sheet.input('EditedVal');
+      expect(sheet.inputing).toBe(true);
+      const shiftTabEditor = new KeyboardEvent('keydown', {
+        key: 'Tab',
+        code: 'Tab',
+        shiftKey: true,
+        bubbles: true,
+        cancelable: true
+      });
+      sheet.inputField.dispatchEvent(shiftTabEditor);
+      expect(sheet.inputing).toBe(false);
+      expect(df.get(1, 1)).toBe('EditedVal');
+      expect(sheet.x).toBe(0);
+    });
+
+    test('PageUp and PageDown scroll rows without modifying or shifting dataframe content', () => {
+      sheet.y = 0;
+      const initialVal0 = df.get(0, 0);
+      const initialVal1 = df.get(0, 1);
+
+      const pageDown = new KeyboardEvent('keydown', { key: 'PageDown', code: 'PageDown', bubbles: true, cancelable: true });
+      document.dispatchEvent(pageDown);
+      expect(sheet.y).toBeGreaterThanOrEqual(0);
+
+      const pageUp = new KeyboardEvent('keydown', { key: 'PageUp', code: 'PageUp', bubbles: true, cancelable: true });
+      document.dispatchEvent(pageUp);
+      expect(sheet.y).toBe(0);
+
+      // Verify row data was NOT mutated by shift
+      expect(df.get(0, 0)).toBe(initialVal0);
+      expect(df.get(0, 1)).toBe(initialVal1);
+    });
+
+    test('Home, Ctrl+Home, and Ctrl+End navigate to respective cell boundaries', () => {
+      sheet.x = 2;
+      sheet.y = 2;
+
+      // Home moves to column 0
+      const homeEvent = new KeyboardEvent('keydown', { key: 'Home', code: 'Home', bubbles: true, cancelable: true });
+      document.dispatchEvent(homeEvent);
+      expect(sheet.x).toBe(0);
+      expect(sheet.y).toBe(2);
+
+      // Ctrl + End moves to bottom-right cell
+      const ctrlEndEvent = new KeyboardEvent('keydown', { key: 'End', code: 'End', ctrlKey: true, bubbles: true, cancelable: true });
+      document.dispatchEvent(ctrlEndEvent);
+      expect(sheet.x).toBe(df.width - 1);
+      expect(sheet.y).toBe(df.height - 1);
+
+      // Ctrl + Home moves to top-left cell (0, 0)
+      const ctrlHomeEvent = new KeyboardEvent('keydown', { key: 'Home', code: 'Home', ctrlKey: true, bubbles: true, cancelable: true });
+      document.dispatchEvent(ctrlHomeEvent);
+      expect(sheet.x).toBe(0);
+      expect(sheet.y).toBe(0);
+    });
+
+    test('F2 key enters cell editing mode', () => {
+      sheet.x = 1;
+      sheet.y = 1;
+      expect(sheet.inputing).toBe(false);
+
+      const f2Event = new KeyboardEvent('keydown', { key: 'F2', code: 'F2', bubbles: true, cancelable: true });
+      document.dispatchEvent(f2Event);
+
+      expect(sheet.inputing).toBe(true);
+      expect(sheet.inputField.parentNode).not.toBeNull();
+      sheet.controller.inputBlur();
+    });
+
+    test('Keys pressed while inside Command Palette do not leak into sheet cell navigation', () => {
+      const palette = document.createElement('ui-command-palette');
+      document.body.appendChild(palette);
+      palette.open();
+
+      sheet.x = 1;
+      sheet.y = 1;
+
+      // Press ArrowDown inside palette
+      const arrowDownEvent = new KeyboardEvent('keydown', { key: 'ArrowDown', code: 'ArrowDown', bubbles: true, cancelable: true });
+      document.dispatchEvent(arrowDownEvent);
+
+      // Sheet cell coordinates must remain unchanged
+      expect(sheet.x).toBe(1);
+      expect(sheet.y).toBe(1);
+      expect(sheet.inputing).toBe(false);
+
+      palette.close();
+      palette.remove();
+    });
+
+    test('Keys pressed while inside Finder do not leak into sheet cell navigation', async () => {
+      const { Finder } = await import('../app/js/Finder.js');
+      const finder = new Finder(sheet);
+      document.body.appendChild(finder);
+      finder.show();
+
+      sheet.x = 1;
+      sheet.y = 1;
+
+      // Focus finder input and press ArrowDown
+      finder.findIn.focus();
+      const arrowDownEvent = new KeyboardEvent('keydown', { key: 'ArrowDown', code: 'ArrowDown', bubbles: true, cancelable: true });
+      finder.findIn.dispatchEvent(arrowDownEvent);
+
+      expect(sheet.x).toBe(1);
+      expect(sheet.y).toBe(1);
+      expect(sheet.inputing).toBe(false);
+
+      finder.close();
+      finder.remove();
+    });
+
+    test('Escape in modal dialog dismisses dialog and does not alter sheet cells', async () => {
+      const { Setting } = await import('../app/js/Setting.js');
+      Setting.show();
+      expect(dom.dialog.children.length).toBeGreaterThan(0);
+
+      sheet.x = 1;
+      sheet.y = 1;
+
+      const escEvent = new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true, cancelable: true });
+      document.dispatchEvent(escEvent);
+
+      expect(dom.dialog.children.length).toBe(0);
+      expect(sheet.x).toBe(1);
+      expect(sheet.y).toBe(1);
+    });
   });
 
   // =========================================================================

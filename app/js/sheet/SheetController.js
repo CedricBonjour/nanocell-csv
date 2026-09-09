@@ -33,6 +33,19 @@ export class SheetController {
     this.sheet.inputField.addEventListener("keydown", (e) => {
       const k = e.key.toUpperCase();
       if (k == "ENTER" && e.shiftKey) return this.sheet.inputField.value = this.sheet.inputField.value + '\u25BE';
+
+      if ((e.ctrlKey || e.metaKey) && (e.key === ";" || k === "T")) {
+        e.preventDefault();
+        e.stopPropagation();
+        const todayStr = (new Date()).getFormated ? (new Date()).getFormated("yyyy-mm-dd") : new Date().toISOString().slice(0, 10);
+        const input = this.sheet.inputField;
+        const start = input.selectionStart || 0;
+        const end = input.selectionEnd || 0;
+        input.value = input.value.substring(0, start) + todayStr + input.value.substring(end);
+        input.selectionStart = input.selectionEnd = start + todayStr.length;
+        return;
+      }
+
       switch (k) {
         case "ENTER":
           e.stopPropagation();
@@ -46,7 +59,24 @@ export class SheetController {
           e.stopPropagation();
           e.preventDefault();
           this.sheet.inputField.blur();
-          this.sheet.x++;
+          if (e.shiftKey) this.sheet.x--;
+          else this.sheet.x++;
+          this.slctRefresh();
+          this.view.refresh();
+          break;
+        case "ARROWUP":
+          e.stopPropagation();
+          e.preventDefault();
+          this.sheet.inputField.blur();
+          this.sheet.y--;
+          this.slctRefresh();
+          this.view.refresh();
+          break;
+        case "ARROWDOWN":
+          e.stopPropagation();
+          e.preventDefault();
+          this.sheet.inputField.blur();
+          this.sheet.y++;
           this.slctRefresh();
           this.view.refresh();
           break;

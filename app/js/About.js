@@ -38,10 +38,17 @@ class About extends HTMLElement {
     this.aboutFooter.style.width = "100%";
     this.aboutFooter.style.display = "flex";
     this.aboutFooter.style.flexDirection = "column";
+    this.aboutFooter.style.alignItems = "center";
+    this.aboutFooter.style.textAlign = "center";
     this.aboutFooter.style.height = "7vh";
     this.aboutFooter.style.justifyContent = "space-between";
 
+    this.bugLink.style.display = "flex";
+    this.bugLink.style.justifyContent = "center";
+    this.bugLink.style.textDecoration = "none";
 
+    this.homeLink.style.display = "block";
+    this.homeLink.style.textAlign = "center";
   }
 
   connectedCallback() {

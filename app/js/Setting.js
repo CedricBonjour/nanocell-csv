@@ -224,7 +224,12 @@ Object.defineProperty(Setting, 'list', {
     { key: "font", dflt: 13, name: "Font Size", min: 7, max: 24, cb: n => { if (dom?.body) dom.body.style.fontSize = n + "px"; } },
     { key: "rows", dflt: 25, name: "Rows", min: 10, max: 60, cb: n => { const s = StateManager.getState('sheet'); if (s) s.reload(); } },
     { key: "cols", dflt: 7, name: "Cols", min: 3, max: 30, cb: n => { const s = StateManager.getState('sheet'); if (s) s.reload(); } },
-    { key: "actionBar", dflt: true, name: "Action Bar", cb: b => { if (dom?.header) dom.header.style.display = b ? "flex" : "none"; } },
+    { key: "actionBar", dflt: true, name: "Action Bar", cb: b => {
+      const header = (dom && dom.header) || (typeof document !== 'undefined' && (document.getElementById('header') || document.querySelector('header')));
+      if (header) header.style.display = b ? "flex" : "none";
+      const s = StateManager.getState('sheet');
+      if (s && typeof s.scrollbarRefresh === 'function') s.scrollbarRefresh();
+    } },
     { key: "purple", dflt: true, name: "Warning color on line return, comma and double quote values", cb: b => { const s = StateManager.getState('sheet'); if (s) s.reload(); } },
 
     { title: "Csv Save" },

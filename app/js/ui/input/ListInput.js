@@ -1,3 +1,5 @@
+import { resolveIconUrl } from '../../utils/misc.js';
+
 class ListInput extends HTMLElement {
   constructor(list = [], hide = false) {
     super();
@@ -7,11 +9,21 @@ class ListInput extends HTMLElement {
     this.classList.add("ui-list");
 
     this.left = document.createElement("button");
+    this.left.className = "icon";
+    this.left.type = "button";
+    this.left.setAttribute("aria-label", "Previous");
+    this.left.setAttribute("title", "Previous");
+    this.left.style.setProperty("--icon-url", `url("${resolveIconUrl('icn/arrow_left.svg')}")`);
+
     this.center = document.createElement("section");
-    this.right = document.createElement("button");
-    this.left.innerHTML = "<";
-    this.right.innerHTML = ">";
     this.center.style.flexGrow = "2";
+
+    this.right = document.createElement("button");
+    this.right.className = "icon";
+    this.right.type = "button";
+    this.right.setAttribute("aria-label", "Next");
+    this.right.setAttribute("title", "Next");
+    this.right.style.setProperty("--icon-url", `url("${resolveIconUrl('icn/arrow_right.svg')}")`);
   }
 
   connectedCallback() {

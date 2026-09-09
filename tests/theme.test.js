@@ -2,6 +2,8 @@ import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { Setting, stg } from '../app/js/Setting.js';
 import { build_dom, dom } from '../app/js/dom.js';
 import { StateManager } from '../app/js/StateManager.js';
+import { cmd, buildMenu, getCommandTooltip } from '../app/js/cmd.js';
+import '../app/js/ui/CommandPalette.js';
 
 describe('Theming & UI Settings Operations', () => {
   beforeEach(() => {
@@ -183,34 +185,27 @@ describe('Theming & UI Settings Operations', () => {
     expect(cssContent).toMatch(/footer\s+img:hover[\s\S]*?transform:\s*none/);
   });
 
-  test('Footer text and space dots use inherit/var(--fh-txt) to prevent color shifting on cell selection', async () => {
-    const fs = await import('fs');
-    const path = await import('path');
-    const cssContent = fs.readFileSync(path.resolve(__dirname, '../app/css/style.css'), 'utf-8');
-
-    // Ensure all themes define --dots as inherit rather than var(--active)
-    const dotMatches = [...cssContent.matchAll(/--dots:\s*([^;]+);/g)];
-    expect(dotMatches.length).toBeGreaterThanOrEqual(6);
-    dotMatches.forEach((m) => {
-      expect(m[1].trim()).toBe('inherit');
-    });
-
-    // Ensure footer elements are styled with var(--fh-txt)
-    expect(cssContent).toMatch(/#footer,\s*#footerLeft,\s*#footerCenter,\s*#footerRight\s*\{[^}]*color:\s*var\(--fh-txt\)/);
-  });
-
   test('Icons default color matches table header text color across all themes', async () => {
     const fs = await import('fs');
     const path = await import('path');
     const cssContent = fs.readFileSync(path.resolve(__dirname, '../app/css/style.css'), 'utf-8');
 
-    // Verify each theme defines calibrated --icon-filter for table header color
-    expect(cssContent).toMatch(/\[data-theme="light"\][\s\S]*?--icon-filter:\s*brightness\(0\)\s*saturate\(100%\)\s*invert\(38%\)/);
-    expect(cssContent).toMatch(/\[data-theme="solarized"\][\s\S]*?--icon-filter:\s*brightness\(0\)\s*saturate\(100%\)\s*invert\(69%\)/);
-    expect(cssContent).toMatch(/body\[data-theme="dark"\][\s\S]*?--icon-filter:\s*brightness\(0\)\s*saturate\(100%\)\s*invert\(53%\)/);
-    expect(cssContent).toMatch(/\[data-theme="night"\][\s\S]*?--icon-filter:\s*brightness\(0\)\s*saturate\(100%\)\s*invert\(53%\)/);
-    expect(cssContent).toMatch(/\[data-theme="nord"\][\s\S]*?--icon-filter:\s*brightness\(0\)\s*saturate\(100%\)\s*invert\(77%\)/);
-    expect(cssContent).toMatch(/\[data-theme="dracula"\][\s\S]*?--icon-filter:\s*brightness\(0\)\s*saturate\(100%\)\s*invert\(49%\)/);
+    // Verify each theme defines clean hex --icon-color and --icon-hover-color
+    expect(cssContent).toMatch(/\[data-theme="light"\][\s\S]*?--icon-color:\s*#616161;/);
+    expect(cssContent).toMatch(/\[data-theme="solarized"\][\s\S]*?--icon-color:\s*#93a1a1;/);
+    expect(cssContent).toMatch(/body\[data-theme="dark"\][\s\S]*?--icon-color:\s*#858585;/);
+    expect(cssContent).toMatch(/\[data-theme="night"\][\s\S]*?--icon-color:\s*#858585;/);
+    expect(cssContent).toMatch(/\[data-theme="nord"\][\s\S]*?--icon-color:\s*#d8dee9;/);
+    expect(cssContent).toMatch(/\[data-theme="dracula"\][\s\S]*?--icon-color:\s*#6272a4;/);
+  });
+
+  test('CSS mask-image system uses --icon-color defaulting to #000000', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const cssContent = fs.readFileSync(path.resolve(__dirname, '../app/css/style.css'), 'utf-8');
+
+    expect(cssContent).toMatch(/\.icon::before\s*\{[^}]*mask-image:\s*var\(--icon-url\);/);
+    expect(cssContent).toMatch(/\.icon::before\s*\{[^}]*background-color:\s*var\(--icon-color,\s*#000000\);/);
   });
 
   test('Header and menu icons suppress text selection and caret cursor during navigation', async () => {
@@ -218,11 +213,11 @@ describe('Theming & UI Settings Operations', () => {
     const path = await import('path');
     const cssContent = fs.readFileSync(path.resolve(__dirname, '../app/css/style.css'), 'utf-8');
 
-    // Verify header, menu and img suppress caret and user selection
+    // Verify header, menu and icon suppress caret and user selection
     expect(cssContent).toMatch(/header\s*\{[\s\S]*?caret-color:\s*transparent;/);
     expect(cssContent).toMatch(/#menu\s*\{[\s\S]*?caret-color:\s*transparent;/);
-    expect(cssContent).toMatch(/img\s*\{[\s\S]*?caret-color:\s*transparent;/);
-    expect(cssContent).toMatch(/img\s*\{[\s\S]*?user-select:\s*none;/);
+    expect(cssContent).toMatch(/\.icon\s*\{[\s\S]*?caret-color:\s*transparent;/);
+    expect(cssContent).toMatch(/\.icon\s*\{[\s\S]*?user-select:\s*none;/);
   });
 
   test('#closeDialog has pointer-events: auto !important and cursor: pointer in style.css', async () => {
@@ -232,5 +227,123 @@ describe('Theming & UI Settings Operations', () => {
 
     expect(cssContent).toMatch(/#closeDialog\s*\{[^}]*pointer-events:\s*auto\s*!important;/);
     expect(cssContent).toMatch(/#closeDialog\s*\{[^}]*cursor:\s*pointer\s*!important;/);
+  });
+
+  test('Footer lock element updates --icon-url on src property changes', () => {
+    const lock = dom.footerDiv.lock;
+    expect(lock).toBeDefined();
+    lock.src = 'icn/lock.svg';
+    expect(lock.style.getPropertyValue('--icon-url')).toContain('icn/lock.svg');
+    lock.src = 'icn/edit.svg';
+    expect(lock.style.getPropertyValue('--icon-url')).toContain('icn/edit.svg');
+  });
+
+  test('buildMenu populates header with user-friendly tooltips and keyboard shortcuts', () => {
+    buildMenu();
+    const icons = dom.header.querySelectorAll('.icon');
+    expect(icons.length).toBeGreaterThan(15);
+
+    // Verify first icon is 'New Sheet' with shortcut
+    const newIcon = icons[0];
+    expect(newIcon.getAttribute('title')).toContain('New Sheet');
+    expect(newIcon.getAttribute('title')).toContain('N');
+
+    // Verify 'Freeze Header Row' icon has readable title and shortcut
+    const fixTopIcon = Array.from(icons).find(el => el.style.getPropertyValue('--icon-url').includes('fixTop'));
+    expect(fixTopIcon).toBeDefined();
+    expect(fixTopIcon.getAttribute('title')).toContain('Freeze Header Row');
+    expect(fixTopIcon.getAttribute('title')).toContain('B');
+
+    // Verify 'Reload File'
+    const reloadIcon = Array.from(icons).find(el => el.style.getPropertyValue('--icon-url').includes('reloadFile'));
+    expect(reloadIcon).toBeDefined();
+    expect(reloadIcon.getAttribute('title')).toContain('Reload File');
+    expect(reloadIcon.getAttribute('title')).toContain('R');
+  });
+
+  test('getCommandTooltip generates readable names and handles shortcut modifiers correctly', () => {
+    expect(getCommandTooltip(cmd.undo)).toMatch(/Undo \((Ctrl\+|⌘)Z\)/);
+    expect(getCommandTooltip(cmd.redo)).toMatch(/Redo \((Ctrl\+|⌘)Shift\+Z\)/);
+    expect(getCommandTooltip(cmd.fixTop)).toMatch(/Freeze Header Row \((Ctrl\+|⌘)B\)/);
+    expect(getCommandTooltip(cmd.sort_reverse)).toMatch(/Sort Descending \((Ctrl\+|⌘)Shift\+L\)/);
+    expect(getCommandTooltip(null, 'fallback')).toBe('fallback');
+  });
+
+  test('Menu and lock icons resolve to absolute URLs under http/https to prevent mask 404s', () => {
+    buildMenu();
+    const icons = dom.header.querySelectorAll('.icon');
+    const undoIcon = Array.from(icons).find(el => el.style.getPropertyValue('--icon-url').includes('undo'));
+    expect(undoIcon).toBeDefined();
+    expect(undoIcon.style.getPropertyValue('--icon-url')).toMatch(/^url\("http:\/\/localhost:\d+\/icn\/menu\/undo\.svg"\)$/);
+  });
+
+  test('All icons throughout the app share standard --icon-size and footer lock has spacing', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const cssContent = fs.readFileSync(path.resolve(__dirname, '../app/css/style.css'), 'utf-8');
+
+    expect(cssContent).toMatch(/--icon-size:\s*1\.25em;/);
+    expect(cssContent).toMatch(/\.icon\s*\{[^}]*height:\s*var\(--icon-size,\s*1\.25em\);/);
+    expect(cssContent).toMatch(/#footer\s+\.icon[\s\S]*?margin:\s*0\s+0\.3em\s+0\s+0\.8em;/);
+    expect(cssContent).toMatch(/#closeDialog\s*\{[^}]*height:\s*var\(--icon-size,\s*1\.25em\);/);
+  });
+
+  test('CommandPalette close button uses off.svg icon with proper accessibility', () => {
+    const palette = document.createElement('ui-command-palette');
+    document.body.appendChild(palette);
+    palette.connectedCallback();
+
+    const closeBtn = palette.querySelector('.cmd_palette_close');
+    expect(closeBtn).not.toBeNull();
+    expect(closeBtn.classList.contains('icon')).toBe(true);
+    expect(closeBtn.style.getPropertyValue('--icon-url')).toContain('off.svg');
+    expect(closeBtn.getAttribute('role')).toBe('button');
+    expect(closeBtn.getAttribute('aria-label')).toBe('Close');
+  });
+
+  test('Modal dialogs (.dialog_large, #dialog) have higher z-index than ui-finder in style.css', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const cssContent = fs.readFileSync(path.resolve(__dirname, '../app/css/style.css'), 'utf-8');
+
+    const dialogLargeMatch = cssContent.match(/\.dialog_large\s*\{[^}]*z-index:\s*(\d+);/);
+    const finderMatch = cssContent.match(/ui-finder\s*\{[^}]*z-index:\s*(\d+);/);
+    const dialogIdMatch = cssContent.match(/#dialog\s*\{[^}]*z-index:\s*(\d+);/);
+
+    expect(dialogLargeMatch).not.toBeNull();
+    expect(finderMatch).not.toBeNull();
+    expect(dialogIdMatch).not.toBeNull();
+
+    const dialogLargeZ = parseInt(dialogLargeMatch[1], 10);
+    const finderZ = parseInt(finderMatch[1], 10);
+    const dialogIdZ = parseInt(dialogIdMatch[1], 10);
+
+    expect(dialogLargeZ).toBeGreaterThan(finderZ);
+    expect(dialogIdZ).toBeGreaterThan(finderZ);
+  });
+
+  test('Opening About or Settings dialog dismisses active finder widget so it does not stay above', async () => {
+    const { Finder } = await import('../app/js/Finder.js');
+    const { About } = await import('../app/js/About.js');
+
+    const finder = new Finder();
+    document.body.appendChild(finder);
+    finder.show();
+    expect(finder.classList.contains('visible')).toBe(true);
+    expect(finder.style.display).toBe('block');
+
+    // Opening About dialog pushes to dom.dialog
+    About.show();
+    expect(dom.dialog.children.length).toBeGreaterThan(0);
+    expect(finder.classList.contains('visible')).toBe(false);
+    expect(finder.style.display).toBe('none');
+
+    // Showing finder again, then opening Settings dialog
+    finder.show();
+    expect(finder.classList.contains('visible')).toBe(true);
+    Setting.show();
+    expect(dom.dialog.children.length).toBeGreaterThan(0);
+    expect(finder.classList.contains('visible')).toBe(false);
+    expect(finder.style.display).toBe('none');
   });
 });

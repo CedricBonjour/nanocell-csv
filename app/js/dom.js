@@ -46,6 +46,31 @@ let build_dom = function () {
     if (s) s.scrollbarRefresh();
   };
 
+  dom.dialog.addEventListener('keydown', function (e) {
+    if (e.defaultPrevented || e.key !== 'Tab') return;
+    const selector = '.ui-list, .ui-num, .ui-bool-toggle, ui-bool, button:not([tabindex="-1"]), input:not([tabindex="-1"]), select:not([tabindex="-1"]), textarea:not([tabindex="-1"]), #closeDialog, [tabindex="0"]';
+    const all = Array.from(dom.dialog.querySelectorAll(selector));
+    const focusable = all.filter(el => {
+      if (el.disabled) return false;
+      if (el.style.display === 'none') return false;
+      if (el.closest && el.closest('.hidden')) return false;
+      return true;
+    }).filter((el, _, arr) => !arr.some(parent => parent !== el && parent.contains(el)));
+
+    if (focusable.length === 0) return;
+
+    e.preventDefault();
+    const active = document.activeElement;
+    const currentIndex = focusable.indexOf(active);
+    let nextIndex;
+    if (e.shiftKey) {
+      nextIndex = (currentIndex <= 0) ? focusable.length - 1 : currentIndex - 1;
+    } else {
+      nextIndex = (currentIndex === -1 || currentIndex >= focusable.length - 1) ? 0 : currentIndex + 1;
+    }
+    focusable[nextIndex].focus();
+  });
+
   dom.dialog.push = function (e, fullscreen = false, closeButton = true) {
     this.clear();
     if (typeof document !== 'undefined' && document.activeElement && typeof document.activeElement.blur === 'function') {
@@ -73,17 +98,18 @@ let build_dom = function () {
       const btn = document.createElement("span");
       btn.className = "icon";
       setIcon(btn, 'off');
-      btn.style.position = (fullscreen) ? "fixed" : "absolute";
       btn.setAttribute("title", "Close (Esc)");
       btn.setAttribute("aria-label", "Close");
       btn.setAttribute("id", "closeDialog");
       btn.setAttribute("role", "button");
+      btn.setAttribute("tabindex", "0");
       btn.addEventListener("click", function () { dom.dialog.clear() });
-      btn.style.cursor = "pointer";
-      btn.style.pointerEvents = "auto";
-      if (!fullscreen) {
-        btn.style.marginTop = ".5em";
-      }
+      btn.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          dom.dialog.clear();
+        }
+      });
       dom.dialog.appendChild(btn);
     }
   };

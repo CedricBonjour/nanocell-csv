@@ -179,7 +179,7 @@ export class SheetView {
     }
     else f.left.innerHTML = (this.sheet.x + 1) + ":" + (this.sheet.y + 1);
     f.right.innerHTML = this.sheet.df.width + ":" + this.sheet.df.height;
-    f.center.innerHTML = this.sheet.df.get(this.sheet.x, this.sheet.y).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('\n', '<br>').replaceAll(' ', '<span style="color:var(--dots, inherit)">&bull;</span>');
+    f.center.innerHTML = this.sheet.df.get(this.sheet.x, this.sheet.y).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('\n', '<br>').replaceAll(' ', '<span class="cell-space-dot">&bull;</span>');
     if (f.lock) {
       f.lock.src = (this.sheet.df.isSaved) ? "lock" : "edit";
       const lockTitle = this.sheet.df.isSaved ? "Saved file" : "Unsaved changes";

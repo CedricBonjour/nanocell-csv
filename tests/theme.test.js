@@ -108,13 +108,12 @@ describe('Theming & UI Settings Operations', () => {
     expect(dom.dialog.querySelector('h1').innerText).toBe('Settings');
   });
 
-  test('Settings pane close button (#closeDialog) has pointer-events: auto and closes dialog on click', () => {
+  test('Settings pane close button (#closeDialog) closes dialog on click', () => {
     Setting.show();
     expect(dom.dialog.children.length).toBeGreaterThan(0);
     const closeBtn = dom.dialog.querySelector('#closeDialog');
     expect(closeBtn).not.toBeNull();
-    expect(closeBtn.style.pointerEvents).toBe('auto');
-    expect(closeBtn.style.cursor).toBe('pointer');
+    expect(closeBtn.classList.contains('icon')).toBe(true);
 
     closeBtn.click();
     expect(dom.dialog.children.length).toBe(0);
@@ -284,10 +283,10 @@ describe('Theming & UI Settings Operations', () => {
     const path = await import('path');
     const cssContent = fs.readFileSync(path.resolve(__dirname, '../app/style.css'), 'utf-8');
 
-    expect(cssContent).toMatch(/--icon-size:\s*1\.25em;/);
-    expect(cssContent).toMatch(/\.icon\s*\{[^}]*height:\s*var\(--icon-size,\s*1\.25em\);/);
-    expect(cssContent).toMatch(/#footer\s+\.icon[\s\S]*?margin:\s*0\s+0\.3em\s+0\s+0\.8em;/);
-    expect(cssContent).toMatch(/#closeDialog\s*\{[^}]*height:\s*var\(--icon-size,\s*1\.25em\);/);
+    expect(cssContent).toMatch(/--icon-size:\s*24px;/);
+    expect(cssContent).toMatch(/\.icon\s*\{[^}]*height:\s*var\(--icon-size,\s*24px\);/);
+    expect(cssContent).toMatch(/#footer\s+\.icon[\s\S]*?margin:\s*0\s+4px\s+0\s+10px;/);
+    expect(cssContent).toMatch(/#closeDialog\s*\{[^}]*height:\s*var\(--icon-size,\s*24px\);/);
   });
 
   test('CommandPalette close button uses off.svg icon with proper accessibility', () => {

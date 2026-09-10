@@ -1,5 +1,6 @@
 import { dom } from './dom.js';
 import { StateManager } from './StateManager.js';
+import { setIcon } from './icons.js';
 import { BoolInput } from './ui/input/BoolInput.js';
 import { ListInput } from './ui/input/ListInput.js';
 import { NumInput } from './ui/input/NumInput.js';
@@ -81,6 +82,10 @@ class Setting {
       input = new NumInput(setting.dflt, setting.min, setting.max);
     } else if (typeof setting.dflt === "boolean") {
       input = new BoolInput();
+    }
+
+    if (input && typeof input.connectedCallback === 'function' && !input._initialized) {
+      input.connectedCallback();
     }
 
     if (input === undefined) {
@@ -189,13 +194,45 @@ class Setting {
     const footer = document.createElement("div");
     footer.classList.add("stg-footer");
     const b = document.createElement("button");
-    b.classList.add("btn-reset-settings");
-    b.innerText = "Reset to default settings";
+    b.className = "icon btn-reset-settings";
+    b.type = "button";
+    b.setAttribute("title", "Reset to default settings");
+    b.setAttribute("aria-label", "Reset to default settings");
+    setIcon(b, 'reset_settings');
     b.onclick = Setting.resetDefault;
     footer.appendChild(b);
 
     content.appendChild(body);
     content.appendChild(footer);
+
+    // Tab navigation looping across all focusable settings controls
+    content.addEventListener("keydown", (e) => {
+      if (e.key === "Tab") {
+        const dialog = dom?.dialog || content.parentElement || content;
+        const selector = '.ui-list, .ui-num, .ui-bool-toggle, ui-bool, button:not([tabindex="-1"]), input:not([tabindex="-1"]), select:not([tabindex="-1"]), textarea:not([tabindex="-1"]), #closeDialog, [tabindex="0"]';
+        const all = Array.from(dialog.querySelectorAll(selector));
+        const focusable = all.filter(el => {
+          if (el.disabled) return false;
+          if (el.style.display === 'none') return false;
+          if (el.closest && el.closest('.hidden')) return false;
+          return true;
+        }).filter((el, _, arr) => !arr.some(parent => parent !== el && parent.contains(el)));
+
+        if (focusable.length === 0) return;
+
+        e.preventDefault();
+        const active = document.activeElement;
+        const currentIndex = focusable.indexOf(active);
+        let nextIndex;
+        if (e.shiftKey) {
+          nextIndex = (currentIndex <= 0) ? focusable.length - 1 : currentIndex - 1;
+        } else {
+          nextIndex = (currentIndex === -1 || currentIndex >= focusable.length - 1) ? 0 : currentIndex + 1;
+        }
+        focusable[nextIndex].focus();
+      }
+    });
+
     dom.dialog.push(content, true);
 
     const firstInput = content.querySelector('.ui-list, .ui-num, .ui-bool-toggle');

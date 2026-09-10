@@ -1,4 +1,5 @@
 import { dom } from './dom.js';
+import { setIcon } from './icons.js';
 
 class About extends HTMLElement {
   constructor() {
@@ -16,39 +17,25 @@ class About extends HTMLElement {
     this.homeLink = document.createElement("a");
     this.bugLink = document.createElement("a");
     this.buttonBugReport = document.createElement("button");
+    this.buttonBugReport.className = "icon";
+    this.buttonBugReport.type = "button";
+    this.buttonBugReport.setAttribute("title", "Bug Report");
+    this.buttonBugReport.setAttribute("aria-label", "Bug Report");
+    setIcon(this.buttonBugReport, 'bug');
+    this.bugIcon = this.buttonBugReport;
     this.aboutFooter = document.createElement("div");
 
     this.titleEl.innerHTML = "Nanocell CSV Editor";
-    this.buttonBugReport.innerHTML = "Bug Report";
     this.logoEl.src = "/logo.svg";
+    this.logoEl.className = "about-logo";
     this.homeLink.href = "https://nanocell-csv.com/";
     this.homeLink.innerHTML = "https://nanocell-csv.com/";
     this.homeLink.target = "_blank";
+    this.homeLink.className = "about-home-link";
     this.bugLink.href = "https://github.com/CedricBonjour/nanocell-csv/issues/new";
     this.bugLink.target = "_blank";
-
-    this.logoEl.style.filter = "none";
-    this.logoEl.style.height = "auto";
-    this.logoEl.style.width = "10em";
-    this.logoEl.style.borderRadius = "0";
-
-    this.aboutFooter.style.position = "absolute";
-    this.aboutFooter.style.bottom = "3em";
-    this.aboutFooter.style.left = "0";
-    this.aboutFooter.style.width = "100%";
-    this.aboutFooter.style.display = "flex";
-    this.aboutFooter.style.flexDirection = "column";
-    this.aboutFooter.style.alignItems = "center";
-    this.aboutFooter.style.textAlign = "center";
-    this.aboutFooter.style.height = "7vh";
-    this.aboutFooter.style.justifyContent = "space-between";
-
-    this.bugLink.style.display = "flex";
-    this.bugLink.style.justifyContent = "center";
-    this.bugLink.style.textDecoration = "none";
-
-    this.homeLink.style.display = "block";
-    this.homeLink.style.textAlign = "center";
+    this.bugLink.className = "about-bug-link";
+    this.aboutFooter.className = "about-footer";
   }
 
   connectedCallback() {
@@ -56,12 +43,6 @@ class About extends HTMLElement {
     this._initialized = true;
 
     this.initElements();
-
-    this.style.display = "flex";
-    this.style.flexDirection = "column";
-    this.style.height = "100vh";
-    this.style.justifyContent = "center";
-    this.style.alignItems = "center";
 
     this.getVersion(e => { if (this.versionEl) this.versionEl.innerHTML = e; });
     this.appendChild(this.logoEl);

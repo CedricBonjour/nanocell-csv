@@ -39,8 +39,6 @@ class NumInput extends HTMLElement {
     this.appendChild(this.left);
     this.appendChild(this.center);
     this.appendChild(this.right);
-    this.style.display = "flex";
-    this.center.style.flexGrow = "2";
     this.left.addEventListener("click", () => { this.setValueInternal(this.value - 1, true); });
     this.right.addEventListener("click", () => { this.setValueInternal(this.value + 1, true); });
     this.setAttribute('tabindex', '0');

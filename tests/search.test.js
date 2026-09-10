@@ -171,9 +171,14 @@ describe('Finder Search & Replace Operations', () => {
     expect(finder.nextBtn.style.getPropertyValue('--icon-url')).toContain('url(');
     expect(finder.closeBtn.style.getPropertyValue('--icon-url')).toContain('url(');
 
-    // Verify replace buttons retain their text labels
-    expect(finder.replaceSingleBtn.innerText).toBe('Replace');
-    expect(finder.replaceBtn.innerText).toBe('Replace All');
+    // Verify replace single button is removed
+    expect(finder.replaceSingleBtn).toBeUndefined();
+    expect(finder.widget.querySelector('.replace-single-btn')).toBeNull();
+
+    // Verify replace all button is now an icon button using find_replace
+    expect(finder.replaceBtn.classList.contains('icon')).toBe(true);
+    expect(finder.replaceBtn.querySelector('svg')).toBeNull();
+    expect(finder.replaceBtn.style.getPropertyValue('--icon-url')).toContain('url(');
   });
 
   test('Finder Find and Replace rows have vertically aligned input starts and consistent structure', () => {
@@ -205,6 +210,108 @@ describe('Finder Search & Replace Operations', () => {
     const rightReplace = replaceRow.querySelector('.finder-btn-group');
     expect(rightFind).not.toBeNull();
     expect(rightReplace).not.toBeNull();
+    expect(rightReplace.children.length).toBe(1);
+    expect(rightReplace.firstElementChild).toBe(finder.replaceBtn);
+  });
+
+  test('Tab navigation in Finder loops across all controls when replace row is collapsed', () => {
+    document.body.appendChild(finder);
+    // Replace row is collapsed by default
+    expect(finder.replaceRow.classList.contains('hidden')).toBe(true);
+    const focusable = finder.getFocusableElements();
+    expect(focusable).toEqual([
+      finder.toggleBtn,
+      finder.findIn,
+      finder.caseBtn,
+      finder.prevBtn,
+      finder.nextBtn,
+      finder.closeBtn
+    ]);
+
+    // Focus first element and press Tab repeatedly
+    finder.toggleBtn.focus();
+    expect(document.activeElement).toBe(finder.toggleBtn);
+
+    const pressTab = (shift = false) => {
+      finder.widget.dispatchEvent(new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: shift,
+        bubbles: true,
+        cancelable: true
+      }));
+    };
+
+    pressTab(); // -> findIn
+    expect(document.activeElement).toBe(finder.findIn);
+
+    pressTab(); // -> caseBtn
+    expect(document.activeElement).toBe(finder.caseBtn);
+
+    pressTab(); // -> prevBtn
+    expect(document.activeElement).toBe(finder.prevBtn);
+
+    pressTab(); // -> nextBtn
+    expect(document.activeElement).toBe(finder.nextBtn);
+
+    pressTab(); // -> closeBtn
+    expect(document.activeElement).toBe(finder.closeBtn);
+
+    // Tab wraps to toggleBtn
+    pressTab();
+    expect(document.activeElement).toBe(finder.toggleBtn);
+
+    // Shift+Tab wraps back to closeBtn
+    pressTab(true);
+    expect(document.activeElement).toBe(finder.closeBtn);
+  });
+
+  test('Tab navigation in Finder loops across all controls including replace inputs when replace row is open', () => {
+    document.body.appendChild(finder);
+    finder.toggleReplaceRow(true);
+    expect(finder.replaceRow.classList.contains('hidden')).toBe(false);
+
+    const focusable = finder.getFocusableElements();
+    expect(focusable).toEqual([
+      finder.toggleBtn,
+      finder.findIn,
+      finder.caseBtn,
+      finder.prevBtn,
+      finder.nextBtn,
+      finder.closeBtn,
+      finder.replaceIn,
+      finder.replaceBtn
+    ]);
+
+    finder.closeBtn.focus();
+    expect(document.activeElement).toBe(finder.closeBtn);
+
+    const pressTab = (shift = false) => {
+      finder.widget.dispatchEvent(new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: shift,
+        bubbles: true,
+        cancelable: true
+      }));
+    };
+
+    pressTab(); // -> replaceIn
+    expect(document.activeElement).toBe(finder.replaceIn);
+
+    pressTab(); // -> replaceBtn
+    expect(document.activeElement).toBe(finder.replaceBtn);
+
+    // Tab wraps around to toggleBtn
+    pressTab();
+    expect(document.activeElement).toBe(finder.toggleBtn);
+
+    // Shift+Tab wraps back to replaceBtn
+    pressTab(true);
+    expect(document.activeElement).toBe(finder.replaceBtn);
+
+    // Closing replace row updates getFocusableElements and focus
+    finder.toggleReplaceRow(false);
+    expect(finder.getFocusableElements().length).toBe(6);
+    expect(document.activeElement).toBe(finder.findIn);
   });
 });
 

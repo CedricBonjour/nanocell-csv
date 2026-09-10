@@ -17,7 +17,6 @@ class ListInput extends HTMLElement {
     setIcon(this.left, 'arrow_left');
 
     this.center = document.createElement("section");
-    this.center.style.flexGrow = "2";
 
     this.right = document.createElement("button");
     this.right.className = "icon";
@@ -33,7 +32,6 @@ class ListInput extends HTMLElement {
     this._initialized = true;
 
     this.setAttribute('tabindex', 0);
-    this.style.display = "flex";
 
     this.appendChild(this.left);
     this.appendChild(this.center);

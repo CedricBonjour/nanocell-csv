@@ -19,6 +19,17 @@ for (const [path, url] of Object.entries(iconModules)) {
   iconMap.set(`/app/icn/${rel}`, url);
 }
 
+// Common semantic aliases
+if (iconMap.has('on')) {
+  iconMap.set('check', iconMap.get('on'));
+  iconMap.set('accept', iconMap.get('on'));
+}
+if (iconMap.has('off')) {
+  iconMap.set('cross', iconMap.get('off'));
+  iconMap.set('reject', iconMap.get('off'));
+  iconMap.set('close', iconMap.get('off'));
+}
+
 /**
  * Returns the resolved URL or data URI for an icon.
  * Supports names like 'edit', 'save', 'lock', as well as legacy paths like 'menu/save' or 'icn/edit.svg'.

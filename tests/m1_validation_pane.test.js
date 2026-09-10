@@ -174,4 +174,69 @@ describe('Milestone 1 — Validation Pane & Cell Focus Navigation Test Suite', (
       expect(df.get(1, 1)).toBe('Say "hello"');
     });
   });
+
+  describe('ValidationPane Button & Icon Standardization', () => {
+    test('Accept All and Reject All buttons follow the standard icon button system without raw inlined SVGs or text', () => {
+      pane.init();
+      const acceptAll = pane.querySelector('#validation-accept-all-btn');
+      const rejectAll = pane.querySelector('#validation-reject-all-btn');
+
+      expect(acceptAll).toBeDefined();
+      expect(rejectAll).toBeDefined();
+
+      // Must follow standard icon button class
+      expect(acceptAll.classList.contains('icon')).toBe(true);
+      expect(rejectAll.classList.contains('icon')).toBe(true);
+
+      // Must not use raw inline SVGs
+      expect(acceptAll.querySelector('svg')).toBeNull();
+      expect(rejectAll.querySelector('svg')).toBeNull();
+
+      // Must be icon-only buttons with accessibility labels and --icon-url
+      expect(acceptAll.textContent.trim()).toBe('');
+      expect(rejectAll.textContent.trim()).toBe('');
+      expect(acceptAll.getAttribute('title')).toBe('Accept all proposed edits');
+      expect(rejectAll.getAttribute('title')).toBe('Reject all proposed edits');
+      expect(acceptAll.style.getPropertyValue('--icon-url')).toContain('url(');
+      expect(rejectAll.style.getPropertyValue('--icon-url')).toContain('url(');
+    });
+
+    test('Item accept and reject buttons follow standard icon class with --icon-url and no raw inlined SVGs', () => {
+      const item = {
+        id: 'icon_test_1',
+        x: 0,
+        y: 1,
+        header: 'Header 1',
+        oldValue: ' 12,34 ',
+        newValue: '12,34',
+        category: 'WHITESPACE_TRIMMING',
+        categoryName: 'Whitespace/Trimming',
+        status: 'pending'
+      };
+
+      pane.loadItems([item]);
+      pane.show();
+
+      const acceptBtn = pane.querySelector('.item-accept-btn');
+      const rejectBtn = pane.querySelector('.item-reject-btn');
+
+      expect(acceptBtn).toBeDefined();
+      expect(rejectBtn).toBeDefined();
+
+      // Must use standard .icon and item classes
+      expect(acceptBtn.classList.contains('icon')).toBe(true);
+      expect(rejectBtn.classList.contains('icon')).toBe(true);
+      expect(acceptBtn.classList.contains('item-accept-btn')).toBe(true);
+      expect(rejectBtn.classList.contains('item-reject-btn')).toBe(true);
+
+      // Must not contain raw inline SVGs
+      expect(acceptBtn.querySelector('svg')).toBeNull();
+      expect(rejectBtn.querySelector('svg')).toBeNull();
+
+      // Must identify icon via data-icon
+      expect(acceptBtn.getAttribute('data-icon')).toBe('on');
+      expect(rejectBtn.getAttribute('data-icon')).toBe('off');
+    });
+  });
 });
+

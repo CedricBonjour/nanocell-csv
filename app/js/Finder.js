@@ -74,8 +74,7 @@ class Finder extends HTMLElement {
           <input type="text" class="finder-input replace-input" placeholder="Replace" aria-label="Replace term" />
         </div>
         <div class="finder-btn-group">
-          <button class="finder-btn replace-single-btn" type="button" title="Replace (Enter in replace input)">Replace</button>
-          <button class="finder-btn replace-all-btn" type="button" title="Replace All (Alt+A)">Replace All</button>
+          <button class="finder-action-icon-btn replace-all-btn icon" type="button" title="Replace All (Alt+A)" aria-label="Replace All"></button>
         </div>
       </div>
     `;
@@ -90,7 +89,6 @@ class Finder extends HTMLElement {
     this.nextBtn = this.widget.querySelector('.next-btn');
     this.closeBtn = this.widget.querySelector('.close-btn');
     this.replaceRow = this.widget.querySelector('.replace-row');
-    this.replaceSingleBtn = this.widget.querySelector('.replace-single-btn');
     this.replaceBtn = this.widget.querySelector('.replace-all-btn');
 
     // Apply icon system
@@ -99,6 +97,7 @@ class Finder extends HTMLElement {
     setIcon(this.prevBtn, 'arrow_up');
     setIcon(this.nextBtn, 'arrow_down');
     setIcon(this.closeBtn, 'off');
+    setIcon(this.replaceBtn, 'find_replace');
 
     this.caseInfo = document.createElement('span');
     this.caseInfo.innerHTML = "A = a";
@@ -106,9 +105,7 @@ class Finder extends HTMLElement {
     // Legacy table references for backwards compatibility
     this.table = new Table();
     this.listTable = new Table();
-    this.listTable.style.maxHeight = "20em";
-    this.listTable.classList.add("scroll");
-    this.listTable.style.margin = "1em";
+    this.listTable.classList.add("finder-list-table", "scroll");
     this.listTable.style.display = "none";
 
     this.appendChild(this.widget);
@@ -129,11 +126,6 @@ class Finder extends HTMLElement {
         } else {
           this.findNext();
         }
-      } else if (e.key === 'Tab') {
-        if (!this.replaceRow.classList.contains('hidden')) {
-          e.preventDefault();
-          this.replaceIn.focus();
-        }
       }
     });
 
@@ -143,14 +135,26 @@ class Finder extends HTMLElement {
         this.close();
       } else if (e.key === 'Enter') {
         e.preventDefault();
-        if (e.altKey || e.ctrlKey) {
-          this.replaceAll();
-        } else {
-          this.replace();
-        }
-      } else if (e.key === 'Tab') {
+        this.replaceAll();
+      }
+    });
+
+    // Tab navigation looping across all focusable pane controls based on replace visibility
+    this.widget.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        const focusable = this.getFocusableElements();
+        if (focusable.length === 0) return;
+
         e.preventDefault();
-        this.findIn.focus();
+        const active = document.activeElement;
+        const currentIndex = focusable.indexOf(active);
+        let nextIndex;
+        if (e.shiftKey) {
+          nextIndex = (currentIndex <= 0) ? focusable.length - 1 : currentIndex - 1;
+        } else {
+          nextIndex = (currentIndex === -1 || currentIndex >= focusable.length - 1) ? 0 : currentIndex + 1;
+        }
+        focusable[nextIndex].focus();
       }
     });
 
@@ -159,8 +163,22 @@ class Finder extends HTMLElement {
     this.prevBtn.addEventListener('click', () => { this.findPrev(); });
     this.nextBtn.addEventListener('click', () => { this.findNext(); });
     this.closeBtn.addEventListener('click', () => { this.close(); });
-    this.replaceSingleBtn.addEventListener('click', () => { this.replace(); });
     this.replaceBtn.addEventListener('click', () => { this.replaceAll(); });
+  }
+
+  getFocusableElements() {
+    const list = [
+      this.toggleBtn,
+      this.findIn,
+      this.caseBtn,
+      this.prevBtn,
+      this.nextBtn,
+      this.closeBtn
+    ];
+    if (this.replaceRow && !this.replaceRow.classList.contains('hidden')) {
+      list.push(this.replaceIn, this.replaceBtn);
+    }
+    return list.filter(el => el && !el.disabled && el.style.display !== 'none');
   }
 
   connectedCallback() {
@@ -180,6 +198,9 @@ class Finder extends HTMLElement {
       this.replaceRow.classList.add('hidden');
       this.toggleBtn.classList.remove('expanded');
       this.advanced = false;
+      if (document.activeElement === this.replaceIn || document.activeElement === this.replaceBtn) {
+        this.findIn.focus();
+      }
     }
   }
 

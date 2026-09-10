@@ -154,7 +154,11 @@ function buildMenu() {
     "undo", "redo", "fixTop", "sort", "sort_reverse", "transpose", "trim", "date", "integer", "decimal", "validate_headers", "validate_data",
     "", "find", "about", "settings", "shortcuts"];
   function buildMenuItem(item) {
-    if (item === "") return dom.header.appendChild(document.createElement("hr"));
+    if (item === "") {
+      const spacer = document.createElement("div");
+      spacer.className = "header-spacer grow";
+      return dom.header.appendChild(spacer);
+    }
     const c = cmd[item];
     const tooltip = getCommandTooltip(c, item);
     const icon = document.createElement("span");

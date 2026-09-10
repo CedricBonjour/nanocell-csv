@@ -224,19 +224,36 @@ describe('Settings Management & Input Components Test Suite', () => {
     if (!el._initialized && typeof el.connectedCallback === 'function') {
       el.connectedCallback();
     }
-    const aboutFooter = el.querySelector('div[style*="bottom"]');
+    const aboutFooter = el.querySelector('.about-footer');
     expect(aboutFooter).not.toBeNull();
-    expect(aboutFooter.style.alignItems).toBe('center');
-    expect(aboutFooter.style.textAlign).toBe('center');
+    expect(aboutFooter.classList.contains('about-footer')).toBe(true);
 
     const bugLink = aboutFooter.querySelector('a[href*="issues"]');
     expect(bugLink).not.toBeNull();
-    expect(bugLink.style.display).toBe('flex');
-    expect(bugLink.style.justifyContent).toBe('center');
+    expect(bugLink.classList.contains('about-bug-link')).toBe(true);
+
+    // Verify bug report button is a standard icon button using bug.svg
+    expect(el.buttonBugReport).not.toBeNull();
+    expect(el.buttonBugReport.classList.contains('icon')).toBe(true);
+    expect(el.buttonBugReport.querySelector('svg')).toBeNull();
+    expect(el.buttonBugReport.style.getPropertyValue('--icon-url')).toContain('url(');
+    expect(el.buttonBugReport.getAttribute('aria-label')).toBe('Bug Report');
 
     const homeLink = aboutFooter.querySelector('a[href*="nanocell-csv.com"]');
     expect(homeLink).not.toBeNull();
-    expect(homeLink.style.textAlign).toBe('center');
+    expect(homeLink.classList.contains('about-home-link')).toBe(true);
+  });
+
+  test('Reset to default settings button is a standard icon button using reset_settings.svg', () => {
+    dom.dialog.clear();
+    Setting.show();
+    const resetBtn = dom.dialog.querySelector('.btn-reset-settings');
+    expect(resetBtn).not.toBeNull();
+    expect(resetBtn.classList.contains('icon')).toBe(true);
+    expect(resetBtn.textContent.trim()).toBe('');
+    expect(resetBtn.getAttribute('title')).toBe('Reset to default settings');
+    expect(resetBtn.getAttribute('aria-label')).toBe('Reset to default settings');
+    expect(resetBtn.style.getPropertyValue('--icon-url')).toContain('url(');
   });
 
   test('Stepper buttons have tabindex="-1" to enable single-tab keyboard navigation across setting items', () => {
@@ -338,6 +355,60 @@ describe('Settings Management & Input Components Test Suite', () => {
     const label = row.querySelector('.setting-name');
     label.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     expect(focusCalled).toBe(true);
+  });
+
+  test('Tab navigation in Settings dialog loops across all setting inputs, reset button, and close button', () => {
+    Setting.show();
+
+    const selector = '.ui-list, .ui-num, .ui-bool-toggle, ui-bool, button:not([tabindex="-1"]), input:not([tabindex="-1"]), select:not([tabindex="-1"]), textarea:not([tabindex="-1"]), #closeDialog, [tabindex="0"]';
+    const all = Array.from(dom.dialog.querySelectorAll(selector));
+    const focusable = all.filter(el => {
+      if (el.disabled) return false;
+      if (el.style.display === 'none') return false;
+      if (el.closest && el.closest('.hidden')) return false;
+      return true;
+    }).filter((el, _, arr) => !arr.some(parent => parent !== el && parent.contains(el)));
+
+    expect(focusable.length).toBeGreaterThan(5);
+    const firstInput = focusable[0];
+    const lastEl = focusable[focusable.length - 1];
+    const resetBtn = dom.dialog.querySelector('.btn-reset-settings');
+    const closeBtn = dom.dialog.querySelector('#closeDialog');
+
+    expect(resetBtn).not.toBeNull();
+    expect(closeBtn).not.toBeNull();
+    expect(lastEl).toBe(closeBtn);
+
+    const pressTab = (fromEl, shift = false) => {
+      fromEl.dispatchEvent(new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: shift,
+        bubbles: true,
+        cancelable: true
+      }));
+    };
+
+    // Focus first input and Tab to second
+    firstInput.focus();
+    expect(document.activeElement).toBe(firstInput);
+
+    pressTab(firstInput);
+    expect(document.activeElement).toBe(focusable[1]);
+
+    // Focus last element (close button) and Tab wraps to first input
+    lastEl.focus();
+    expect(document.activeElement).toBe(lastEl);
+
+    pressTab(lastEl);
+    expect(document.activeElement).toBe(firstInput);
+
+    // Shift+Tab on first input wraps to last element (close button)
+    pressTab(firstInput, true);
+    expect(document.activeElement).toBe(lastEl);
+
+    // Shift+Tab on close button moves backward to reset button
+    pressTab(lastEl, true);
+    expect(document.activeElement).toBe(resetBtn);
   });
 });
 

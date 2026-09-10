@@ -1,7 +1,4 @@
-import { dom } from './dom.js';
-import { StateManager } from './StateManager.js';
-
-const getDom = () => StateManager.getState('dom') || dom || (typeof document !== 'undefined' && document.getElementById('dialog') ? { dialog: document.getElementById('dialog') } : null);
+import { setIcon } from './icons.js';
 
 class Msg extends HTMLElement {
   constructor(txt = "Empty message", opt = {}) {
@@ -14,12 +11,25 @@ class Msg extends HTMLElement {
     this.content.innerHTML = txt;
 
     this.ok = document.createElement("button");
-    this.ok.className = "ui-msg-btn ui-msg-ok";
-    this.ok.innerHTML = this.opt.okText || "OK";
+    this.ok.className = "icon ui-msg-btn ui-msg-ok";
+    this.ok.type = "button";
+    this.ok.setAttribute("title", this.opt.okText || "OK");
+    this.ok.setAttribute("aria-label", this.opt.okText || "OK");
+    setIcon(this.ok, 'on');
 
     this.cancel = document.createElement("button");
-    this.cancel.className = "ui-msg-btn ui-msg-cancel";
-    this.cancel.innerHTML = this.opt.cancelText || "Cancel";
+    this.cancel.className = "icon ui-msg-btn ui-msg-cancel";
+    this.cancel.type = "button";
+    this.cancel.setAttribute("title", this.opt.cancelText || "Cancel");
+    this.cancel.setAttribute("aria-label", this.opt.cancelText || "Cancel");
+    setIcon(this.cancel, 'off');
+
+    this.closeBtn = document.createElement('button');
+    this.closeBtn.className = 'icon ui-toast-close-btn';
+    this.closeBtn.type = 'button';
+    this.closeBtn.setAttribute('title', 'Close notification');
+    this.closeBtn.setAttribute('aria-label', 'Close notification');
+    setIcon(this.closeBtn, 'off');
 
     this.ok.onclick = () => {
       if (this.opt.cbt) this.opt.cbt();
@@ -31,22 +41,57 @@ class Msg extends HTMLElement {
       this.dismiss();
     };
 
+    this.closeBtn.onclick = () => {
+      if (this.opt.cbf) this.opt.cbf();
+      this.dismiss();
+    };
+
+    const getFocusableButtons = () => {
+      const btns = [];
+      if (this.cancel && this.cancel.parentNode) btns.push(this.cancel);
+      if (this.ok && this.ok.parentNode) btns.push(this.ok);
+      if (this.closeBtn && this.closeBtn.parentNode) btns.push(this.closeBtn);
+      return btns;
+    };
+
+    const cycleFocus = (e, currentBtn) => {
+      const focusable = getFocusableButtons();
+      if (focusable.length <= 1) return;
+      e.preventDefault();
+      const idx = focusable.indexOf(currentBtn);
+      let nextIdx;
+      if (e.shiftKey) {
+        nextIdx = (idx <= 0) ? focusable.length - 1 : idx - 1;
+      } else {
+        nextIdx = (idx === -1 || idx >= focusable.length - 1) ? 0 : idx + 1;
+      }
+      focusable[nextIdx].focus();
+    };
+
     this.ok.addEventListener('keydown', (e) => {
       const k = e.key.toUpperCase();
-      if (k === "TAB" || k === "ARROWLEFT" || k === "ARROWRIGHT") {
+      if (k === "TAB") {
+        cycleFocus(e, this.ok);
+      } else if (k === "ARROWLEFT" || k === "ARROWRIGHT") {
         if (this.opt.id === 3 && this.cancel.parentNode) {
           e.preventDefault();
           this.cancel.focus();
         }
       } else if (k === "ESCAPE") {
         e.preventDefault();
-        this.cancel.click();
+        if (this.cancel.parentNode) {
+          this.cancel.click();
+        } else {
+          this.dismiss();
+        }
       }
     });
 
     this.cancel.addEventListener('keydown', (e) => {
       const k = e.key.toUpperCase();
-      if (k === "TAB" || k === "ARROWLEFT" || k === "ARROWRIGHT") {
+      if (k === "TAB") {
+        cycleFocus(e, this.cancel);
+      } else if (k === "ARROWLEFT" || k === "ARROWRIGHT") {
         if (this.ok.parentNode) {
           e.preventDefault();
           this.ok.focus();
@@ -54,6 +99,16 @@ class Msg extends HTMLElement {
       } else if (k === "ESCAPE") {
         e.preventDefault();
         this.cancel.click();
+      }
+    });
+
+    this.closeBtn.addEventListener('keydown', (e) => {
+      const k = e.key.toUpperCase();
+      if (k === "TAB") {
+        cycleFocus(e, this.closeBtn);
+      } else if (k === "ESCAPE") {
+        e.preventDefault();
+        this.closeBtn.click();
       }
     });
   }
@@ -109,17 +164,8 @@ class Msg extends HTMLElement {
       bodyDiv.appendChild(actionsDiv);
     }
 
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'ui-toast-close-btn';
-    closeBtn.setAttribute('aria-label', 'Close notification');
-    closeBtn.innerHTML = `<svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M3.72 3.72a.75.75 0 011.06 0L8 6.94l3.22-3.22a.75.75 0 111.06 1.06L9.06 8l3.22 3.22a.75.75 0 11-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 01-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 010-1.06z"/></svg>`;
-    closeBtn.onclick = () => {
-      if (this.opt.cbf) this.opt.cbf();
-      this.dismiss();
-    };
-
     this.appendChild(bodyDiv);
-    this.appendChild(closeBtn);
+    this.appendChild(this.closeBtn);
 
     if (this.opt.t) {
       const timeout = Number(this.opt.t) || 2000;
@@ -154,19 +200,6 @@ class Msg extends HTMLElement {
     }, 150);
   }
 
-  getIconSvg(type) {
-    switch (type) {
-      case 'success':
-        return `<svg viewBox="0 0 16 16" width="16" height="16"><path fill="currentColor" d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"/></svg>`;
-      case 'warning':
-        return `<svg viewBox="0 0 16 16" width="16" height="16"><path fill="currentColor" d="M8.22 1.754a1 1 0 00-1.44 0L.43 10.89A1 1 0 001.15 12.5h13.7a1 1 0 00.72-1.61L8.22 1.754zM8 5a.75.75 0 01.75.75v2.5a.75.75 0 01-1.5 0v-2.5A.75.75 0 018 5zm0 6a1 1 0 100-2 1 1 0 000 2z"/></svg>`;
-      case 'error':
-        return `<svg viewBox="0 0 16 16" width="16" height="16"><path fill="currentColor" d="M3.72 3.72a.75.75 0 011.06 0L8 6.94l3.22-3.22a.75.75 0 111.06 1.06L9.06 8l3.22 3.22a.75.75 0 11-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 01-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 010-1.06z"/></svg>`;
-      default: // info
-        return `<svg viewBox="0 0 16 16" width="16" height="16"><path fill="currentColor" d="M8 1.5a6.5 6.5 0 100 13 6.5 6.5 0 000-13zM0 8a8 8 0 1116 0A8 8 0 010 8zm6.5-2a1 1 0 112 0 1 1 0 01-2 0zM7 7.75a.75.75 0 011.5 0v3.5a.75.75 0 01-1.5 0v-3.5z"/></svg>`;
-    }
-  }
-
   static quick(txt) { const m = new Msg(txt, { id: 0, t: 1500, type: 'info' }); return m.show(); }
   static long(txt) { const m = new Msg(txt, { id: 1, t: 3500, type: 'info' }); return m.show(); }
   static confirm(txt, cb) { const m = new Msg(txt, { id: 2, cbt: cb, type: 'info' }); return m.show(); }
@@ -183,5 +216,3 @@ if (!customElements.get('ui-msg')) {
 }
 
 export { Msg };
-
-

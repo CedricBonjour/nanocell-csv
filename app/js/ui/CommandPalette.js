@@ -76,17 +76,17 @@ class CommandPalette extends HTMLElement {
     this.setAttribute('aria-modal', 'true');
 
     this.innerHTML = `
-      <div class="cmd_palette_backdrop palette-backdrop" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: var(--modal-backdrop, rgba(0,0,0,0.5)); z-index: 9999;"></div>
-      <div class="cmd_palette_modal palette-container" style="position: fixed; top: 15%; left: 50%; transform: translateX(-50%); width: 500px; max-width: 90vw; background-color: var(--modal-bg, #ffffff); color: var(--txt, #333333); border: 1px solid var(--table-borders, #ccc); border-radius: 8px; box-shadow: var(--shadow-lg, 0 10px 25px rgba(0,0,0,0.3)); z-index: 10000; font-family: var(--font-family-ui, sans-serif); overflow: hidden; display: flex; flex-direction: column;">
-        <div class="cmd_palette_header" style="display: flex; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--table-borders, #ccc);">
-          <input type="text" class="cmd_palette_input palette-input" placeholder="Type a command or search..." style="flex: 1; border: none; background: transparent; color: inherit; font-size: 14px; font-family: var(--font-family-ui, sans-serif); outline: none; margin: 0; padding: 4px 8px; box-sizing: border-box;" autofocus />
-          <span class="cmd_palette_close icon" role="button" title="Close (Esc)" aria-label="Close" style="cursor: pointer;"></span>
+      <div class="cmd_palette_backdrop palette-backdrop"></div>
+      <div class="cmd_palette_modal palette-container">
+        <div class="cmd_palette_header">
+          <input type="text" class="cmd_palette_input palette-input" placeholder="Type a command or search..." autofocus />
+          <span class="cmd_palette_close icon" role="button" title="Close (Esc)" aria-label="Close"></span>
         </div>
-        <ul class="cmd_palette_list command-list" role="listbox" style="max-height: 320px; overflow-y: auto; margin: 0; padding: 4px 0; list-style: none;"></ul>
-        <div class="cmd_palette_footer" style="display: flex; justify-content: space-around; padding: 8px 16px; border-top: 1px solid var(--table-borders, #ccc); font-size: 11px; color: var(--grey, #666); background-color: var(--fh-bg, #f5f5f5);">
-          <span><kbd style="font-family: var(--font-family-mono, monospace); background: var(--btn-bg, #eee); border: 1px solid var(--btn-border, #ccc); border-radius: 3px; padding: 1px 4px;">&uarr;</kbd><kbd style="font-family: var(--font-family-mono, monospace); background: var(--btn-bg, #eee); border: 1px solid var(--btn-border, #ccc); border-radius: 3px; padding: 1px 4px;">&darr;</kbd> Navigate</span>
-          <span><kbd style="font-family: var(--font-family-mono, monospace); background: var(--btn-bg, #eee); border: 1px solid var(--btn-border, #ccc); border-radius: 3px; padding: 1px 4px;">&crarr;</kbd> Select</span>
-          <span><kbd style="font-family: var(--font-family-mono, monospace); background: var(--btn-bg, #eee); border: 1px solid var(--btn-border, #ccc); border-radius: 3px; padding: 1px 4px;">Esc</kbd> Dismiss</span>
+        <ul class="cmd_palette_list command-list" role="listbox"></ul>
+        <div class="cmd_palette_footer">
+          <span><kbd>&uarr;</kbd><kbd>&darr;</kbd> Navigate</span>
+          <span><kbd>&crarr;</kbd> Select</span>
+          <span><kbd>Esc</kbd> Dismiss</span>
         </div>
       </div>
     `;

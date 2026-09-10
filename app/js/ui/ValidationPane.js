@@ -1,4 +1,5 @@
 import { StateManager } from '../StateManager.js';
+import { setIcon } from '../icons.js';
 
 /**
  * Custom Element `<ui-validation-pane>` for virtualized rendering of proposed cell validation edits,
@@ -38,21 +39,15 @@ class ValidationPane extends HTMLElement {
 
     this.innerHTML = `
       <div class="validation-pane-header">
-        <span id="validation-count-badge" style="display: none;">0</span>
+        <span id="validation-count-badge">0</span>
         <div class="validation-pane-action-bar">
-          <button class="btn-ok validation-btn validation-action-btn accept-all-btn g" id="validation-accept-all-btn" title="Accept all proposed edits">
-            <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3.5 8.5 6.5 11.5 12.5 4.5"/></svg>
-            <span>Accept All</span>
-          </button>
-          <button class="btn-ko validation-btn validation-action-btn reject-all-btn g" id="validation-reject-all-btn" title="Reject all proposed edits">
-            <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg>
-            <span>Reject All</span>
-          </button>
+          <button class="icon validation-btn accept-all-btn" id="validation-accept-all-btn" type="button" title="Accept all proposed edits" aria-label="Accept all proposed edits"></button>
+          <button class="icon validation-btn reject-all-btn" id="validation-reject-all-btn" type="button" title="Reject all proposed edits" aria-label="Reject all proposed edits"></button>
         </div>
       </div>
       <div class="validation-pane-content scroll" id="validation-list-container">
-        <div class="validation-virtual-spacer" id="validation-virtual-spacer" style="position: relative; width: 100%;">
-          <div class="validation-virtual-content" id="validation-virtual-content" style="position: absolute; top: 0; left: 0; right: 0; will-change: transform;"></div>
+        <div class="validation-virtual-spacer" id="validation-virtual-spacer">
+          <div class="validation-virtual-content" id="validation-virtual-content"></div>
         </div>
         <div class="validation-empty-state" id="validation-empty-state">No validation issues found.</div>
       </div>
@@ -66,6 +61,13 @@ class ValidationPane extends HTMLElement {
     this.closeBtn = this.querySelector('#validation-close-btn');
     this.acceptAllBtn = this.querySelector('#validation-accept-all-btn');
     this.rejectAllBtn = this.querySelector('#validation-reject-all-btn');
+
+    if (this.acceptAllBtn) {
+      setIcon(this.acceptAllBtn, 'done_all');
+    }
+    if (this.rejectAllBtn) {
+      setIcon(this.rejectAllBtn, 'exit');
+    }
 
     if (this.closeBtn) {
       this.closeBtn.addEventListener('click', () => this.close());
@@ -418,12 +420,8 @@ class ValidationPane extends HTMLElement {
               <span class="diff-new" title="${this.escapeHtml(item.newValue)}">${this.formatVal(item.newValue)}</span>
             </div>
             <div class="validation-item-actions">
-              <button class="btn-ok validation-btn item-accept-btn" title="Accept edit" aria-label="Accept edit">
-                <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3.5 8.5 6.5 11.5 12.5 4.5"/></svg>
-              </button>
-              <button class="btn-ko validation-btn item-reject-btn" title="Reject edit" aria-label="Reject edit">
-                <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg>
-              </button>
+              <button class="icon validation-btn item-accept-btn" type="button" title="Accept edit" aria-label="Accept edit" data-icon="on"></button>
+              <button class="icon validation-btn item-reject-btn" type="button" title="Reject edit" aria-label="Reject edit" data-icon="off"></button>
             </div>
           </div>
         `;

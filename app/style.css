@@ -460,9 +460,6 @@ body {
   top: 0;
   bottom: 0;
   width: 100%;
-  transition:
-    background-color 0.2s ease,
-    color 0.2s ease;
   display: flex;
   flex-flow: column;
 }
@@ -476,7 +473,6 @@ header {
   user-select: none;
   -webkit-user-select: none;
   caret-color: transparent;
-  transition: background-color 0.2s ease;
 }
 
 footer {
@@ -486,9 +482,7 @@ footer {
   background-color: var(--fh-bg);
   color: var(--fh-txt);
   user-select: none;
-  transition:
-    background-color 0.2s ease,
-    color 0.2s ease;
+
 }
 
 #footer,
@@ -552,9 +546,7 @@ section {
   display: none;
   flex-direction: column;
   z-index: 10;
-  transition:
-    transform 0.25s ease,
-    opacity 0.25s ease;
+
 }
 
 .ui-validation-pane.open {
@@ -600,9 +592,6 @@ section {
   font-size: 16px;
   cursor: pointer;
   border-radius: 4px;
-  transition:
-    color 0.15s ease,
-    background-color 0.15s ease;
   margin-left: 2px;
 }
 
@@ -634,9 +623,6 @@ section {
   padding: 4px 10px;
   margin-bottom: 4px;
   cursor: pointer;
-  transition:
-    border-color 0.15s ease,
-    background-color 0.15s ease;
   height: 40px;
   box-sizing: border-box;
   display: flex;
@@ -714,10 +700,7 @@ section {
   -webkit-user-select: none;
   caret-color: transparent;
   position: relative;
-  transition:
-    background-color 0.15s ease,
-    transform 0.15s ease,
-    opacity 0.15s ease;
+
 }
 
 .icon::before {
@@ -735,7 +718,6 @@ section {
   -webkit-mask-size: contain;
   mask-size: contain;
   mask-mode: alpha;
-  transition: background-color 0.15s ease;
   pointer-events: none;
 }
 
@@ -805,10 +787,7 @@ img {
   -webkit-user-select: none;
   caret-color: transparent;
   opacity: var(--icon-opacity, 1);
-  transition:
-    background-color 0.15s ease,
-    transform 0.15s ease,
-    opacity 0.15s ease;
+
 }
 
 header img:hover,
@@ -907,7 +886,6 @@ ui-sheet,
   background-color: var(--body-bg);
   padding: 0;
   font-weight: normal;
-  transition: background-color 0.1s ease;
 }
 
 .sheet .tHeader {
@@ -1023,10 +1001,7 @@ textarea,
   height: 1.8em;
   margin: 0.3em;
   font-size: inherit;
-  transition:
-    border-color 0.15s ease,
-    background-color 0.15s ease,
-    box-shadow 0.15s ease;
+
 }
 
 input:focus {
@@ -1054,7 +1029,6 @@ button {
   justify-content: center;
   margin: 0.3em;
   padding: 0.4em 0.4em;
-  transition: all 0.15s ease;
   cursor: pointer;
   min-width: 28px;
   min-height: 28px;
@@ -1174,7 +1148,6 @@ ui-cmenu table {
 
 ui-cmenu tr {
   cursor: pointer;
-  transition: background-color 0.12s ease;
 }
 
 ui-cmenu tr:hover {
@@ -1340,7 +1313,6 @@ ui-command-palette {
   cursor: pointer;
   font-size: 13px;
   border-left: 3px solid transparent;
-  transition: background-color 0.1s ease, border-color 0.1s ease;
 }
 
 .cmd_palette_item:hover,
@@ -1403,17 +1375,14 @@ ui-finder.visible {
   border: 1px solid var(--table-borders);
   border-radius: 8px;
   box-shadow: var(--shadow-lg);
-  padding: 6px;
+  padding: 6px 8px;
   font-family: var(--font-family-ui);
   width: 360px;
   max-width: 90vw;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   user-select: none;
-  transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease;
 }
 
 .finder-row {
@@ -1427,8 +1396,44 @@ ui-finder.visible {
   display: none !important;
 }
 
+.finder-row-spacer {
+  box-sizing: border-box;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+}
 
-.finder-toggle-btn.expanded .caret-icon {
+.finder-toggle-btn.icon {
+  box-sizing: border-box;
+  width: 24px;
+  height: 24px;
+  padding: 2px;
+  margin: 0;
+  flex-shrink: 0;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background-color: transparent;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.finder-toggle-btn.icon:hover {
+  background-color: var(--icon-hover-bg);
+}
+
+.finder-toggle-btn.icon:focus-visible {
+  outline: none;
+  border-color: var(--active);
+  box-shadow: 0 0 0 2px var(--btn-focus-ring, var(--active));
+}
+
+.finder-toggle-btn.icon::before {
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.finder-toggle-btn.expanded::before {
   transform: rotate(90deg);
 }
 
@@ -1444,7 +1449,7 @@ ui-finder.visible {
   width: 100%;
   height: 28px;
   box-sizing: border-box;
-  padding: 2px 55px 2px 8px;
+  padding: 2px 70px 2px 8px;
   font-family: var(--font-family-mono);
   font-size: 12px;
   background-color: var(--input-bg-out);
@@ -1461,8 +1466,8 @@ ui-finder.visible {
 
 .finder-input:focus {
   background-color: var(--input-bg);
-  border-color: var(--blue);
-  box-shadow: 0 0 0 2px var(--btn-focus-ring);
+  border-color: var(--active);
+  box-shadow: 0 0 0 2px var(--btn-focus-ring, var(--active));
 }
 
 .replace-input {
@@ -1471,12 +1476,12 @@ ui-finder.visible {
 
 .finder-count-badge {
   position: absolute;
-  right: 6px;
+  right: 8px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 10px;
+  font-size: 11px;
   font-family: var(--font-family-mono);
-  color: var(--grey);
+  color: var(--txt-soft, var(--grey));
   pointer-events: none;
   white-space: nowrap;
 }
@@ -1484,27 +1489,91 @@ ui-finder.visible {
 .finder-btn-group {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  gap: 4px;
   flex-shrink: 0;
 }
 
-.finder-action-icon-btn.case-btn {
-  font-family: var(--font-family-mono);
-  font-weight: bold;
-  font-size: 11px;
-  color: var(--grey);
+.finder-action-icon-btn.icon {
+  box-sizing: border-box;
+  width: 24px;
+  height: 24px;
+  padding: 3px;
+  margin: 0;
+  flex-shrink: 0;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background-color: transparent;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
-.finder-action-icon-btn.case-btn:hover {
-  color: var(--txt);
-  background-color: var(--btn-hover);
+.finder-action-icon-btn.icon:hover {
+  background-color: var(--icon-hover-bg);
+}
+
+.finder-action-icon-btn.icon:focus-visible {
+  outline: none;
+  border-color: var(--active);
+  box-shadow: 0 0 0 2px var(--btn-focus-ring, var(--active));
+}
+
+.finder-action-icon-btn.prev-btn.fallback-icon::before {
+  transform: rotate(-90deg);
+}
+
+.finder-action-icon-btn.next-btn.fallback-icon::before {
+  transform: rotate(90deg);
+}
+
+.finder-action-icon-btn.case-btn.icon {
+  user-select: none;
 }
 
 .finder-action-icon-btn.case-btn.active,
 .finder-action-icon-btn.case-btn[aria-pressed="true"] {
-  background-color: var(--blue);
-  color: #ffffff;
-  border-color: var(--blue);
+  background-color: var(--active);
+  border-color: var(--active);
+}
+
+.finder-action-icon-btn.case-btn.active::before,
+.finder-action-icon-btn.case-btn[aria-pressed="true"]::before {
+  background-color: var(--white, #ffffff) !important;
+}
+
+.finder-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 26px;
+  padding: 2px 8px;
+  background-color: var(--btn-bg);
+  color: var(--btn-txt);
+  border: 1px solid var(--btn-border);
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: var(--font-family-ui);
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+.finder-btn:hover {
+  background-color: var(--btn-hover);
+  border-color: var(--active);
+  color: var(--active);
+}
+
+.finder-btn:active {
+  background-color: var(--btn-active, var(--bg1));
+  transform: scale(0.97);
+}
+
+.finder-btn:focus-visible {
+  outline: none;
+  border-color: var(--active);
+  box-shadow: 0 0 0 2px var(--btn-focus-ring, var(--active));
 }
 
 

@@ -2,6 +2,7 @@ import { dom } from './dom.js';
 import { StateManager } from './StateManager.js';
 import { Table } from './ui/input/Table.js';
 import { BoolInput } from './ui/input/BoolInput.js';
+import { setIcon, iconMap } from './icons.js';
 
 
 class Finder extends HTMLElement {
@@ -52,11 +53,7 @@ class Finder extends HTMLElement {
     this.widget.className = 'finder-widget floating-panel';
     this.widget.innerHTML = `
       <div class="finder-row find-row">
-        <button class="finder-toggle-btn" title="Toggle Replace (Ctrl+Shift+F)" aria-label="Toggle Replace">
-          <svg class="finder-icon caret-icon" viewBox="0 0 16 16" width="12" height="12">
-            <path fill="currentColor" d="M6 4l4 4-4 4V4z"/>
-          </svg>
-        </button>
+        <button class="finder-toggle-btn icon" type="button" title="Toggle Replace (Ctrl+Shift+F)" aria-label="Toggle Replace"></button>
 
         <div class="finder-input-wrapper">
           <input type="text" class="finder-input find-input" placeholder="Find" aria-label="Find term" />
@@ -64,32 +61,21 @@ class Finder extends HTMLElement {
         </div>
 
         <div class="finder-btn-group">
-          <button class="finder-action-icon-btn case-btn" title="Match Case (Alt+C)" aria-pressed="false">Aa</button>
-          <button class="finder-action-icon-btn prev-btn" title="Previous Match (Shift+Enter)" aria-label="Previous Match">
-            <svg class="finder-icon" viewBox="0 0 16 16" width="14" height="14">
-              <path fill="currentColor" d="M8 4.5l-5 5h10l-5-5z"/>
-            </svg>
-          </button>
-          <button class="finder-action-icon-btn next-btn" title="Next Match (Enter)" aria-label="Next Match">
-            <svg class="finder-icon" viewBox="0 0 16 16" width="14" height="14">
-              <path fill="currentColor" d="M8 11.5l5-5H3l5 5z"/>
-            </svg>
-          </button>
-          <button class="finder-action-icon-btn close-btn" title="Close (Escape)" aria-label="Close">
-            <svg class="finder-icon" viewBox="0 0 16 16" width="14" height="14">
-              <path fill="currentColor" d="M4.646 4.646a.5.5 0 01.708 0L8 7.293l2.646-2.647a.5.5 0 01.708.708L8.707 8l2.647 2.646a.5.5 0 01-.708.708L8 8.707l-2.646 2.647a.5.5 0 01-.708-.708L7.293 8 4.646 5.354a.5.5 0 010-.708z"/>
-            </svg>
-          </button>
+          <button class="finder-action-icon-btn case-btn icon" type="button" title="Match Case (Alt+C)" aria-label="Match Case" aria-pressed="false"></button>
+          <button class="finder-action-icon-btn prev-btn icon" type="button" title="Previous Match (Shift+Enter)" aria-label="Previous Match"></button>
+          <button class="finder-action-icon-btn next-btn icon" type="button" title="Next Match (Enter)" aria-label="Next Match"></button>
+          <button class="finder-action-icon-btn close-btn icon" type="button" title="Close (Escape)" aria-label="Close"></button>
         </div>
       </div>
 
       <div class="finder-row replace-row hidden">
+        <div class="finder-row-spacer"></div>
         <div class="finder-input-wrapper">
           <input type="text" class="finder-input replace-input" placeholder="Replace" aria-label="Replace term" />
         </div>
         <div class="finder-btn-group">
-          <button class="finder-btn replace-single-btn" title="Replace (Enter in replace input)">Replace</button>
-          <button class="finder-btn replace-all-btn" title="Replace All (Alt+A)">Replace All</button>
+          <button class="finder-btn replace-single-btn" type="button" title="Replace (Enter in replace input)">Replace</button>
+          <button class="finder-btn replace-all-btn" type="button" title="Replace All (Alt+A)">Replace All</button>
         </div>
       </div>
     `;
@@ -106,6 +92,13 @@ class Finder extends HTMLElement {
     this.replaceRow = this.widget.querySelector('.replace-row');
     this.replaceSingleBtn = this.widget.querySelector('.replace-single-btn');
     this.replaceBtn = this.widget.querySelector('.replace-all-btn');
+
+    // Apply icon system
+    setIcon(this.toggleBtn, 'arrow_right');
+    setIcon(this.caseBtn, 'match_case');
+    setIcon(this.prevBtn, 'arrow_up');
+    setIcon(this.nextBtn, 'arrow_down');
+    setIcon(this.closeBtn, 'off');
 
     this.caseInfo = document.createElement('span');
     this.caseInfo.innerHTML = "A = a";

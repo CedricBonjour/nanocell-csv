@@ -42,7 +42,7 @@ export default defineConfig(({ command }) => ({
       // ENABLE PWA IN DEV MODE
       devOptions: {
         enabled: true,
-        type: 'module',
+        type: 'module'
       },
 
       manifest: {

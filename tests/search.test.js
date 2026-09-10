@@ -149,4 +149,62 @@ describe('Finder Search & Replace Operations', () => {
     expect(finder.findIn.value).toBe('Cherry');
     expect(finder.found.length).toBe(2);
   });
+
+  test('Finder pane buttons use the unified icon system without inline SVG elements', () => {
+    expect(finder.toggleBtn.classList.contains('icon')).toBe(true);
+    expect(finder.caseBtn.classList.contains('icon')).toBe(true);
+    expect(finder.prevBtn.classList.contains('icon')).toBe(true);
+    expect(finder.nextBtn.classList.contains('icon')).toBe(true);
+    expect(finder.closeBtn.classList.contains('icon')).toBe(true);
+
+    // No inline <svg> inside the buttons
+    expect(finder.toggleBtn.querySelector('svg')).toBeNull();
+    expect(finder.caseBtn.querySelector('svg')).toBeNull();
+    expect(finder.prevBtn.querySelector('svg')).toBeNull();
+    expect(finder.nextBtn.querySelector('svg')).toBeNull();
+    expect(finder.closeBtn.querySelector('svg')).toBeNull();
+
+    // Verify --icon-url CSS property is configured on icon buttons
+    expect(finder.toggleBtn.style.getPropertyValue('--icon-url')).toContain('url(');
+    expect(finder.caseBtn.style.getPropertyValue('--icon-url')).toContain('url(');
+    expect(finder.prevBtn.style.getPropertyValue('--icon-url')).toContain('url(');
+    expect(finder.nextBtn.style.getPropertyValue('--icon-url')).toContain('url(');
+    expect(finder.closeBtn.style.getPropertyValue('--icon-url')).toContain('url(');
+
+    // Verify replace buttons retain their text labels
+    expect(finder.replaceSingleBtn.innerText).toBe('Replace');
+    expect(finder.replaceBtn.innerText).toBe('Replace All');
+  });
+
+  test('Finder Find and Replace rows have vertically aligned input starts and consistent structure', () => {
+    const findRow = finder.widget.querySelector('.find-row');
+    const replaceRow = finder.widget.querySelector('.replace-row');
+
+    // Both rows must exist
+    expect(findRow).not.toBeNull();
+    expect(replaceRow).not.toBeNull();
+
+    // Left column: toggle button in find-row, spacer in replace-row
+    const leftFind = findRow.firstElementChild;
+    const leftReplace = replaceRow.firstElementChild;
+    expect(leftFind.classList.contains('finder-toggle-btn')).toBe(true);
+    expect(leftReplace.classList.contains('finder-row-spacer')).toBe(true);
+
+    // Center column: both have .finder-input-wrapper containing a .finder-input
+    const centerFind = findRow.querySelector('.finder-input-wrapper');
+    const centerReplace = replaceRow.querySelector('.finder-input-wrapper');
+    expect(centerFind).not.toBeNull();
+    expect(centerReplace).not.toBeNull();
+    expect(centerFind.querySelector('input')).toBe(finder.findIn);
+    expect(centerReplace.querySelector('input')).toBe(finder.replaceIn);
+    expect(finder.findIn.classList.contains('finder-input')).toBe(true);
+    expect(finder.replaceIn.classList.contains('finder-input')).toBe(true);
+
+    // Right column: both have .finder-btn-group
+    const rightFind = findRow.querySelector('.finder-btn-group');
+    const rightReplace = replaceRow.querySelector('.finder-btn-group');
+    expect(rightFind).not.toBeNull();
+    expect(rightReplace).not.toBeNull();
+  });
 });
+

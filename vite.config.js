@@ -6,8 +6,8 @@ import { spawnSync } from 'child_process';
 const generateHtmlPlugin = () => ({
   name: 'generate-html',
   closeBundle() {
-    console.log('Running scripts/generate_html.js...');
-    spawnSync('node', ['scripts/generate_html.js'], { stdio: 'inherit' });
+    console.log('Running design/scripts/generate_html.js...');
+    spawnSync('node', ['design/scripts/generate_html.js'], { stdio: 'inherit' });
   }
 });
 
@@ -27,7 +27,10 @@ export default defineConfig(({ command }) => ({
   test: {
     environment: 'jsdom',
     setupFiles: ['./tests/setup.js'],
-    exclude: ['tests/e2e/**', 'node_modules/**']
+    exclude: ['tests/e2e/**', 'node_modules/**'],
+    alias: {
+      'virtual:pwa-register': resolve(__dirname, 'tests/mocks/pwa-register.js')
+    }
   },
   plugins: [
     generateHtmlPlugin(),

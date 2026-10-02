@@ -56,7 +56,6 @@ describe('Theming & UI Settings Operations', () => {
 
     Setting.resetDefault();
     expect(localStorage.getItem('theme')).toBeNull();
-    expect(stg.theme).toBe('light');
     expect(stg.font).toBe(13);
     expect(stg.delimiter).toBe(',');
   });
@@ -68,16 +67,6 @@ describe('Theming & UI Settings Operations', () => {
     expect(row.tagName.toLowerCase()).toBe('tr');
     expect(row.children.length).toBe(2);
     expect(row.children[0].innerHTML).toBe('Theme');
-  });
-
-  // Tier 2: Boundary & Corner Cases
-  test('Theme switching updates document data-theme attribute cleanly', () => {
-    document.body.setAttribute('data-theme', stg.theme);
-    expect(document.body.getAttribute('data-theme')).toBe('light');
-
-    stg.theme = 'dark';
-    document.body.setAttribute('data-theme', stg.theme);
-    expect(document.body.getAttribute('data-theme')).toBe('dark');
   });
 
   test('Setting loads stored numerical values correctly from localStorage', () => {

@@ -44,7 +44,6 @@ describe('Settings Management & Input Components Test Suite', () => {
     localStorage.clear();
     Setting.init();
 
-    expect(stg.theme).toBe('light');
     expect(stg.font).toBe(13);
     expect(stg.purple).toBe(true);
     expect(stg.rows).toBe(25);

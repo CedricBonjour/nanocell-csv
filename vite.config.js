@@ -49,8 +49,6 @@ export default defineConfig(({ command }) => ({
       input: {
         // Points to the index.html at the ROOT of your project
         main: resolve(__dirname, 'index.html'),
-        // Points to the doc.html at the ROOT of your project
-        doc: resolve(__dirname, 'doc.html'),
         // Points to the home.html inside the app folder
         app: resolve(__dirname, 'app/home.html')
       }
@@ -95,8 +93,9 @@ export default defineConfig(({ command }) => ({
         id: '/app/',
         icons: [
           { src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
-          { src: '/favicon-192x192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/favicon-512x512.png', sizes: '512x512', type: 'image/png' }
+          { src: '/favicon-96x96.png', sizes: '96x96', type: 'image/png', purpose: 'any' },
+          { src: '/favicon-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: '/favicon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any' }
         ],
         lang: "en",
         dir: "ltr",

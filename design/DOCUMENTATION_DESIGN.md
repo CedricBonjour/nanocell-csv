@@ -1,7 +1,7 @@
-# Documentation Design & Strategy Specification: `doc.html`
+# Documentation Design & Strategy Specification: Integrated Documentation
 
-**Document Version**: 3.1.0  
-**Target File**: `doc.html` (paired with `index.html` & `theme.css`)  
+**Document Version**: 3.2.0  
+**Target File**: `index.html#docs` (with seamless redirect from `doc.html`)  
 **Directory**: `design/DOCUMENTATION_DESIGN.md`  
 **Target Audience**: Data Engineers, Data Analysts, Backend Developers, Database Administrators, Spreadsheet Users  
 **Status**: Authoritative Documentation Design Standard  
@@ -12,24 +12,25 @@
 
 Traditional software documentation often reads like an uninspired reference manual: listing every obscure menu item, detailing dry technical edge cases (*"In Case A, condition X occurs; in Case B, condition Y occurs"*), and droning on about generic features that every spreadsheet user already expects (e.g. cut, copy, paste).
 
-The documentation for **NanoCell CSV** (`doc.html`) takes a user-oriented, visual-first approach:
+The documentation for **NanoCell CSV** is integrated directly into `index.html` between **Key Features** and **Contribute** (`#docs`), taking a user-oriented, visual-first approach:
 1. **Pain Point ➔ Solution Duality**: Every core capability is presented in a side-by-side split pane: the real-world frustration on the left (red-tinted card: `The Pain Point`) paired with NanoCell's clean resolution on the right (green-tinted card: `The NanoCell Solution`), with clean headers free of leading icons.
-2. **The "Oh, I Can Do That?!" Subtitles**: Each section leads with a punchy, conversational eureka subtitle right beneath the title, instantly communicating the practical capability before diving into details.
-3. **Consistent, Highly Legible Visual Examples**: Every example uses a uniform, static tabular card layout modeled directly after spreadsheet grids: clear columns, readable data cells, and `<span class="tag-diff-del">` (soft red badge without strikethrough for full readability) and `<span class="tag-diff-add">` (green highlighted) diff indicators. Zero distracting interactive gimmicks.
-4. **Streamlined Large File Sampling Table**:
+2. **Sticky Full-Window-Width Quick Jump Navigation**: As the user scrolls into the documentation section, the quick-jump bar smoothly docks to the top of the viewport (`position: sticky; top: 0; width: 100%`) with a frosted translucent glass background (`backdrop-filter: blur(8px)`), spanning the entire window width for effortless navigation between feature spotlights.
+3. **The "Oh, I Can Do That?!" Subtitles**: Each section leads with a punchy, conversational eureka subtitle right beneath the title, instantly communicating the practical capability before diving into details.
+4. **Consistent, Highly Legible Visual Examples**: Every example uses a uniform, static tabular card layout modeled directly after spreadsheet grids: clear columns, readable data cells, and `<span class="tag-diff-del">` (soft red badge without strikethrough for full readability) and `<span class="tag-diff-add">` (green highlighted) diff indicators. Zero distracting interactive gimmicks.
+5. **Streamlined Large File Sampling Table**:
    - Uses genuine spreadsheet row headers (`.row-header`) with row index numbers (`1`, `2`, `3`, etc.).
    - Visualizes chunked streaming across regular intervals separated by multiple `! [...] !` dividers.
-5. **Clean 3-Column Data Validation Table**:
+6. **Clean 3-Column Data Validation Table**:
    - Focuses strictly on `Issue Category`, `Original Value (Dirty)`, and `Sanitized Value (Proposed Fix)`.
    - Single issue per row (Header Syntax and Duplicate Header separated).
    - Clean badges without strikethrough lines cutting through values, numbers, and quotes.
    - Dedicated note boxes for shortcuts and the Date Ambiguity Safeguard.
-6. **Consolidated Essentials & Keyboard Power Tools**:
+7. **Consolidated Essentials & Keyboard Power Tools**:
    - Merged into a unified `.essentials-grid` where every matrix operation (Transpose, Shift, Series Expand, In-Place Rounding, Freeze Header, Command Palette) and standard essential (Undo/Redo, Date Stamp, Find, Sort, Themes, Trimmer) shares the exact same clean card style with clean, text-only card titles (no leading icons).
-7. **Jargon-Free Privacy Explanations & Standard Typography**:
+8. **Jargon-Free Privacy Explanations & Standard Typography**:
    - Removed technical acronyms; simple, accessible language emphasizing offline freedom, zero server uploads, and no-admin desktop PWA installation.
    - Architecture overview rendered in clean standard sans-serif typography (`.doc-text-table`) instead of console monospace fonts.
-8. **Actionable, Non-Technical Settings Context in Discrete 'More tips' Drawers**:
+9. **Actionable, Non-Technical Settings Context in Discrete 'More tips' Drawers**:
    - Gathers tips, shortcuts, and settings into a subtle, discrete drawer labeled systematically as `More tips ▾` without leading icons.
    - Short, concise bullet points highlighting practical customizations in Settings (`Ctrl+G`).
 
@@ -47,46 +48,41 @@ The documentation for **NanoCell CSV** (`doc.html`) takes a user-oriented, visua
 
 ---
 
-## 3. Information Architecture & Section Hierarchy
+## 3. Information Architecture & Section Hierarchy in `index.html`
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│                        1. HERO & QUICK JUMP BAR                        │
-│   Headline + 2-min pitch + Quick Jump Pills + Direct "Launch App" CTA  │
+│ 1. GLOBAL TOP NAVIGATION (Fixed/Sticky at top of viewport)             │
+│    Logo + Docs (#docs) + About (#about) + "Test in the browser" + PWA  │
 ├────────────────────────────────────────────────────────────────────────┤
-│             2. SPOTLIGHT 1: INSTANT LARGE FILE VIEW (O(1))             │
-│   Subtitle: ✨ "Oh, I can open a 2.5 GB CSV in 200ms without freezing?" │
-│   Left: Pain Point (Excel crashes) | Right: Solution (Worker stream)   │
-│   Visual Table: Spreadsheet row headers + Multiple regular intervals   │
-│   In Settings: editMaxFileSize, vo_n_chunks, vo_n_rows                 │
+│ 2. HERO: CSV Viewer & Editor (#header)                                 │
+│    Screenshots + Key Words (Free, Fast, Data Accurate, Cross Platform) │
 ├────────────────────────────────────────────────────────────────────────┤
-│             3. SPOTLIGHT 2: STRICT DATA ACCURACY (NO CORRUPTION)       │
-│   Subtitle: ✨ "Oh, zip codes keep zeros & phone numbers keep '+'?!"   │
-│   Left: Pain Point (Type conversion) | Right: Solution (Pure text)     │
-│   Visual Table: Postal codes, phones, SKUs (Excel bad vs NanoCell safe)│
-│   In Settings: delimiter, encoding, save_strict, trim                  │
+│ 3. ABOUT: Built for speed and simplicity (#about) [GREY]               │
+│    Core philosophy of speed, data integrity, and simplicity            │
 ├────────────────────────────────────────────────────────────────────────┤
-│             4. SPOTLIGHT 3: 1-CLICK DATA VALIDATION & SMART DATES      │
-│   Subtitle: ✨ "Oh, I can auto-clean SQL headers & dates in 10s?!"     │
-│   Left: Pain Point (Import crash) | Right: Solution (1-click fixes)    │
-│   Shortcut Note Box (Ctrl+Shift+H, Ctrl+Shift+P, Date Format)          │
-│   Visual Table: 3 columns, 1 issue/row (Header, Dups, Trim, Commas, LR)│
-│   Date Ambiguity Safeguard Note Box                                    │
-│   In Settings: Non-technical concise bullet points                     │
+│ 4. TOP CTA: Ready to See It in Action? (#launch-top) [WHITE]           │
+│    Direct browser launch button                                        │
 ├────────────────────────────────────────────────────────────────────────┤
-│             5. SPOTLIGHT 4: 100% PRIVATE & AIR-GAPPED                  │
-│   Subtitle: ✨ "Oh, my confidential files never touch an external host?!"│
-│   Left: Pain Point (Data leakage) | Right: Solution (Local sandbox)    │
-│   Simple Accessible Architecture Table (Files, Memory, Network)        │
+│ 5. KEY FEATURES SUMMARY (#features) [GREY]                             │
+│    5-card clickable grid scrolling directly to matching #docs sections │
 ├────────────────────────────────────────────────────────────────────────┤
-│             6. THE STANDARD ESSENTIALS & POWER TOOLS (MERGED)          │
-│   Subtitle: ✨ "Oh, I can transpose & shift without touching mouse?!"  │
-│   Consolidated Card Grid: Transpose, Shift, Series, Round, Freeze,     │
-│   Command Palette, Date Stamp (Ctrl+;), Undo/Redo, Find, Sort, Themes  │
-│   In Settings: Viewport rows/cols, sort header/number options          │
+│ 6. FEATURE DOCUMENTATION & GUIDES (#docs)                              │
+│    • STICKY TOP FULL-WIDTH QUICK-JUMP NAV BAR (100% width, blur glass) │
+│    • Spotlight 1: Instant Large File View (O(1) Streaming) [WHITE]     │
+│    • Spotlight 2: Strict Verbatim Data Accuracy (Zero Corruption) [GREY│
+│    • Spotlight 3: 1-Click Data Validation & Smart Dates [WHITE]        │
+│    • Spotlight 4: 100% Private & Air-Gapped (Client-side) [GREY]       │
+│    • Spotlight 5: The Standard Essentials & Power Tools [WHITE]        │
 ├────────────────────────────────────────────────────────────────────────┤
-│             7. CALL TO ACTION & SYSTEM FOOTER                          │
-│   Launch App CTA banner + Links to GitHub, Home, Terms & License       │
+│ 7. BOTTOM CTA: Ready to See It in Action? (#launch-bottom) [GREY]      │
+│    Launch NanoCell CSV Editor outside doc container                    │
+├────────────────────────────────────────────────────────────────────────┤
+│ 8. CONTRIBUTE (#contribute) [WHITE]                                    │
+│    Community growth & GitHub issue tracker feedback                    │
+├────────────────────────────────────────────────────────────────────────┤
+│ 9. SYSTEM FOOTER (#footer) [GREY]                                      │
+│    Links to #docs, Terms, Bug report, GitHub, Contact email toast       │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 

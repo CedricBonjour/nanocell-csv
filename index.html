@@ -26,6 +26,637 @@
   <meta name="description"
     content="Nanocell - CSV file Viewer & Editor : free, fast, simple, lightweight, offline, cross platform, and data accurate">
 
+  <style>
+    /* Documentation Visual Extensions to theme.css */
+    :root {
+      --card-bg: #ffffff;
+      --card-border: #e2e8f0;
+      --font-mono: "Inconsolata", "Courier New", Courier, monospace;
+      --tag-green-bg: #e6f4ea;
+      --tag-green-txt: #137333;
+      --tag-red-bg: #fce8e6;
+      --tag-red-txt: #c5221f;
+      --tag-blue-bg: #e8f0fe;
+      --tag-blue-txt: #1a73e8;
+      --tag-purple-bg: #f3e8fd;
+      --tag-purple-txt: #7b1fa2;
+      --tag-orange-bg: #feefe3;
+      --tag-orange-txt: #d9381e;
+    }
+
+    #container {
+      scroll-behavior: smooth;
+    }
+
+    #docs {
+      width: 100%;
+      scroll-margin-top: 0;
+    }
+
+    /* Secondary CTA in Navbar: "Test in the browser" */
+    #test-browser-nav {
+      min-width: auto;
+      margin: 1em 1em;
+    }
+
+    .btn-test-browser {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.65em 1.15em;
+      background-color: #f8fafc;
+      color: #475569;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 0.5em;
+      font-size: 0.88em;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      text-decoration: none !important;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .btn-test-browser:hover {
+      border-color: #94a3b8;
+      color: #0f172a;
+      background-color: #f1f5f9;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+      text-decoration: none !important;
+    }
+
+    .essential-card a {
+      color: var(--green);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .essential-card a:hover {
+      color: #14532d;
+    }
+
+    /* Sticky Full-Width Quick Jump Navigation */
+    .quick-jump-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-bottom: 1px solid #e2e8f0;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      padding: 0.75em 1rem;
+      box-sizing: border-box;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.6em;
+      margin: 0;
+    }
+
+    .jump-pill {
+      background: #ffffff;
+      border: 1px solid #d0d7de;
+      padding: 0.45em 0.95em;
+      border-radius: 2em;
+      font-size: 0.88em;
+      font-weight: 600;
+      color: #333;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4em;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      text-decoration: none !important;
+    }
+
+    .jump-pill:hover {
+      border-color: var(--green);
+      color: var(--green);
+      box-shadow: 0 2px 8px rgba(72, 167, 65, 0.15);
+      transform: translateY(-1px);
+    }
+
+    /* Automatic alternating background system (applied everywhere) */
+    .section-bg-grey,
+    section.section-bg-grey {
+      background-color: var(--grey) !important;
+    }
+
+    .section-bg-white,
+    section.section-bg-white {
+      background-color: #ffffff !important;
+    }
+
+    /* CSS Default Alternations */
+    #about { background-color: var(--grey); }
+    #launch-top { background-color: #ffffff; }
+    #features { background-color: var(--grey); }
+    #large-files { background-color: #ffffff; }
+    #data-accuracy { background-color: var(--grey); }
+    #data-validation { background-color: #ffffff; }
+    #client-privacy { background-color: var(--grey); }
+    #essentials { background-color: #ffffff; }
+    #launch-bottom { background-color: var(--grey); }
+    #contribute { background-color: #ffffff; }
+    #footer { background-color: var(--grey); }
+
+    /* Section structure */
+    .doc-section {
+      width: 100%;
+      padding: 7vh 1rem 6vh 1rem;
+      box-sizing: border-box;
+      scroll-margin-top: 75px;
+    }
+
+    .doc-section-content {
+      max-width: 980px;
+      margin: 0 auto;
+      text-align: left;
+      width: 100%;
+    }
+
+    .section-header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5em;
+      padding: 0.35em 0.85em;
+      border-radius: 1.5em;
+      font-size: 0.82em;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 0.6em;
+    }
+
+    .badge-speed { background: var(--tag-orange-bg); color: var(--tag-orange-txt); }
+    .badge-accuracy { background: var(--tag-blue-bg); color: var(--tag-blue-txt); }
+    .badge-validation { background: var(--tag-purple-bg); color: var(--tag-purple-txt); }
+    .badge-privacy { background: #fef3c7; color: #92400e; }
+    .badge-essentials { background: #f1f5f9; color: #475569; }
+
+    .doc-section h2 {
+      margin: 0 0 0.2em 0;
+      font-size: 2.1em;
+      color: #111;
+      text-align: left;
+    }
+
+    /* Eureka Subtitle */
+    .eureka-subtitle {
+      font-size: 1.12em;
+      font-weight: 600;
+      color: #1e293b;
+      margin: 0.2em 0 1.5em 0;
+      line-height: 1.55em;
+      display: flex;
+      align-items: center;
+      gap: 0.4em;
+      flex-wrap: wrap;
+    }
+
+    /* Side-by-Side Pain Point vs Solution Panes */
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5em;
+      margin: 1.5em 0;
+    }
+
+    .comparison-col {
+      border-radius: 10px;
+      padding: 1.4em;
+      border: 1px solid #e2e8f0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .col-bad {
+      background: #fff8f8;
+      border-color: #fecaca;
+    }
+
+    .col-good {
+      background: #f4fbf5;
+      border-color: #bbf7d0;
+    }
+
+    .comparison-title {
+      font-weight: 700;
+      font-size: 1.05em;
+      margin-bottom: 0.75em;
+      display: flex;
+      align-items: center;
+      gap: 0.5em;
+    }
+
+    .col-bad .comparison-title { color: #dc2626; }
+    .col-good .comparison-title { color: #16a34a; }
+
+    .comparison-body {
+      font-size: 0.96em;
+      line-height: 1.6em;
+      color: #334155;
+    }
+
+    .comparison-body p {
+      width: 100%;
+      max-width: 100%;
+      text-align: left;
+      margin: 0.4em 0;
+    }
+
+    /* Consistent Visual Example Cards */
+    .example-card {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 1.8em 0 1.2em 0;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .example-header {
+      background: #f1f5f9;
+      padding: 0.8em 1.2em;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #cbd5e1;
+    }
+
+    .example-title {
+      font-weight: 700;
+      font-size: 0.95em;
+      color: #334155;
+      display: flex;
+      align-items: center;
+      gap: 0.5em;
+    }
+
+    .example-badge {
+      font-size: 0.8em;
+      font-weight: 700;
+      padding: 0.25em 0.65em;
+      border-radius: 6px;
+      background: #e2e8f0;
+      color: #475569;
+    }
+
+    .badge-lock-preview {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .badge-safe-preview {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .example-table-container {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    .scrollable-stream-container {
+      width: 100%;
+      max-height: 300px;
+      overflow-y: auto;
+      overflow-x: auto;
+    }
+
+    .scrollable-stream-container thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: #f8fafc;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    }
+
+    .example-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--font-mono);
+      font-size: 0.88em;
+    }
+
+    .example-table th {
+      background: #f8fafc;
+      padding: 0.75em 1em;
+      text-align: left;
+      font-size: 0.8em;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #475569;
+      border-bottom: 1px solid #cbd5e1;
+      font-family: sans-serif;
+    }
+
+    .example-table td {
+      padding: 0.75em 1em;
+      border-bottom: 1px solid #e2e8f0;
+      color: #1e293b;
+      vertical-align: middle;
+    }
+
+    .example-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* Spreadsheet Row Header column */
+    .row-header {
+      background: #f1f5f9 !important;
+      color: #64748b !important;
+      font-weight: 700 !important;
+      text-align: right !important;
+      padding: 0.55em 0.9em !important;
+      width: 3.5em;
+      border-right: 2px solid #cbd5e1 !important;
+      user-select: none;
+      font-family: var(--font-mono) !important;
+    }
+
+    .row-header-th {
+      background: #e2e8f0 !important;
+      color: #475569 !important;
+      width: 3.5em;
+      text-align: right !important;
+      padding: 0.75em 0.9em !important;
+      border-right: 2px solid #cbd5e1 !important;
+    }
+
+    .tag-diff-del {
+      background: #fee2e2;
+      color: #b91c1c;
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      margin-right: 0.4em;
+      display: inline-block;
+    }
+
+    .doc-text-table,
+    .doc-text-table td,
+    .doc-text-table th {
+      font-family: sans-serif !important;
+      font-size: 0.92em;
+      line-height: 1.5;
+    }
+
+    .tag-diff-add {
+      background: #dcfce7;
+      color: #15803d;
+      font-weight: 700;
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    .tag-note {
+      font-size: 0.82em;
+      color: #64748b;
+      font-family: sans-serif;
+      margin-left: 0.5em;
+    }
+
+    /* Large file stream specific rows */
+    .stream-row-gap {
+      background: #f8fafc;
+      text-align: center !important;
+      font-weight: 700;
+      color: #64748b;
+      letter-spacing: 1px;
+      padding: 0.85em 1em !important;
+    }
+
+    /* Key badge styling */
+    kbd.key {
+      display: inline-block;
+      padding: 0.2em 0.55em;
+      font-family: var(--font-mono);
+      font-size: 0.85em;
+      font-weight: 700;
+      color: #1f2937;
+      background: #f3f4f6;
+      border: 1px solid #d1d5db;
+      border-bottom: 2px solid #9ca3af;
+      border-radius: 5px;
+      line-height: 1.2;
+      box-shadow: 0 1px 1px rgba(0,0,0,0.08);
+      vertical-align: baseline;
+      margin: 0 0.15em;
+    }
+
+    /* Settings & Note Box */
+    .settings-box {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-left: 4px solid var(--green);
+      border-radius: 6px;
+      padding: 0.85em 1.2em;
+      margin-top: 1.2em;
+      font-size: 0.92em;
+      line-height: 1.55em;
+      color: #334155;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6em;
+    }
+
+    .settings-box strong {
+      color: #0f172a;
+    }
+
+    .note-box {
+      border-left-color: #3b82f6;
+      background: #f0f7ff;
+    }
+
+    .note-box-warn {
+      border-left-color: #f59e0b;
+      background: #fffbeb;
+    }
+
+    /* Seamless Discrete 'More tips' Container */
+    .more-tips-container {
+      margin-top: 1.4em;
+    }
+
+    .more-tips-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45em;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 0.38em 0.85em;
+      font-size: 0.84em;
+      font-weight: 600;
+      color: #64748b;
+      cursor: pointer;
+      font-family: inherit;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+
+    .more-tips-toggle:hover {
+      color: var(--green);
+      border-color: #cbd5e1;
+      background: #ffffff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+
+    .more-tips-toggle .chevron {
+      transition: transform 0.25s ease;
+      display: inline-block;
+      font-size: 0.8em;
+      color: #94a3b8;
+    }
+
+    .more-tips-toggle.active {
+      color: #1e293b;
+      border-color: #cbd5e1;
+      background: #ffffff;
+    }
+
+    .more-tips-toggle.active .chevron {
+      transform: rotate(180deg);
+      color: var(--green);
+    }
+
+    .more-tips-content {
+      display: grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
+      opacity: 0;
+    }
+
+    .more-tips-content.open {
+      grid-template-rows: 1fr;
+      opacity: 1;
+      margin-top: 0.6em;
+    }
+
+    .more-tips-inner {
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 0.7em;
+    }
+
+    .more-tips-inner .settings-box {
+      margin-top: 0;
+    }
+
+    /* Essentials & Power Tools Grid */
+    .essentials-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.2em;
+      margin-top: 1.5em;
+    }
+
+    .essential-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 1.1em 1.3em;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .essential-card:hover {
+      border-color: var(--green);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    }
+
+    .essential-card strong {
+      display: block;
+      color: #1e293b;
+      font-size: 1.05em;
+      margin-bottom: 0.4em;
+    }
+
+    .essential-card p {
+      font-size: 0.9em;
+      color: #475569;
+      line-height: 1.5em;
+      margin: 0;
+      width: 100%;
+      text-align: left;
+    }
+
+    .essential-card .card-keys {
+      margin-top: 0.8em;
+      padding-top: 0.6em;
+      border-top: 1px solid #f1f5f9;
+      font-size: 0.85em;
+      color: #64748b;
+    }
+
+    .launch-section {
+      width: 100%;
+      padding: 6vh 1rem;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .launch-banner {
+      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+      border: 2px solid var(--green);
+      border-radius: 16px;
+      padding: 3em 2em;
+      text-align: center;
+      margin: 0 auto;
+      max-width: 800px;
+      box-sizing: border-box;
+      width: 100%;
+    }
+
+    #features .essential-card {
+      cursor: pointer;
+      user-select: none;
+    }
+
+    #features .essential-card:hover {
+      border-color: var(--green);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 14px rgba(72, 167, 65, 0.15);
+    }
+
+    .launch-banner h2 {
+      text-align: center;
+      margin-bottom: 0.3em;
+      color: #14532d;
+    }
+
+    .launch-banner p {
+      margin: 0 auto 1.5em auto;
+      text-align: center;
+      color: #166534;
+      font-size: 1.1em;
+    }
+
+    @media (max-width: 800px) {
+      .comparison-grid {
+        grid-template-columns: 1fr;
+      }
+      .doc-section h2 {
+        font-size: 1.6em;
+      }
+      .eureka-subtitle {
+        font-size: 1em;
+      }
+    }
+  </style>
+
 </head>
 
 <body>
@@ -36,9 +667,11 @@
       <span id="navTitle">NanoCell - csv editor</span>
     </a>
     <div class="grow"></div>
-    <a class="nav_element nav_link" href="doc.html">Docs</a>
+    <a class="nav_element nav_link" href="#docs">Docs</a>
     <a class="nav_element nav_link" href="#about">About</a>
-    <a class="nav_element nav_link" href="#contribute">Contribute</a>
+    <div class="nav_element hide_phone" id="test-browser-nav">
+      <a class="btn-test-browser" href="app/home.html" target="_blank">Test in the browser</a>
+    </div>
     <div class="nav_element" id="install"><button>Install<br>
         <div id="version">Beta version</div>
       </button> </div>
@@ -71,49 +704,763 @@
         simple, reliable, and universal.
       </p>
       <p>Nanocell-csv aims to be the go-to CSV editing tool for software engineers and data experts worldwide.</p>
-
-      <a class="anchorButton" href="app/home.html" target="_blank">
-        Test Nanocell-csv in the browser now
-      </a>
-
-
-    </section>
-    <section id="features">
-      <h2>Key features</h2>
-      <p><b>Data privacy</b> - Nanocell-csv works 100% off-line, your data is never leaving your computer.
-        Nanocell-csv.com runs on a static server which, by design, only sends data on request but cannot register any
-        data. Don't take my word for it, checkout the source code <a
-          href="https://github.com/CedricBonjour/nanocell-csv">[here]</a>.</p>
-      <p><b>Data accuracy</b> - CSV data is text and Nanocell-csv makes sure values are being handled as such. Leading
-        zeros and '+' signs are
-        kept. No more data corruption of phone numbers, zipcodes, etc. Pasting data also finally works as
-        you would expect, no more paste reformatting or column split action to perform ! </p>
-      <p><b>Instant view large files</b> - O(1) &#128521;. This is achieved by sampling the header,
-        the footer and a few rows at regular intervals without parsing the entire file. The goal here is for data
-        experts to quickly understand what they are dealing with when first opening a file. That is before they start
-        using heavier Big-Data tools like pandas, pyspark, powerBI, R etc... </p>
-      <p><b>Install anywhere</b> - Nanocell-csv requires no .exe file for installation and is completely
-        cross-platform. You can use it anywhere, even at work, for those subject to an admin lock.</p>
-      <p><b>Data validation for database import</b> - quickly identify and resolve any unconventional issues in your
-        data. Make sure that : headers are limited to alphanumeric characters, encoding is UTF-8, values do not contain
-        line breaks, and much more. Nanocell-csv helps you streamline your workflow before database import. </p>
     </section>
 
-    <!-- <section id="test">
+    <section class="launch-section" id="launch-top">
+      <div class="launch-banner">
+        <h2>Ready to See It in Action?</h2>
+        <p>Open NanoCell directly in your browser. No sign-up, no downloads, zero setup required.</p>
+        <a class="anchorButton" href="app/home.html" target="_blank" style="font-size: 1.1em; padding: 0.9em 2em;">
+          Launch NanoCell CSV Editor
+        </a>
+        <div style="margin-top: 1.2em; font-size: 0.9em; color: #15803d;">
+          Works in Chrome, Edge, Brave, and all Chromium browsers.
+        </div>
+      </div>
+    </section>
 
-      <a href="app/home.html" target="_blank"><button>Test Nanocell-csv in the browser now</button></a>
-      <br>
-      <br>
-      <b> Download </b>
-      <a href="csv_files/demo_r100.csv" download="nanocell_csv_demo_r100.csv"> 100-rows-of-standard-user-data.csv </a>
+    <section id="features" style="padding: 7vh 1rem 6vh 1rem; scroll-margin-top: 75px;">
+      <div class="doc-section-content" style="width: 100%; box-sizing: border-box;">
+        <h2 style="text-align: center; margin-bottom: 0.8em;">Key features</h2>
+        <div class="essentials-grid">
+          <div class="essential-card" role="button" tabindex="0" data-target="client-privacy" onclick="if (!event.target.closest('a')) document.getElementById('client-privacy')?.scrollIntoView({ behavior: 'smooth' });">
+            <div>
+              <strong>Data privacy</strong>
+              <p>Nanocell-csv works 100% off-line, your data is never leaving your computer.
+                Nanocell-csv.com runs on a static server which, by design, only sends data on request but cannot register any
+                data. Don't take my word for it, checkout the source code <a
+                  href="https://github.com/CedricBonjour/nanocell-csv">[here]</a>.</p>
+            </div>
+          </div>
+          <div class="essential-card" role="button" tabindex="0" data-target="data-accuracy" onclick="if (!event.target.closest('a')) document.getElementById('data-accuracy')?.scrollIntoView({ behavior: 'smooth' });">
+            <div>
+              <strong>Data accuracy</strong>
+              <p>CSV data is text and Nanocell-csv makes sure values are being handled as such. Leading
+                zeros and '+' signs are
+                kept. No more data corruption of phone numbers, zipcodes, etc. Pasting data also finally works as
+                you would expect, no more paste reformatting or column split action to perform ! </p>
+            </div>
+          </div>
+          <div class="essential-card" role="button" tabindex="0" data-target="large-files" onclick="if (!event.target.closest('a')) document.getElementById('large-files')?.scrollIntoView({ behavior: 'smooth' });">
+            <div>
+              <strong>Instant view large files</strong>
+              <p>O(1) &#128521;. This is achieved by sampling the header,
+                the footer and a few rows at regular intervals without parsing the entire file. The goal here is for data
+                experts to quickly understand what they are dealing with when first opening a file. That is before they start
+                using heavier Big-Data tools like pandas, pyspark, powerBI, R etc... </p>
+            </div>
+          </div>
+          <div class="essential-card" role="button" tabindex="0" data-target="client-privacy" onclick="if (!event.target.closest('a')) document.getElementById('client-privacy')?.scrollIntoView({ behavior: 'smooth' });">
+            <div>
+              <strong>Install anywhere</strong>
+              <p>Nanocell-csv requires no .exe file for installation and is completely
+                cross-platform. You can use it anywhere, even at work, for those subject to an admin lock.</p>
+            </div>
+          </div>
+          <div class="essential-card" role="button" tabindex="0" data-target="data-validation" onclick="if (!event.target.closest('a')) document.getElementById('data-validation')?.scrollIntoView({ behavior: 'smooth' });">
+            <div>
+              <strong>Data validation for database import</strong>
+              <p>quickly identify and resolve any unconventional issues in your
+                data. Make sure that : headers are limited to alphanumeric characters, encoding is UTF-8, values do not contain
+                line breaks, and much more. Nanocell-csv helps you streamline your workflow before database import. </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
 
-      <a href="csv_files/color_types.csv" download="nanocell_csv_color_showcase.csv">
-        Showcase-of-Nanocell-color-palette.csv</a>
+    <!-- DOCUMENTATION SECTION -->
+    <div id="docs">
+      <div class="quick-jump-nav">
+        <a class="jump-pill" href="#large-files">⚡ Instant Gigabyte Preview</a>
+        <a class="jump-pill" href="#data-accuracy">🛡️ Zero Data Corruption</a>
+        <a class="jump-pill" href="#data-validation">🧹 1-Click Data Validation</a>
+        <a class="jump-pill" href="#client-privacy">🔒 100% Offline Privacy</a>
+        <a class="jump-pill" href="#essentials">⌨️ Essentials &amp; Shortcuts</a>
+      </div>
 
+      <!-- 1. LARGE FILES -->
+      <section class="doc-section" id="large-files">
+        <div class="doc-section-content">
+          <span class="section-header-badge badge-speed">⚡ O(1) Instant Streaming</span>
+          <h2>Instant Large File View (Read-Only Preview)</h2>
+          <div class="eureka-subtitle">
+            ✨ "Oh, I can open a 2.5 GB CSV in 200 milliseconds without freezing my laptop just to inspect the schema?!"
+          </div>
 
-    </section> -->
+          <div class="comparison-grid">
+            <div class="comparison-col col-bad">
+              <div class="comparison-title">
+                The Pain Point
+              </div>
+              <div class="comparison-body">
+                <p>You download a <strong>2.5 GB database dump</strong> or server log. Opening it in Excel freezes your entire system or crashes with an <em>"Out of memory"</em> error.</p>
+                <p>Writing a Python script or booting a notebook with Pandas just to check the column names and inspect a few sample rows takes minutes to parse and consumes gigabytes of RAM.</p>
+              </div>
+            </div>
 
+            <div class="comparison-col col-good">
+              <div class="comparison-title">
+                The NanoCell Solution
+              </div>
+              <div class="comparison-body">
+                <p>NanoCell opens multi-gigabyte files <strong>instantly in $O(1)$ time</strong>. A background Web Worker samples the header row, regular intervals across the file, and the footer without parsing the full file.</p>
+                <p>It automatically engages <strong>View-Only Mode</strong> (locking edits) so you can safely verify schemas, column counts, and sample records with zero risk of file corruption and zero RAM strain.</p>
+              </div>
+            </div>
+          </div>
 
+          <!-- Visual Example Table with Row Headers and Regular Interval Dividers -->
+          <div class="example-card">
+            <div class="example-header">
+              <span class="example-title">Visual Example: Stream Sampling of <code>production_events_3gb.csv</code> <span style="font-size: 0.85em; font-weight: normal; color: #64748b;">(scroll to inspect)</span></span>
+              <span class="example-badge badge-lock-preview">🔒 Locked in View-Only Mode</span>
+            </div>
+            <div class="example-table-container scrollable-stream-container">
+              <table class="example-table">
+                <thead>
+                  <tr>
+                    <th class="row-header-th">#</th>
+                    <th>id</th>
+                    <th>event_uuid</th>
+                    <th>timestamp</th>
+                    <th>status_code</th>
+                    <th>latency_ms</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="row-header">1</td>
+                    <td>1001</td>
+                    <td>e7a9-410c</td>
+                    <td>2026-10-02T11:00:15Z</td>
+                    <td>200</td>
+                    <td>42</td>
+                  </tr>
+                  <tr>
+                    <td class="row-header">2</td>
+                    <td>1002</td>
+                    <td>b214-99a1</td>
+                    <td>2026-10-02T11:00:18Z</td>
+                    <td>200</td>
+                    <td>35</td>
+                  </tr>
+                  <tr>
+                    <td class="row-header">3</td>
+                    <td>1003</td>
+                    <td>fa80-112e</td>
+                    <td>2026-10-02T11:00:23Z</td>
+                    <td>304</td>
+                    <td>19</td>
+                  </tr>
+                  <tr>
+                    <td class="row-header">4</td>
+                    <td>1004</td>
+                    <td>c019-48bb</td>
+                    <td>2026-10-02T11:00:29Z</td>
+                    <td>200</td>
+                    <td>51</td>
+                  </tr>
+                  <tr>
+                    <td class="row-header">5</td>
+                    <td>1005</td>
+                    <td>de33-771f</td>
+                    <td>2026-10-02T11:00:34Z</td>
+                    <td>500</td>
+                    <td>890</td>
+                  </tr>
+                  <tr>
+                    <td class="row-header" style="text-align: center !important;">...</td>
+                    <td colspan="5" class="stream-row-gap">! [...] ! &nbsp; 950,000 ROWS SAMPLED AT REGULAR INTERVALS &nbsp; ! [...] !</td>
+                  </tr>
+                  <tr>
+                    <td class="row-header">950001</td>
+                    <td>950001</td>
+                    <td>d912-4011</td>
+                    <td>2026-10-02T13:12:00Z</td>
+                    <td>200</td>
+                    <td>28</td>
+                  </tr>
+                  <tr>
+                    <td class="row-header">950002</td>
+                    <td>950002</td>
+                    <td>bb31-6204</td>
+                    <td>2026-10-02T13:12:04Z</td>
+                    <td>200</td>
+                    <td>32</td>
+                  </tr>
+                  <tr>
+                    <td class="row-header">950003</td>
+                    <td>950003</td>
+                    <td>ac78-1992</td>
+                    <td>2026-10-02T13:12:09Z</td>
+                    <td>304</td>
+                    <td>15</td>
+                  </tr>
+                  <tr>
+                    <td class="row-header" style="text-align: center !important;">...</td>
+                    <td colspan="5" class="stream-row-gap">! [...] ! &nbsp; 950,000 ROWS SAMPLED AT REGULAR INTERVALS &nbsp; ! [...] !</td>
+                  </tr>
+                  <tr>
+                    <td class="row-header">1900001</td>
+                    <td>1900001</td>
+                    <td>c490-112d</td>
+                    <td>2026-10-02T15:20:04Z</td>
+                    <td>200</td>
+                    <td>36</td>
+                  </tr>
+                  <tr>
+                    <td class="row-header">1900002</td>
+                    <td>1900002</td>
+                    <td>aa10-8843</td>
+                    <td>2026-10-02T15:20:09Z</td>
+                    <td>200</td>
+                    <td>41</td>
+                  </tr>
+                  <tr>
+                    <td class="row-header">1900003</td>
+                    <td>1900003</td>
+                    <td>f140-5201</td>
+                    <td>2026-10-02T15:20:14Z</td>
+                    <td>502</td>
+                    <td>1100</td>
+                  </tr>
+                  <tr>
+                    <td class="row-header" style="text-align: center !important;">...</td>
+                    <td colspan="5" class="stream-row-gap">! [...] ! &nbsp; 950,000 ROWS SAMPLED AT REGULAR INTERVALS &nbsp; ! [...] !</td>
+                  </tr>
+                  <tr>
+                    <td class="row-header">3850198</td>
+                    <td>3850198</td>
+                    <td>ef01-9014</td>
+                    <td>2026-10-02T18:45:02Z</td>
+                    <td>200</td>
+                    <td>24</td>
+                  </tr>
+                  <tr>
+                    <td class="row-header">3850199</td>
+                    <td>3850199</td>
+                    <td>bc22-3108</td>
+                    <td>2026-10-02T18:45:08Z</td>
+                    <td>200</td>
+                    <td>30</td>
+                  </tr>
+                  <tr>
+                    <td class="row-header">3850200</td>
+                    <td>3850200</td>
+                    <td>f881-229a</td>
+                    <td>2026-10-02T18:45:12Z</td>
+                    <td>500</td>
+                    <td>1240</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="more-tips-container">
+            <button class="more-tips-toggle" type="button" aria-expanded="false" onclick="toggleMoreTips(this)">
+              <span>More tips</span>
+              <span class="chevron">▾</span>
+            </button>
+            <div class="more-tips-content">
+              <div class="more-tips-inner">
+                <div class="settings-box">
+                  <span>⚙️</span>
+                  <div>
+                    <strong>In Settings (<kbd class="key">Ctrl</kbd>+<kbd class="key">G</kbd>):</strong>
+                    You can adjust the file size limit where View-Only mode automatically activates, and customize how many sample sections and rows are previewed when opening large files.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. DATA ACCURACY -->
+      <section class="doc-section" id="data-accuracy">
+        <div class="doc-section-content">
+          <span class="section-header-badge badge-accuracy">🛡️ Strict Text Fidelity</span>
+          <h2>Zero Data Corruption: Verbatim Text Accuracy</h2>
+          <div class="eureka-subtitle">
+            ✨ "Oh, my zip codes won't lose leading zeros, phone numbers keep their '+', and SKU numbers don't turn into scientific floats?!"
+          </div>
+
+          <div class="comparison-grid">
+            <div class="comparison-col col-bad">
+              <div class="comparison-title">
+                The Pain Point
+              </div>
+              <div class="comparison-body">
+                <p>You open a customer list, order table, or inventory export in a standard spreadsheet. The application tries to be "smart" by guessing data types.</p>
+                <p>Zip codes like <code>"02138"</code> lose their leading zero and become <code>2138</code>. Phone numbers like <code>"+44 7911..."</code> lose their <code>+</code>. Product codes like <code>"84E02"</code> become <code>8.40E+03</code>. When you save, your original database identifiers are permanently destroyed.</p>
+              </div>
+            </div>
+
+            <div class="comparison-col col-good">
+              <div class="comparison-title">
+                The NanoCell Solution
+              </div>
+              <div class="comparison-body">
+                <p>CSV is text, and NanoCell handles every single cell as <strong>pure verbatim text</strong>. Zero unwanted type casting, zero loss of leading zeros or signs.</p>
+                <p>Pasting raw delimited text fills the grid predictably without triggering broken delimiter split dialogs or auto-formatting accidents. What you see is exactly what gets written back to disk.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="example-card">
+            <div class="example-header">
+              <span class="example-title">Visual Example: What Happens When You Open and Save a CSV</span>
+              <span class="example-badge badge-safe-preview">✅ Verbatim Text Preserved</span>
+            </div>
+            <div class="example-table-container">
+              <table class="example-table">
+                <thead>
+                  <tr>
+                    <th>Field Type</th>
+                    <th>Raw CSV Text</th>
+                    <th>Standard Spreadsheet (Excel / Calc)</th>
+                    <th>NanoCell CSV</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Postal Code / Area ID</td>
+                    <td><code>"004291"</code></td>
+                    <td><span class="tag-diff-del">4291</span> <span class="tag-note">(Leading zeros stripped!)</span></td>
+                    <td><span class="tag-diff-add">004291</span> <span class="tag-note">(Byte-exact preserved)</span></td>
+                  </tr>
+                  <tr>
+                    <td>International Phone</td>
+                    <td><code>"+44 7911 123456"</code></td>
+                    <td><span class="tag-diff-del">447911123456</span> <span class="tag-note">(+ sign lost!)</span></td>
+                    <td><span class="tag-diff-add">+44 7911 123456</span> <span class="tag-note">(Exact string)</span></td>
+                  </tr>
+                  <tr>
+                    <td>Product Part SKU</td>
+                    <td><code>"9876E5"</code></td>
+                    <td><span class="tag-diff-del">9.88E+08</span> <span class="tag-note">(Corrupted to float!)</span></td>
+                    <td><span class="tag-diff-add">9876E5</span> <span class="tag-note">(Untouched identifier)</span></td>
+                  </tr>
+                  <tr>
+                    <td>ISO Timestamp String</td>
+                    <td><code>"2026-05-12"</code></td>
+                    <td><span class="tag-diff-del">12/05/2026</span> <span class="tag-note">(Forced localized rewrite)</span></td>
+                    <td><span class="tag-diff-add">2026-05-12</span> <span class="tag-note">(Clean ISO preserved)</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="more-tips-container">
+            <button class="more-tips-toggle" type="button" aria-expanded="false" onclick="toggleMoreTips(this)">
+              <span>More tips</span>
+              <span class="chevron">▾</span>
+            </button>
+            <div class="more-tips-content">
+              <div class="more-tips-inner">
+                <div class="settings-box">
+                  <span>⚙️</span>
+                  <div>
+                    <strong>In Settings (<kbd class="key">Ctrl</kbd>+<kbd class="key">G</kbd>):</strong>
+                    You can set your preferred delimiter (comma, semicolon, tab, or pipe), choose text encodings like UTF-8, enforce strict quotation rules, and automatically remove empty rows and columns when opening files.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. DATA VALIDATION & SMART DATES -->
+      <section class="doc-section" id="data-validation">
+        <div class="doc-section-content">
+          <span class="section-header-badge badge-validation">🧹 1-Click Database Prep</span>
+          <h2>Data Validation: Clean Messy CSVs For SQL Import</h2>
+          <div class="eureka-subtitle">
+            ✨ "Oh, I can auto-clean messy headers, invalid commas, and mixed international dates for database import in 10 seconds?!"
+          </div>
+
+          <div class="comparison-grid">
+            <div class="comparison-col col-bad">
+              <div class="comparison-title">
+                The Pain Point
+              </div>
+              <div class="comparison-body">
+                <p>You need to bulk import a CSV into PostgreSQL (<code>\COPY</code>), Snowflake, or MySQL (<code>LOAD DATA</code>). The pipeline crashes halfway through.</p>
+                <p>The culprit: column headers contain spaces or illegal characters (e.g. <code>"Order Total ($)"</code>), two columns share the same name, cells have invisible trailing spaces, European decimal numbers use commas (<code>19,95</code>), or mixed international dates swap months and days.</p>
+              </div>
+            </div>
+
+            <div class="comparison-col col-good">
+              <div class="comparison-title">
+                The NanoCell Solution
+              </div>
+              <div class="comparison-body">
+                <p>Run <strong>Validate Headers</strong> or <strong>Validate Data</strong>. NanoCell scans the entire dataset and displays proposed fixes in the virtualized <strong>Validation Pane</strong>.</p>
+                <p>Review proposed changes side-by-side and click <strong>Accept All</strong> to execute every fix in a single atomic transaction that can be undone in one <kbd class="key">Ctrl</kbd>+<kbd class="key">Z</kbd>!</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Concise 3-Column Visual Example Table (1 Issue Per Row) -->
+          <div class="example-card">
+            <div class="example-header">
+              <span class="example-title">Visual Example: Validation Rules &amp; Proposed Cell Transformations</span>
+              <span class="example-badge">Validation Engine</span>
+            </div>
+            <div class="example-table-container">
+              <table class="example-table">
+                <thead>
+                  <tr>
+                    <th>Issue Category</th>
+                    <th>Original Value (Dirty)</th>
+                    <th>Sanitized Value (Proposed Fix)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Header Syntax</strong></td>
+                    <td><span class="tag-diff-del">"Customer First-Name"</span></td>
+                    <td><span class="tag-diff-add">customer_first_name</span> <span class="tag-note">(Converted to clean SQL identifier)</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Duplicate Header</strong></td>
+                    <td><span class="tag-diff-del">"total"</span> <span class="tag-note">(Second occurrence)</span></td>
+                    <td><span class="tag-diff-add">total_c4</span> <span class="tag-note">(Auto-disambiguated with column index)</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Whitespace Trimming</strong></td>
+                    <td><span class="tag-diff-del">"&nbsp;&nbsp;Paris, France&nbsp;&nbsp;"</span></td>
+                    <td><span class="tag-diff-add">"Paris, France"</span> <span class="tag-note">(Padded whitespace stripped)</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Decimal Comma Coercion</strong></td>
+                    <td><span class="tag-diff-del">"149,95"</span></td>
+                    <td><span class="tag-diff-add">"149.95"</span> <span class="tag-note">(European decimal comma to dot in numbers)</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Embedded Line Break</strong></td>
+                    <td><span class="tag-diff-del">"Building A\nSuite 4"</span></td>
+                    <td><span class="tag-diff-add">"Building A|Suite 4"</span> <span class="tag-note">(Dangerous newline replaced with pipe)</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Date Standardization</strong></td>
+                    <td><span class="tag-diff-del">"24/09/2026"</span> <span class="tag-note">(DD/MM/YYYY)</span></td>
+                    <td><span class="tag-diff-add">"2026-09-24"</span> <span class="tag-note">(Standardized to ISO-8601 via &gt;12 rule)</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="more-tips-container">
+            <button class="more-tips-toggle" type="button" aria-expanded="false" onclick="toggleMoreTips(this)">
+              <span>More tips</span>
+              <span class="chevron">▾</span>
+            </button>
+            <div class="more-tips-content">
+              <div class="more-tips-inner">
+                <!-- Shortcuts Note Box -->
+                <div class="settings-box note-box">
+                  <span>⌨️</span>
+                  <div>
+                    <strong>Validation Shortcuts:</strong> Press <kbd class="key">Ctrl</kbd>+<kbd class="key">Shift</kbd>+<kbd class="key">H</kbd> to validate headers, <kbd class="key">Ctrl</kbd>+<kbd class="key">Shift</kbd>+<kbd class="key">P</kbd> to validate data, or click <strong>Validate Date Format</strong> in the toolbar.
+                  </div>
+                </div>
+
+                <!-- Date Ambiguity Safeguard Note Box -->
+                <div class="settings-box note-box-warn">
+                  <span>🛡️</span>
+                  <div>
+                    <strong>Date Ambiguity Safeguard:</strong> When date parts cannot be determined with certainty (e.g. <code>"03/05/2026"</code> where both numbers are &le; 12), NanoCell refuses to guess and warns you instead of risking data corruption.
+                  </div>
+                </div>
+
+                <!-- Non-technical Bulleted Settings Box -->
+                <div class="settings-box">
+                  <span>⚙️</span>
+                  <div>
+                    <strong>In Settings (<kbd class="key">Ctrl</kbd>+<kbd class="key">G</kbd>):</strong> You can customize validation rules to fit your database requirements:
+                    <ul style="margin: 0.4em 0 0 0; padding-left: 1.2em; line-height: 1.55em;">
+                      <li>Turn European decimal commas into dots for numeric values</li>
+                      <li>Replace commas in text fields with dashes</li>
+                      <li>Convert double quotes into single quotes</li>
+                      <li>Replace line breaks inside cells with pipes (<code>|</code>)</li>
+                      <li>Force all text to lowercase</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. CLIENT-SIDE PRIVACY -->
+      <section class="doc-section" id="client-privacy">
+        <div class="doc-section-content">
+          <span class="section-header-badge badge-privacy">🔒 100% Offline Privacy</span>
+          <h2>100% Private: Your Data Never Leaves Your Computer</h2>
+          <div class="eureka-subtitle">
+            ✨ "Oh, my sensitive customer records, payroll files, and company numbers never get uploaded to any external server?!"
+          </div>
+
+          <div class="comparison-grid">
+            <div class="comparison-col col-bad">
+              <div class="comparison-title">
+                The Pain Point
+              </div>
+              <div class="comparison-body">
+                <p>Uploading sensitive company records, financial numbers, or customer lists to online spreadsheet websites puts your private data at risk.</p>
+                <p>Most online tools send your files to their servers, where your data can be stored, analyzed, or accidentally exposed.</p>
+              </div>
+            </div>
+
+            <div class="comparison-col col-good">
+              <div class="comparison-title">
+                The NanoCell Solution
+              </div>
+              <div class="comparison-body">
+                <p>NanoCell runs 100% on your own computer inside your browser. No files are ever sent to an external server. Your data never leaves your machine.</p>
+                <p>Disconnect your Wi-Fi or turn on airplane mode—NanoCell runs completely offline. You can install it on your desktop without needing admin rights.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="example-card">
+            <div class="example-header">
+              <span class="example-title">Security &amp; Privacy Architecture</span>
+              <span class="example-badge badge-safe-preview">🛡️ Zero Cloud Roundtrips</span>
+            </div>
+            <div class="example-table-container">
+              <table class="example-table doc-text-table">
+                <thead>
+                  <tr>
+                    <th>Stage</th>
+                    <th>How It Works</th>
+                    <th>Privacy Guarantee</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Opening Files</strong></td>
+                    <td>Files are loaded directly from your hard drive into your browser</td>
+                    <td>No upload progress bar, no remote storage</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Editing &amp; Viewing</strong></td>
+                    <td>All calculations and data changes happen in your computer's local memory</td>
+                    <td>Zero external web requests during use</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Saving Files</strong></td>
+                    <td>Writes the modified CSV directly back to your local folder</td>
+                    <td>Byte-exact file saved locally with zero cloud copies</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="more-tips-container">
+            <button class="more-tips-toggle" type="button" aria-expanded="false" onclick="toggleMoreTips(this)">
+              <span>More tips</span>
+              <span class="chevron">▾</span>
+            </button>
+            <div class="more-tips-content">
+              <div class="more-tips-inner">
+                <div class="settings-box note-box">
+                  <span>💻</span>
+                  <div>
+                    <strong>Desktop Installation:</strong> You can install NanoCell directly from your browser's address bar (click the install icon). It launches in its own dedicated window without browser toolbars, starts instantly, and works completely offline without needing admin privileges.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. THE STANDARD ESSENTIALS & POWER TOOLS (MERGED) -->
+      <section class="doc-section" id="essentials">
+        <div class="doc-section-content">
+          <span class="section-header-badge badge-essentials">⌨️ The Essentials &amp; Shortcuts</span>
+          <h2>The Standard Essentials &amp; Power Tools</h2>
+          <div class="eureka-subtitle">
+            ✨ "Oh, I can transpose rows to columns, shift reorder data, and round numbers without touching the mouse?!"
+          </div>
+
+          <div class="essentials-grid">
+            <!-- Transpose -->
+            <div class="essential-card">
+              <div>
+                <strong>Matrix Transposition</strong>
+                <p>Pivots selected rows into columns and columns into rows. Ideal for re-orienting horizontal metric summaries for SQL ingestion.</p>
+              </div>
+              <div class="card-keys">
+                <span>Shortcut:</span> <kbd class="key">Ctrl</kbd>+<kbd class="key">Shift</kbd>+<kbd class="key">T</kbd>
+              </div>
+            </div>
+
+            <!-- Shift -->
+            <div class="essential-card">
+              <div>
+                <strong>Dynamic Row &amp; Col Shift</strong>
+                <p>Reorder columns or move rows up and down dynamically. No cutting, copying, or shifting adjacent cells around.</p>
+              </div>
+              <div class="card-keys">
+                <span>Shortcut:</span> <kbd class="key">Alt</kbd> + <kbd class="key">↑</kbd> <kbd class="key">↓</kbd> <kbd class="key">←</kbd> <kbd class="key">→</kbd>
+              </div>
+            </div>
+
+            <!-- Series Auto-Expansion -->
+            <div class="essential-card">
+              <div>
+                <strong>Series Auto-Expansion</strong>
+                <p>Select your starting seed row and highlight rows below. Press <kbd class="key">Ctrl</kbd>+<kbd class="key">E</kbd> to project arithmetic progressions across the range.</p>
+              </div>
+              <div class="card-keys">
+                <span>Shortcut:</span> <kbd class="key">Ctrl</kbd>+<kbd class="key">E</kbd>
+              </div>
+            </div>
+
+            <!-- Number Rounding -->
+            <div class="essential-card">
+              <div>
+                <strong>In-Place Number Rounding</strong>
+                <p>Round noisy floating-point calculations directly in the cells. No formula column writing or copy-paste-values needed.</p>
+              </div>
+              <div class="card-keys">
+                <span>Shortcuts:</span> <kbd class="key">Ctrl</kbd>+<kbd class="key">I</kbd> <em>(Int)</em> &bull; <kbd class="key">Ctrl</kbd>+<kbd class="key">$</kbd> <em>(2 Dec)</em>
+              </div>
+            </div>
+
+            <!-- Freeze Header -->
+            <div class="essential-card">
+              <div>
+                <strong>Freeze Header Row</strong>
+                <p>Lock your column titles at the top with a single keystroke. Scroll through thousands of records without losing column context.</p>
+              </div>
+              <div class="card-keys">
+                <span>Shortcut:</span> <kbd class="key">Ctrl</kbd>+<kbd class="key">B</kbd>
+              </div>
+            </div>
+
+            <!-- Command Palette -->
+            <div class="essential-card">
+              <div>
+                <strong>Fuzzy Command Palette</strong>
+                <p>Developer-style quick launcher. Access every setting, formatter, and transformation via instant keyboard fuzzy search.</p>
+              </div>
+              <div class="card-keys">
+                <span>Shortcuts:</span> <kbd class="key">Ctrl</kbd>+<kbd class="key">K</kbd> or <kbd class="key">Ctrl</kbd>+<kbd class="key">P</kbd>
+              </div>
+            </div>
+
+            <!-- Instant Date Stamp -->
+            <div class="essential-card">
+              <div>
+                <strong>Instant Date Stamp</strong>
+                <p>Stamps today's date formatted as universal ISO <code>YYYY-MM-DD</code> directly into the active cell or selection.</p>
+              </div>
+              <div class="card-keys">
+                <span>Shortcut:</span> <kbd class="key">Ctrl</kbd>+<kbd class="key">;</kbd>
+              </div>
+            </div>
+
+            <!-- Undo & Redo -->
+            <div class="essential-card">
+              <div>
+                <strong>Multi-Step Undo &amp; Redo</strong>
+                <p>Full transaction history with single-step rollback for batch validations and matrix transformations.</p>
+              </div>
+              <div class="card-keys">
+                <span>Shortcuts:</span> <kbd class="key">Ctrl</kbd>+<kbd class="key">Z</kbd> / <kbd class="key">Ctrl</kbd>+<kbd class="key">Y</kbd>
+              </div>
+            </div>
+
+            <!-- Find & Match -->
+            <div class="essential-card">
+              <div>
+                <strong>Find &amp; Occurrence Jump</strong>
+                <p>Quick search across all cells; press <kbd class="key">Ctrl</kbd>+<kbd class="key">D</kbd> to jump straight to the next matching cell.</p>
+              </div>
+              <div class="card-keys">
+                <span>Shortcuts:</span> <kbd class="key">Ctrl</kbd>+<kbd class="key">F</kbd> / <kbd class="key">Ctrl</kbd>+<kbd class="key">D</kbd>
+              </div>
+            </div>
+
+            <!-- Column Sorting -->
+            <div class="essential-card">
+              <div>
+                <strong>Fast Column Sorting</strong>
+                <p>Sort rows ascending or descending based on the active column while safely preserving the pinned header row.</p>
+              </div>
+              <div class="card-keys">
+                <span>Shortcuts:</span> <kbd class="key">Ctrl</kbd>+<kbd class="key">L</kbd> / <kbd class="key">Ctrl</kbd>+<kbd class="key">Shift</kbd>+<kbd class="key">L</kbd>
+              </div>
+            </div>
+
+            <!-- 6 Built-in Themes -->
+            <div class="essential-card">
+              <div>
+                <strong>6 Built-In Themes</strong>
+                <p>Light, Dark, Solarized, Night, Nord, and Dracula available in the settings dialog.</p>
+              </div>
+              <div class="card-keys">
+                <span>Shortcut:</span> Settings (<kbd class="key">Ctrl</kbd>+<kbd class="key">G</kbd>)
+              </div>
+            </div>
+
+            <!-- Empty Row/Col Trimmer -->
+            <div class="essential-card">
+              <div>
+                <strong>Empty Row &amp; Col Trimmer</strong>
+                <p>Clean up bloated export files by automatically removing all trailing blank rows and columns.</p>
+              </div>
+              <div class="card-keys">
+                <span>Shortcut:</span> <kbd class="key">Ctrl</kbd>+<kbd class="key">Shift</kbd>+<kbd class="key">T</kbd>
+              </div>
+            </div>
+          </div>
+
+          <div class="more-tips-container">
+            <button class="more-tips-toggle" type="button" aria-expanded="false" onclick="toggleMoreTips(this)">
+              <span>More tips</span>
+              <span class="chevron">▾</span>
+            </button>
+            <div class="more-tips-content">
+              <div class="more-tips-inner">
+                <div class="settings-box">
+                  <span>⚙️</span>
+                  <div>
+                    <strong>In Settings (<kbd class="key">Ctrl</kbd>+<kbd class="key">G</kbd>):</strong>
+                    You can customize your screen grid size (how many rows and columns fit on screen), highlight cells with hidden quotes or line returns in warning colors, and choose whether sorting keeps headers locked or sorts numbers before text.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+    </div>
+
+    <section class="launch-section" id="launch-bottom">
+      <div class="launch-banner">
+        <h2>Ready to See It in Action?</h2>
+        <p>Open NanoCell directly in your browser. No sign-up, no downloads, zero setup required.</p>
+        <a class="anchorButton" href="app/home.html" target="_blank" style="font-size: 1.1em; padding: 0.9em 2em;">
+          Launch NanoCell CSV Editor
+        </a>
+        <div style="margin-top: 1.2em; font-size: 0.9em; color: #15803d;">
+          Works in Chrome, Edge, Brave, and all Chromium browsers.
+        </div>
+      </div>
+    </section>
 
     <section id="contribute">
       <h2>Contribute</h2>
@@ -129,7 +1476,7 @@
     <section id="footer">
       <div>
         <strong>Links</strong>
-        <a href="./doc.html">Documentation</a>
+        <a href="#docs">Documentation</a>
         <a href="./terms_of_use_and_license.html">Terms of use</a>
         <a href="https://github.com/CedricBonjour/nanocell-csv/issues/new" target="_blank">Bug report </a>
         <a href="https://github.com/CedricBonjour/nanocell-csv" target="_blank"> Github Repository</a>
@@ -202,8 +1549,54 @@
       toast.style.opacity = "0";
     });
 
+    // Discrete 'More tips' sliding toggle
+    function toggleMoreTips(btn) {
+      const content = btn.nextElementSibling;
+      const isExpanded = btn.classList.toggle('active');
+      btn.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+      if (content) {
+        content.classList.toggle('open', isExpanded);
+      }
+    }
+
+    // Automatic section background alternator (applied everywhere)
+    function autoAlternateSectionBackgrounds() {
+      const sections = document.querySelectorAll('section');
+      sections.forEach((sec, idx) => {
+        if (idx % 2 === 0) {
+          sec.classList.remove('section-bg-white');
+          sec.classList.add('section-bg-grey');
+        } else {
+          sec.classList.remove('section-bg-grey');
+          sec.classList.add('section-bg-white');
+        }
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', autoAlternateSectionBackgrounds);
+    } else {
+      autoAlternateSectionBackgrounds();
+    }
+
     buildSmoothAnchorScroll();
+
+    function buildKeyFeaturesCardScroll() {
+      document.querySelectorAll('#features .essential-card').forEach(card => {
+        card.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            if (e.target.closest('a')) return;
+            e.preventDefault();
+            card.click();
+          }
+        });
+      });
+    }
+    buildKeyFeaturesCardScroll();
+
     if (isMobile()) {
+      const testBrowserNav = document.getElementById("test-browser-nav");
+      if (testBrowserNav) testBrowserNav.style.display = "none";
       installButton.classList.add("isMobileDnld");
       installButton.innerHTML = "Download available on Desktop only";
     }

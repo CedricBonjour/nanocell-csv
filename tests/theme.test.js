@@ -49,13 +49,15 @@ describe('Theming & UI Settings Operations', () => {
     expect(dom.body.style.fontSize).toBe('16px');
   });
 
-  test('Setting.resetDefault clears localStorage and restores default values', () => {
+  test('Setting.resetDefault restores default values and saves changes to localStorage', () => {
     stg.theme = 'dark';
     stg.font = 20;
     stg.delimiter = ';';
 
     Setting.resetDefault();
-    expect(localStorage.getItem('theme')).toBeNull();
+    expect(localStorage.getItem('theme')).toBe('nord');
+    expect(localStorage.getItem('font')).toBe('13');
+    expect(localStorage.getItem('delimiter')).toBe(',');
     expect(stg.font).toBe(13);
     expect(stg.delimiter).toBe(',');
   });

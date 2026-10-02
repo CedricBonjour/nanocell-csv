@@ -275,7 +275,6 @@ class Setting {
 
   static resetDefault() {
     for (const s of Setting.list) if (s.key) stg[s.key] = s.dflt;
-    localStorage.clear();
     Setting.show();
   }
 }

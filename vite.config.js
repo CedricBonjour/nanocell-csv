@@ -49,6 +49,8 @@ export default defineConfig(({ command }) => ({
       input: {
         // Points to the index.html at the ROOT of your project
         main: resolve(__dirname, 'index.html'),
+        // Points to the doc.html at the ROOT of your project
+        doc: resolve(__dirname, 'doc.html'),
         // Points to the home.html inside the app folder
         app: resolve(__dirname, 'app/home.html')
       }

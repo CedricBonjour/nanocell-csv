@@ -60,7 +60,8 @@ document.addEventListener("mousedown", e => {
   mouseTargetStart = e.target;
   if (e.button === 0) LBT = getTargetType(e);
   if (e.button === 2) RBT = getTargetType(e);
-  if (e.target.tagName != "INPUT" && e.target.tagName != "BUTTON") e.preventDefault(); // prevents text selection
+  const isSelectable = Boolean(e.target.closest && e.target.closest('ui-about'));
+  if (e.target.tagName != "INPUT" && e.target.tagName != "BUTTON" && !isSelectable) e.preventDefault(); // prevents text selection
   const sheet = getSheet();
   if (sheet) {
     const cell = e.target.closest ? (e.target.closest("td") || e.target.closest("th")) : null;

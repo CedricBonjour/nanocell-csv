@@ -1748,6 +1748,45 @@ ui-about {
   height: 100vh;
   justify-content: center;
   align-items: center;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+ui-about h1,
+ui-about h3,
+ui-about .about-version-container,
+ui-about .about-home-link {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.about-version-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.about-version-container h3 {
+  margin: 0;
+  line-height: normal;
+}
+
+.about-copy-btn {
+  width: var(--icon-size, 20px);
+  height: var(--icon-size, 20px);
+  min-width: 20px;
+  min-height: 20px;
+  padding: 2px;
+  cursor: pointer;
+  opacity: 0.75;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.about-copy-btn:hover {
+  opacity: 1;
+  transform: scale(1.1);
 }
 
 .about-logo {

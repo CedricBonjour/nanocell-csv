@@ -1,5 +1,6 @@
 import { dom } from './dom.js';
 import { setIcon } from './icons.js';
+import { Msg } from './Msg.js';
 
 class About extends HTMLElement {
   constructor() {
@@ -13,6 +14,50 @@ class About extends HTMLElement {
 
     this.titleEl = document.createElement("h1");
     this.versionEl = document.createElement("h3");
+    this.versionContainer = document.createElement("div");
+    this.versionContainer.className = "about-version-container";
+
+    this.copyBtn = document.createElement("button");
+    this.copyBtn.className = "icon about-copy-btn";
+    this.copyBtn.type = "button";
+    this.copyBtn.setAttribute("title", "Copy version");
+    this.copyBtn.setAttribute("aria-label", "Copy version");
+    setIcon(this.copyBtn, 'copy');
+    this.buttonCopy = this.copyBtn;
+
+    this.copyBtn.onclick = async () => {
+      const appName = this.titleEl?.innerText?.trim() || "Nanocell CSV Editor";
+      const version = this.versionEl?.innerText?.trim() || this.getVersion();
+      const textToCopy = `${appName}-${version}`;
+      let success = false;
+      try {
+        if (navigator?.clipboard?.writeText) {
+          await navigator.clipboard.writeText(textToCopy);
+          success = true;
+        }
+      } catch (e) {
+        console.warn('Navigator clipboard write failed, trying fallback:', e);
+      }
+      if (!success && typeof document !== 'undefined') {
+        try {
+          const ta = document.createElement('textarea');
+          ta.value = textToCopy;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          ta.remove();
+          success = true;
+        } catch (e) {
+          console.warn('Fallback copy failed:', e);
+        }
+      }
+      setIcon(this.copyBtn, 'on');
+      setTimeout(() => setIcon(this.copyBtn, 'copy'), 1500);
+      Msg.quick(`Copied: ${textToCopy}`);
+    };
+
     this.logoEl = document.createElement("img");
     this.homeLink = document.createElement("a");
     this.bugLink = document.createElement("a");
@@ -45,9 +90,12 @@ class About extends HTMLElement {
     this.initElements();
 
     this.getVersion(e => { if (this.versionEl) this.versionEl.innerHTML = e; });
+    this.versionContainer.appendChild(this.versionEl);
+    this.versionContainer.appendChild(this.copyBtn);
+
     this.appendChild(this.logoEl);
     this.appendChild(this.titleEl);
-    this.appendChild(this.versionEl);
+    this.appendChild(this.versionContainer);
     this.bugLink.appendChild(this.buttonBugReport);
     this.aboutFooter.appendChild(this.bugLink);
     this.aboutFooter.appendChild(this.homeLink);

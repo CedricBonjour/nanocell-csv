@@ -170,6 +170,39 @@ describe('Settings Management & Input Components Test Suite', () => {
     expect(versionEl.innerHTML).toMatch(/^v\d+\.\d+\.\d+-[a-zA-Z0-9]+$/);
   });
 
+  test('About pane includes copy button that copies <App name>-<version name> to clipboard', async () => {
+    const el = About.show();
+    const copyBtn = el.querySelector('.about-copy-btn');
+    expect(copyBtn).not.toBeNull();
+    expect(copyBtn.getAttribute('title')).toBe('Copy version');
+
+    let clipboardText = '';
+    navigator.clipboard = {
+      writeText: async (txt) => { clipboardText = txt; }
+    };
+
+    copyBtn.click();
+    await Promise.resolve();
+
+    expect(clipboardText).toMatch(/^Nanocell CSV Editor-v\d+\.\d+\.\d+-.+$/);
+  });
+
+  test('Mousedown inside ui-about does not preventDefault to permit text selection', async () => {
+    await import('../app/js/mouse.js');
+    const el = About.show();
+    const versionEl = el.querySelector('h3');
+    expect(versionEl).not.toBeNull();
+
+    const mousedownEvent = new MouseEvent('mousedown', {
+      bubbles: true,
+      cancelable: true,
+      button: 0
+    });
+
+    versionEl.dispatchEvent(mousedownEvent);
+    expect(mousedownEvent.defaultPrevented).toBe(false);
+  });
+
   test('cmd.settings.run() invokes Setting.show() without ReferenceError', () => {
     dom.dialog.clear();
     expect(dom.dialog.children.length).toBe(0);

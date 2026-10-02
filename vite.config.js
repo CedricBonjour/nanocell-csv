@@ -2,6 +2,33 @@ import { defineConfig } from 'vitest/config';
 import { VitePWA } from 'vite-plugin-pwa';
 import { resolve } from 'path';
 import { spawnSync } from 'child_process';
+import { readFileSync } from 'fs';
+
+const pkg = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf-8'));
+
+let commitHash = '';
+let commitCount = '';
+try {
+  const gitRes = spawnSync('git', ['rev-parse', '--short', 'HEAD'], { encoding: 'utf-8' });
+  if (gitRes.status === 0 && gitRes.stdout) {
+    commitHash = gitRes.stdout.trim();
+  }
+  const countRes = spawnSync('git', ['rev-list', '--count', 'HEAD'], { encoding: 'utf-8' });
+  if (countRes.status === 0 && countRes.stdout) {
+    commitCount = countRes.stdout.trim();
+  }
+} catch {
+  // fallback if git command fails
+}
+if (!commitHash) {
+  commitHash = process.env.GIT_COMMIT || process.env.VITE_COMMIT || 'dev';
+}
+
+const parts = (pkg.version || '1.0.0').replace(/^v/, '').split('.');
+const major = parts[0] || '1';
+const minor = parts[1] || '0';
+const patch = commitCount || parts[2] || '0';
+const appVersion = `v${major}.${minor}.${patch}-${commitHash}`;
 
 const generateHtmlPlugin = () => ({
   name: 'generate-html',
@@ -12,6 +39,9 @@ const generateHtmlPlugin = () => ({
 });
 
 export default defineConfig(({ command }) => ({
+  define: {
+    __APP_VERSION__: JSON.stringify(appVersion)
+  },
   build: {
     outDir: resolve(__dirname, 'dist'),
     emptyOutDir: true,
@@ -35,9 +65,11 @@ export default defineConfig(({ command }) => ({
   plugins: [
     generateHtmlPlugin(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       includeAssets: ['**/*.{png,svg,webp,ico}'],
       workbox: {
+        cacheId: appVersion,
+        cleanupOutdatedCaches: true,
         navigateFallback: null,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,ttf}']
       },

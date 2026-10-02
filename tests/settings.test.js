@@ -163,6 +163,13 @@ describe('Settings Management & Input Components Test Suite', () => {
     expect(dialog.querySelector('ui-about')).not.toBeNull();
   });
 
+  test('About pane displays version formatted as v<version>-<commit>', () => {
+    const el = About.show();
+    const versionEl = el.querySelector('h3');
+    expect(versionEl).not.toBeNull();
+    expect(versionEl.innerHTML).toMatch(/^v\d+\.\d+\.\d+-[a-zA-Z0-9]+$/);
+  });
+
   test('cmd.settings.run() invokes Setting.show() without ReferenceError', () => {
     dom.dialog.clear();
     expect(dom.dialog.children.length).toBe(0);

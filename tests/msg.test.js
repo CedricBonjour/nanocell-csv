@@ -152,4 +152,53 @@ describe('Msg Modern UI & Toast System Test Suite', () => {
     pressTab(msgInstance.closeBtn, true);
     expect(document.activeElement).toBe(msgInstance.ok);
   });
+
+  test('PWA update registration specifies onNeedRefresh handler', async () => {
+    await import('../app/js/main.js');
+    const { lastRegisteredSWOptions } = await import('./mocks/pwa-register.js');
+    expect(lastRegisteredSWOptions).not.toBeNull();
+    expect(typeof lastRegisteredSWOptions.onNeedRefresh).toBe('function');
+  });
+
+  test('handleSWUpdatePrompt prompts user and executes reload if no unsaved changes', async () => {
+    const { handleSWUpdatePrompt, setSheet } = await import('../app/js/main.js');
+    const { Sheet } = await import('../app/js/Sheet.js');
+    const { Dataframe } = await import('../app/js/Dataframe.js');
+
+    const testSheet = new Sheet(new Dataframe([['A', 'B']]));
+    testSheet.df.isSaved = true;
+    setSheet(testSheet);
+
+    let reloaded = false;
+    const toast = handleSWUpdatePrompt((reload) => { reloaded = reload; });
+
+    expect(toast).not.toBeNull();
+    expect(toast.innerHTML).toContain('Reload to update?');
+    expect(toast.classList.contains('ui-toast-info')).toBe(true);
+
+    const okBtn = toast.querySelector('.ui-msg-ok');
+    okBtn.click();
+    expect(reloaded).toBe(true);
+  });
+
+  test('handleSWUpdatePrompt warns user and blocks reload when unsaved changes exist', async () => {
+    const { handleSWUpdatePrompt, setSheet } = await import('../app/js/main.js');
+    const { Sheet } = await import('../app/js/Sheet.js');
+    const { Dataframe } = await import('../app/js/Dataframe.js');
+
+    const testSheet = new Sheet(new Dataframe([['A', 'B']]));
+    testSheet.df.isSaved = false;
+    setSheet(testSheet);
+
+    let reloaded = false;
+    const toast = handleSWUpdatePrompt((reload) => { reloaded = reload; });
+
+    expect(toast).not.toBeNull();
+    expect(toast.innerHTML).toContain('unsaved changes');
+    expect(toast.classList.contains('ui-toast-warning')).toBe(true);
+
+    const okBtn = toast.querySelector('.ui-msg-ok');
+    okBtn.click();
+    expect(reloaded).toBe(false);
+  });
 });

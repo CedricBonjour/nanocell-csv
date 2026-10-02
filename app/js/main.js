@@ -16,7 +16,7 @@ import './ui/CommandPalette.js';
 import './ui/ValidationPane.js';
 import './About.js';
 import './Finder.js';
-import './Msg.js';
+import { Msg } from './Msg.js';
 
 import { registerSW } from 'virtual:pwa-register';
 
@@ -66,7 +66,48 @@ let nanocell_cleanStart = function () {
 window.addEventListener('DOMContentLoaded', () => {
   nanocell_cleanStart();
 });
-registerSW({ immediate: true });
+export function handleSWUpdatePrompt(updateSWFn = updateSW) {
+  const currentSheet = getSheet();
+  const hasUnsaved = currentSheet?.df && !currentSheet.df.isSaved;
+  const message = hasUnsaved
+    ? "A new update is available. You have unsaved changes. Please save your file before updating."
+    : "A new update is available. Reload to update?";
+
+  return new Msg(message, {
+    id: 3,
+    type: hasUnsaved ? 'warning' : 'info',
+    title: 'Update Available',
+    okText: 'Reload',
+    cancelText: 'Later',
+    defaultFocus: hasUnsaved ? 'cancel' : 'ok',
+    cbt: () => {
+      const sheetNow = getSheet();
+      if (sheetNow?.df && !sheetNow.df.isSaved) {
+        Msg.warning("Please save your changes before reloading.", "Unsaved Changes");
+        return;
+      }
+      if (typeof updateSWFn === 'function') {
+        updateSWFn(true);
+      }
+    }
+  }).show();
+}
+
+export const updateSW = registerSW({
+  immediate: true,
+  onNeedRefresh() {
+    handleSWUpdatePrompt(updateSW);
+  },
+  onOfflineReady() {
+    console.log('App ready to work offline');
+  },
+  onRegisteredSW(swUrl, registration) {
+    if (registration) {
+      setInterval(() => registration.update(), 60 * 60 * 1000);
+      window.addEventListener('focus', () => registration.update());
+    }
+  }
+});
 
 export function setSheet(s) {
   sheet = s;

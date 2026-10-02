@@ -66,11 +66,11 @@ class About extends HTMLElement {
   }
 
   getVersion(cb) {
-    if (typeof caches !== 'undefined' && caches.keys) {
-      caches.keys().then(cache => { cb(cache.join('<br>')) }).catch(err => { console.warn("Failed to get cache version:", err); cb("version error"); });
-    } else {
-      cb("1.0.0");
+    const version = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'v1.0.1-dev';
+    if (typeof cb === 'function') {
+      cb(version);
     }
+    return version;
   }
 }
 

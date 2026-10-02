@@ -78,6 +78,13 @@ const cmd = {
     },
     description: "Insert today's date"
   },
+  date_checker: {
+    label: "Validate Date Format",
+    run() {
+      getSheet()?.validate_date_format();
+    },
+    description: "Validate and standardize date formats to YYYY-mm-dd"
+  },
   find: { label: "Find & Match", k: "F", ctrl: true, run() { const s = getSheet(); if (s) { s.finder.findMenu(s.getSlctFirstValue(), false); s.scrollbarRefresh(); } }, description: "Quick find / match" },
   findAdvanced: { label: "Advanced Find / Replace", k: "F", ctrl: true, shift: true, run() { const s = getSheet(); if (s) s.finder.findMenu(s.getSlctFirstValue(), true); }, description: "Advanced find / replace (work in progress)" },
   menubar: { label: "Toggle Menu Bar", k: "M", ctrl: true, run() { stg.actionBar = (stg.actionBar !== false) ? false : true; }, description: "Toggle action bar display" },
@@ -151,7 +158,7 @@ function buildCommands() {
 function buildMenu() {
   const menuItems = [
     "new", "open", "save", "reloadFile", "",
-    "undo", "redo", "fixTop", "sort", "sort_reverse", "transpose", "trim", "date", "integer", "decimal", "validate_headers", "validate_data",
+    "undo", "redo", "fixTop", "sort", "sort_reverse", "transpose", "trim", "date", "date_checker", "integer", "decimal", "validate_headers", "validate_data",
     "", "find", "about", "settings", "shortcuts"];
   function buildMenuItem(item) {
     if (item === "") {

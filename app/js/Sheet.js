@@ -80,6 +80,9 @@ class Sheet extends HTMLElement {
   validate_headers() { return this.controller.validate_headers(); }
   go_to_next() { return this.controller.go_to_next(); }
   validate_data() { return this.controller.validate_data(); }
+  validate_date_format() { return this.controller.validate_date_format(); }
+  validate_dates() { return this.controller.validate_dates(); }
+
   rangeOrdered() { return this.controller.rangeOrdered(); }
   expand() { return this.controller.expand(); }
   slctAll() { return this.controller.slctAll(); }

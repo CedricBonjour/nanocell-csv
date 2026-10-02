@@ -7,6 +7,9 @@ import { StateManager } from '../StateManager.js';
 import { Setting, stg } from '../Setting.js';
 import { Msg } from '../Msg.js';
 import { LBT, TargetType } from '../mouse.js';
+import { parseDateCandidate, parseYearFirstDate } from '../utils/DateExt.js';
+
+
 
 /**
  * Manages input events, grid navigation, selection ranges, and operations on the active Sheet.
@@ -418,6 +421,146 @@ export class SheetController {
     this.openValidationPaneWithItems(items);
     return items;
   }
+
+  /**
+   * Validates and standardizes date cells in the sheet to 'YYYY-mm-dd'.
+   * Transforms year-first dates (e.g. YYYY-m-d) systematically to 'YYYY-mm-dd'.
+   * Scans for cells matching 'dd-mm-YYYY' or 'mm-dd-YYYY' across any separator.
+   * Differentiates year-last source format with certainty based on digits > 12.
+   * If both formats coexist or no date has a digit > 12, alerts user via Msg.js.
+   * If format is determined with certainty, transforms matching cells to 'YYYY-mm-dd'.
+   * @returns {Array<Object>} List of executed change objects with metadata.
+   */
+  validate_date_format() {
+    if (this.sheet.inputing) this.inputBlur();
+    if (this.sheet?.df?.lock) {
+      Msg.warning("Sheet is locked (view-only mode).", "Date Validation");
+      const res = [];
+      res.success = false;
+      res.reason = 'locked';
+      return res;
+    }
+
+    const yearFirstCandidates = [];
+    const yearLastCandidates = [];
+    let dayFirstCount = 0;
+    let monthFirstCount = 0;
+
+    for (let y = 0; y < this.sheet.df.height; y++) {
+      for (let x = 0; x < this.sheet.df.width; x++) {
+        const val = this.sheet.df.get(x, y);
+        if (!val) continue;
+
+        // Check year-first (e.g., YYYY-m-d / YYYY-mm-dd)
+        const yf = parseYearFirstDate(val);
+        if (yf) {
+          yearFirstCandidates.push({ x, y, ...yf });
+          continue;
+        }
+
+        // Check year-last (dd-mm-YYYY or mm-dd-YYYY)
+        const yl = parseDateCandidate(val);
+        if (yl) {
+          if (yl.p1 > 12) {
+            dayFirstCount++;
+          } else if (yl.p2 > 12) {
+            monthFirstCount++;
+          }
+          yearLastCandidates.push({ x, y, ...yl });
+        }
+      }
+    }
+
+    if (yearFirstCandidates.length === 0 && yearLastCandidates.length === 0) {
+      Msg.info("No matching date cells found in the file.", "Date Validation");
+      const res = [];
+      res.success = false;
+      res.reason = 'no_dates';
+      return res;
+    }
+
+    // 1. Year-first dates: systematic and independent normalization to YYYY-mm-dd
+    const yearFirstChanges = [];
+    for (const c of yearFirstCandidates) {
+      const formatted = `${String(c.year).padStart(4, '0')}-${String(c.month).padStart(2, '0')}-${String(c.day).padStart(2, '0')}`;
+      const currentVal = this.sheet.df.get(c.x, c.y);
+      if (currentVal !== formatted) {
+        yearFirstChanges.push({
+          x: c.x,
+          y: c.y,
+          oldValue: currentVal,
+          newValue: formatted
+        });
+      }
+    }
+
+    // 2. Year-last dates evaluation
+    let detectedFormat = null;
+    let yearLastIssue = null;
+    const yearLastChanges = [];
+
+    if (yearLastCandidates.length > 0) {
+      if (dayFirstCount > 0 && monthFirstCount > 0) {
+        yearLastIssue = 'coexistence';
+        Msg.warning("Both 'dd-mm-YYYY' and 'mm-dd-YYYY' formats coexist in the file.", "Date Validation");
+      } else if (dayFirstCount === 0 && monthFirstCount === 0) {
+        yearLastIssue = 'ambiguous';
+        Msg.warning("Cannot determine date format with certainty: no date has a digit over 12.", "Date Validation");
+      } else {
+        detectedFormat = dayFirstCount > 0 ? 'dd-mm-YYYY' : 'mm-dd-YYYY';
+        for (const c of yearLastCandidates) {
+          const day = detectedFormat === 'dd-mm-YYYY' ? c.p1 : c.p2;
+          const month = detectedFormat === 'dd-mm-YYYY' ? c.p2 : c.p1;
+          const year = c.year;
+
+          const formatted = `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          const currentVal = this.sheet.df.get(c.x, c.y);
+          if (currentVal !== formatted) {
+            yearLastChanges.push({
+              x: c.x,
+              y: c.y,
+              oldValue: currentVal,
+              newValue: formatted
+            });
+          }
+        }
+      }
+    }
+
+    const changes = [...yearFirstChanges, ...yearLastChanges];
+
+    if (changes.length > 0) {
+      this.sheet.df.create({
+        type: 'RANGE_EDIT',
+        timestamp: Date.now(),
+        payload: { changes }
+      });
+      this.sheet.refresh();
+      StateManager.emit('dataframe:changed', { action: 'dateValidate', changes });
+      if (!yearLastIssue) {
+        Msg.success(`Converted ${changes.length} date${changes.length === 1 ? '' : 's'} to YYYY-mm-dd${detectedFormat ? ` (${detectedFormat})` : ''}.`, "Date Validation");
+      }
+    } else if (!yearLastIssue) {
+      Msg.info("All matching dates are already in YYYY-mm-dd format.", "Date Validation");
+    }
+
+    const result = changes;
+    if (yearLastIssue) {
+      result.success = yearFirstChanges.length > 0;
+      result.reason = yearLastIssue;
+    } else {
+      result.success = true;
+      result.detectedFormat = detectedFormat || 'YYYY-mm-dd';
+    }
+    result.count = changes.length;
+    return result;
+  }
+
+
+  validate_dates() {
+    return this.validate_date_format();
+  }
+
 
   /**
    * Computes normalized boundary coordinates for active selection range.

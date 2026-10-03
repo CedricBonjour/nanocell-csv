@@ -3,6 +3,7 @@ app/test/
 test/csv_files/
 test/
 private/
+marketing/
 
 *TODO.md
 

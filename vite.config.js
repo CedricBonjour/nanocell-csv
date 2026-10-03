@@ -38,6 +38,13 @@ const generateHtmlPlugin = () => ({
   }
 });
 
+const htmlVersionPlugin = () => ({
+  name: 'html-version-transform',
+  transformIndexHtml(html) {
+    return html.replace(/__APP_VERSION__/g, appVersion);
+  }
+});
+
 export default defineConfig(({ command }) => ({
   define: {
     __APP_VERSION__: JSON.stringify(appVersion)
@@ -63,6 +70,7 @@ export default defineConfig(({ command }) => ({
     }
   },
   plugins: [
+    htmlVersionPlugin(),
     generateHtmlPlugin(),
     VitePWA({
       registerType: 'prompt',

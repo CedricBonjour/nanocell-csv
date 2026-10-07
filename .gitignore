@@ -31,3 +31,7 @@ coverage/
 # Misc
 .DS_Store
 dev-dist/
+
+# Build outputs
+dist/
+out/

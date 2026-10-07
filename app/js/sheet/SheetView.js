@@ -123,8 +123,8 @@ export class SheetView {
   loadTopHeader(x) {
     if (!this.rows[0] || !this.rows[0].cells[x + 1]) return;
     if (this.sheet.fixTop && this.sheet.df.get(this.sheet.baseX + x, 0).length > 0)
-      this.rows[0].cells[x + 1].firstChild.innerHTML = this.sheet.df.get(this.sheet.baseX + x, 0);
-    else this.rows[0].cells[x + 1].firstChild.innerHTML = this.sheet.baseX + x + 1;
+      this.rows[0].cells[x + 1].firstChild.textContent = this.sheet.df.get(this.sheet.baseX + x, 0);
+    else this.rows[0].cells[x + 1].firstChild.textContent = this.sheet.baseX + x + 1;
 
     const matrixX = this.sheet.baseX + x;
     if (this.sheet.expandedCol !== null && this.sheet.expandedCol !== undefined) {
@@ -134,8 +134,25 @@ export class SheetView {
         this.rows[0].cells[x + 1].style.width = "0%";
       }
     } else {
-      this.rows[0].cells[x + 1].style.width = String(100.0 / this.sheet.nViewCols) + "%";
+      const nCols = this.sheet?.nViewCols || 10;
+      this.rows[0].cells[x + 1].style.width = (100.0 / nCols) + "%";
     }
+  }
+
+  /**
+   * Recalculates and applies column width percentages across header row cells.
+   * @returns {string} The computed column width percentage string.
+   */
+  calcColSizes() {
+    const nCols = this.sheet?.nViewCols || 10;
+    const widthStr = (100.0 / nCols) + '%';
+    if (this.rows && this.rows[0]) {
+      const colCount = Math.max(this.sheet?.width || 0, this.rows[0].cells.length - 1);
+      for (let x = 0; x < colCount; x++) {
+        this.loadTopHeader(x);
+      }
+    }
+    return widthStr;
   }
 
   /**

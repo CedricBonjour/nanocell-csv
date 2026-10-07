@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach } from 'vitest';
-import { Dataframe } from '../app/js/Dataframe.js';
+import { Dataframe } from '../core/model/Dataframe.js';
 import { Sheet } from '../app/js/Sheet.js';
 import { Finder } from '../app/js/Finder.js';
 import { Setting } from '../app/js/Setting.js';

@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach } from 'vitest';
-import { Dataframe } from '../app/js/Dataframe.js';
+import { Dataframe } from '../core/model/Dataframe.js';
 import { stg } from '../app/js/Setting.js';
 
 describe('Dataframe Core Operations', () => {

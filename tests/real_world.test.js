@@ -2,7 +2,7 @@ import { describe, test, expect, beforeEach } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { csv_parse, separatorDetection } from '../app/js/csv_worker.js';
-import { Dataframe } from '../app/js/Dataframe.js';
+import { Dataframe } from '../core/model/Dataframe.js';
 import { Sheet } from '../app/js/Sheet.js';
 import { CsvHandle } from '../app/js/CsvHandle.js';
 import { Finder } from '../app/js/Finder.js';

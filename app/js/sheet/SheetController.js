@@ -8,6 +8,11 @@ import { Setting, stg } from '../Setting.js';
 import { Msg } from '../Msg.js';
 import { LBT, TargetType } from '../mouse.js';
 import { parseDateCandidate, parseYearFirstDate } from '../utils/DateExt.js';
+import { HeaderValidator } from '../../../core/validation/HeaderValidator.js';
+import { DataValidator } from '../../../core/validation/DataValidator.js';
+import { DateValidator } from '../../../core/validation/DateValidator.js';
+import { createRange } from '../../../core/model/Range.js';
+import { formatDate } from '../../../core/utils/date.js';
 
 
 
@@ -40,7 +45,7 @@ export class SheetController {
       if ((e.ctrlKey || e.metaKey) && (e.key === ";" || k === "T")) {
         e.preventDefault();
         e.stopPropagation();
-        const todayStr = (new Date()).getFormated ? (new Date()).getFormated("yyyy-mm-dd") : new Date().toISOString().slice(0, 10);
+        const todayStr = formatDate(new Date(), 'yyyy-mm-dd');
         const input = this.sheet.inputField;
         const start = input.selectionStart || 0;
         const end = input.selectionEnd || 0;
@@ -225,22 +230,11 @@ export class SheetController {
    * @param {boolean} ascending - True for ascending, false for descending.
    */
   sort(n, ascending) {
-    let col_items = this.sheet.df.data.map(row => row[n]).map((val, idx) => ({ val, idx }));
-    if (stg.sort_header) col_items.shift();
-    let numbers = [];
-    let strings = [];
-    let empty = [];
-    col_items.forEach(item => {
-      if (item.val === undefined || item.val.length < 1) empty.push(item.idx);
-      else if (!isNaN(item.val)) numbers.push({ val: +item.val, idx: item.idx });
-      else strings.push(item);
+    this.sheet.df.sort(n, {
+      ascending,
+      hasHeader: Boolean(stg.sort_header),
+      numbersFirst: Boolean(stg.sort_num_first)
     });
-    let str_ordered = strings.sort((a, b) => (ascending) ? a.val.localeCompare(b.val) : b.val.localeCompare(a.val)).map(({ idx }) => idx);
-    let num_ordered = numbers.sort((a, b) => (ascending) ? a.val - b.val : b.val - a.val).map(({ idx }) => idx);
-    let new_order = stg.sort_num_first ? num_ordered.concat(str_ordered) : str_ordered.concat(num_ordered);
-    new_order = new_order.concat(empty);
-    if (stg.sort_header) new_order.unshift(0);
-    this.sheet.df.order(new_order);
     this.view.refresh();
   }
 
@@ -276,38 +270,12 @@ export class SheetController {
    * @returns {Array<Object>} List of proposed header edit objects.
    */
   validate_headers() {
-    const items = [];
-    const simulatedHeaders = [];
-    let idCounter = 0;
-
-    for (let x = 0; x < this.sheet.df.width; x++) {
-      const originalH = this.sheet.df.get(x, 0);
-      let h = originalH;
-      if (h === undefined || h === "") h = `col_${x + 1}`;
-      h = String(h).toLowerCase();
-      h = h.replace(/[^a-zA-Z0-9]/g, '_');
-
-      for (let i = 0; i < x; i++) {
-        if (h === simulatedHeaders[i]) {
-          h = h + `_c${x + 1}`;
-        }
-      }
-      simulatedHeaders.push(h);
-
-      if (h !== originalH) {
-        items.push({
-          id: `val_hdr_${x}_${idCounter++}`,
-          x: x,
-          y: 0,
-          header: originalH || `col_${x + 1}`,
-          oldValue: originalH ?? "",
-          newValue: h,
-          category: 'DUPLICATE_FIX',
-          categoryName: 'Duplicate Fixes',
-          status: 'pending'
-        });
-      }
-    }
+    const rawItems = HeaderValidator.validate(this.sheet.df);
+    const items = rawItems.map(item => ({
+      ...item,
+      category: 'DUPLICATE_FIX',
+      categoryName: 'Duplicate Fixes'
+    }));
 
     this.openValidationPaneWithItems(items);
     return items;
@@ -340,83 +308,14 @@ export class SheetController {
    * @returns {Array<Object>} List of proposed edit objects.
    */
   validate_data() {
-    const items = [];
-    let dot = stg.dv_comma_num;
-    let dash = stg.dv_comma_txt;
-    let single_quote = stg.dv_quotes;
-    let line_return = stg.dv_lr;
-    let lower = stg.dv_lower;
-    let idCounter = 0;
-
-    for (let y = 0; y < this.sheet.df.height; y++) {
-      for (let x = 0; x < this.sheet.df.width; x++) {
-        const origVal = this.sheet.df.get(x, y);
-        if (origVal === undefined || origVal === null) continue;
-        let d = String(origVal);
-        if (d.length < 1) continue;
-
-        const headerName = this.sheet.df.get(x, 0) || `col_${x + 1}`;
-
-        // 1. Whitespace Trimming check
-        if (d !== d.trim()) {
-          const trimmed = d.trim();
-          items.push({
-            id: `val_data_${x}_${y}_${idCounter++}`,
-            x: x,
-            y: y,
-            header: headerName,
-            oldValue: d,
-            newValue: trimmed,
-            category: 'WHITESPACE_TRIMMING',
-            categoryName: 'Whitespace/Trimming',
-            status: 'pending'
-          });
-          d = trimmed;
-        }
-
-        if (d.length < 1 || !isNaN(d)) continue;
-
-        // 2. Data Type Coercion (e.g. comma to dot for numbers)
-        if (dot && d.includes(',')) {
-          let numberTry = d.replace(',', '.');
-          if (!isNaN(numberTry)) {
-            items.push({
-              id: `val_data_${x}_${y}_${idCounter++}`,
-              x: x,
-              y: y,
-              header: headerName,
-              oldValue: origVal,
-              newValue: numberTry,
-              category: 'DATA_TYPE_COERCION',
-              categoryName: 'Data Type Coercion',
-              status: 'pending'
-            });
-            continue;
-          }
-        }
-
-        // 3. Constraint / Range Violations (comma in text, line returns, quotes, lowercase)
-        let v = d;
-        if (dash) v = v.replaceAll(',', '-');
-        if (line_return) v = v.replaceAll('\n', '|');
-        if (single_quote) v = v.replaceAll('\"', '\'');
-        if (lower) v = v.toLowerCase();
-
-        if (v !== d) {
-          items.push({
-            id: `val_data_${x}_${y}_${idCounter++}`,
-            x: x,
-            y: y,
-            header: headerName,
-            oldValue: origVal,
-            newValue: v,
-            category: 'CONSTRAINT_RANGE_VIOLATION',
-            categoryName: 'Constraint/Range Violations',
-            status: 'pending'
-          });
-        }
-      }
-    }
+    const items = DataValidator.validate(this.sheet.df, {
+      trimWhitespace: true,
+      coerceCommaDecimals: Boolean(stg.dv_comma_num),
+      replaceCommaWithHyphen: Boolean(stg.dv_comma_txt),
+      replaceNewlineWithPipe: Boolean(stg.dv_lr),
+      replaceDoubleQuotes: Boolean(stg.dv_quotes),
+      toLowerCase: Boolean(stg.dv_lower)
+    });
 
     this.openValidationPaneWithItems(items);
     return items;
@@ -441,37 +340,9 @@ export class SheetController {
       return res;
     }
 
-    const yearFirstCandidates = [];
-    const yearLastCandidates = [];
-    let dayFirstCount = 0;
-    let monthFirstCount = 0;
+    const { proposals, success, detectedFormat, reason } = DateValidator.validate(this.sheet.df);
 
-    for (let y = 0; y < this.sheet.df.height; y++) {
-      for (let x = 0; x < this.sheet.df.width; x++) {
-        const val = this.sheet.df.get(x, y);
-        if (!val) continue;
-
-        // Check year-first (e.g., YYYY-m-d / YYYY-mm-dd)
-        const yf = parseYearFirstDate(val);
-        if (yf) {
-          yearFirstCandidates.push({ x, y, ...yf });
-          continue;
-        }
-
-        // Check year-last (dd-mm-YYYY or mm-dd-YYYY)
-        const yl = parseDateCandidate(val);
-        if (yl) {
-          if (yl.p1 > 12) {
-            dayFirstCount++;
-          } else if (yl.p2 > 12) {
-            monthFirstCount++;
-          }
-          yearLastCandidates.push({ x, y, ...yl });
-        }
-      }
-    }
-
-    if (yearFirstCandidates.length === 0 && yearLastCandidates.length === 0) {
+    if (reason === 'no_dates') {
       Msg.info("No matching date cells found in the file.", "Date Validation");
       const res = [];
       res.success = false;
@@ -479,55 +350,18 @@ export class SheetController {
       return res;
     }
 
-    // 1. Year-first dates: systematic and independent normalization to YYYY-mm-dd
-    const yearFirstChanges = [];
-    for (const c of yearFirstCandidates) {
-      const formatted = `${String(c.year).padStart(4, '0')}-${String(c.month).padStart(2, '0')}-${String(c.day).padStart(2, '0')}`;
-      const currentVal = this.sheet.df.get(c.x, c.y);
-      if (currentVal !== formatted) {
-        yearFirstChanges.push({
-          x: c.x,
-          y: c.y,
-          oldValue: currentVal,
-          newValue: formatted
-        });
-      }
+    if (reason === 'coexistence') {
+      Msg.warning("Both 'dd-mm-YYYY' and 'mm-dd-YYYY' formats coexist in the file.", "Date Validation");
+    } else if (reason === 'ambiguous') {
+      Msg.warning("Cannot determine date format with certainty: no date has a digit over 12.", "Date Validation");
     }
 
-    // 2. Year-last dates evaluation
-    let detectedFormat = null;
-    let yearLastIssue = null;
-    const yearLastChanges = [];
-
-    if (yearLastCandidates.length > 0) {
-      if (dayFirstCount > 0 && monthFirstCount > 0) {
-        yearLastIssue = 'coexistence';
-        Msg.warning("Both 'dd-mm-YYYY' and 'mm-dd-YYYY' formats coexist in the file.", "Date Validation");
-      } else if (dayFirstCount === 0 && monthFirstCount === 0) {
-        yearLastIssue = 'ambiguous';
-        Msg.warning("Cannot determine date format with certainty: no date has a digit over 12.", "Date Validation");
-      } else {
-        detectedFormat = dayFirstCount > 0 ? 'dd-mm-YYYY' : 'mm-dd-YYYY';
-        for (const c of yearLastCandidates) {
-          const day = detectedFormat === 'dd-mm-YYYY' ? c.p1 : c.p2;
-          const month = detectedFormat === 'dd-mm-YYYY' ? c.p2 : c.p1;
-          const year = c.year;
-
-          const formatted = `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          const currentVal = this.sheet.df.get(c.x, c.y);
-          if (currentVal !== formatted) {
-            yearLastChanges.push({
-              x: c.x,
-              y: c.y,
-              oldValue: currentVal,
-              newValue: formatted
-            });
-          }
-        }
-      }
-    }
-
-    const changes = [...yearFirstChanges, ...yearLastChanges];
+    const changes = proposals.map(p => ({
+      x: p.x,
+      y: p.y,
+      oldValue: p.oldValue,
+      newValue: p.newValue
+    }));
 
     if (changes.length > 0) {
       this.sheet.df.create({
@@ -537,21 +371,17 @@ export class SheetController {
       });
       this.sheet.refresh();
       StateManager.emit('dataframe:changed', { action: 'dateValidate', changes });
-      if (!yearLastIssue) {
+      if (!reason) {
         Msg.success(`Converted ${changes.length} date${changes.length === 1 ? '' : 's'} to YYYY-mm-dd${detectedFormat ? ` (${detectedFormat})` : ''}.`, "Date Validation");
       }
-    } else if (!yearLastIssue) {
+    } else if (!reason) {
       Msg.info("All matching dates are already in YYYY-mm-dd format.", "Date Validation");
     }
 
     const result = changes;
-    if (yearLastIssue) {
-      result.success = yearFirstChanges.length > 0;
-      result.reason = yearLastIssue;
-    } else {
-      result.success = true;
-      result.detectedFormat = detectedFormat || 'YYYY-mm-dd';
-    }
+    result.success = success;
+    if (reason) result.reason = reason;
+    if (detectedFormat) result.detectedFormat = detectedFormat;
     result.count = changes.length;
     return result;
   }
@@ -806,15 +636,14 @@ export class SheetController {
   rangeTranspose() {
     if (this.sheet.df.lock) return;
     if (!this.sheet.rangeEnd) return;
-    let r = this.rangeArray();
-    let t = [];
-    for (let x = 0; x < r[0].length; x++) {
-      let row = [];
-      for (let y = 0; y < r.length; y++) row.push(r[y][x]);
-      t.push(row);
-    }
-    this.rangeEdit('');
-    this.paste(t);
+    const r = this.rangeOrdered();
+    const cellRange = createRange(r.xmin, r.ymin, r.xmax, r.ymax);
+    this.sheet.df.transpose(cellRange);
+    this.sheet.rangeEnd = {
+      x: r.xmin + (r.ymax - r.ymin),
+      y: r.ymin + (r.xmax - r.xmin)
+    };
+    this.view.refresh();
   }
 
   /**

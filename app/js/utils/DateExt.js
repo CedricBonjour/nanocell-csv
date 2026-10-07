@@ -93,77 +93,17 @@ Date.isDate = function (t) {
   return regex.test(t);
 };
 
-/**
- * Validates whether year, month (1-12), and day form a valid calendar date.
- * @param {number} year - 4-digit year.
- * @param {number} month - 1-indexed month (1-12).
- * @param {number} day - 1-indexed day of month (1-31).
- * @returns {boolean} True if the date is a valid calendar date.
- */
-export function isValidCalendarDate(year, month, day) {
-  if (typeof year !== 'number' || typeof month !== 'number' || typeof day !== 'number') return false;
-  if (month < 1 || month > 12 || day < 1 || day > 31 || year < 1) return false;
-  const isLeap = (year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0));
-  const daysInMonth = [31, isLeap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-  return day <= daysInMonth[month - 1];
-}
+import {
+  isValidCalendarDate,
+  parseDateCandidate,
+  parseYearFirstDate
+} from '../../../core/utils/date.js';
 
-/**
- * Parses a candidate cell value matching 'dd-mm-YYYY' or 'mm-dd-YYYY' across arbitrary separators.
- * Returns object { p1, p2, year, raw } or null if not matching.
- * @param {string|number} rawVal - Cell raw value.
- * @returns {{ p1: number, p2: number, year: number, raw: string } | null}
- */
-export function parseDateCandidate(rawVal) {
-  if (rawVal === undefined || rawVal === null) return null;
-  const s = String(rawVal).trim();
-  if (!s) return null;
+export {
+  isValidCalendarDate,
+  parseDateCandidate,
+  parseYearFirstDate
+};
 
-  // Must match: 1-2 digits, non-alphanumeric separator(s), 1-2 digits, non-alphanumeric separator(s), 4 digits
-  const m = s.match(/^(\d{1,2})[^0-9a-zA-Z]+(\d{1,2})[^0-9a-zA-Z]+(\d{4})$/);
-  if (!m) return null;
-
-  const p1 = parseInt(m[1], 10);
-  const p2 = parseInt(m[2], 10);
-  const year = parseInt(m[3], 10);
-
-  if (p1 < 1 || p1 > 31 || p2 < 1 || p2 > 31 || year < 1) return null;
-
-  // At least one must be <= 12 to be a valid month
-  if (p1 > 12 && p2 > 12) return null;
-
-  // If p1 > 12, p1 must be day and p2 must be month
-  if (p1 > 12 && !isValidCalendarDate(year, p2, p1)) return null;
-
-  // If p2 > 12, p2 must be day and p1 must be month
-  if (p2 > 12 && !isValidCalendarDate(year, p1, p2)) return null;
-
-  return { p1, p2, year, raw: s };
-}
-
-/**
- * Parses a candidate cell value matching 'YYYY-mm-dd' or 'YYYY-m-d' across arbitrary separators.
- * Returns object { year, month, day, raw } or null if not matching.
- * @param {string|number} rawVal - Cell raw value.
- * @returns {{ year: number, month: number, day: number, raw: string } | null}
- */
-export function parseYearFirstDate(rawVal) {
-  if (rawVal === undefined || rawVal === null) return null;
-  const s = String(rawVal).trim();
-  if (!s) return null;
-
-  // Must match: 4 digits (year), non-alphanumeric separator(s), 1-2 digits (month), non-alphanumeric separator(s), 1-2 digits (day)
-  const m = s.match(/^(\d{4})[^0-9a-zA-Z]+(\d{1,2})[^0-9a-zA-Z]+(\d{1,2})$/);
-  if (!m) return null;
-
-  const year = parseInt(m[1], 10);
-  const month = parseInt(m[2], 10);
-  const day = parseInt(m[3], 10);
-
-  if (year < 1 || month < 1 || month > 12 || day < 1 || day > 31) return null;
-  if (!isValidCalendarDate(year, month, day)) return null;
-
-  return { year, month, day, raw: s };
-}
 
 

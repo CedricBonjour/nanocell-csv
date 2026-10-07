@@ -1,4 +1,4 @@
-import { Dataframe } from './Dataframe.js';
+import { Dataframe } from '../../core/model/Dataframe.js';
 import { dom } from './dom.js';
 import { Finder } from './Finder.js';
 import { StateManager } from './StateManager.js';

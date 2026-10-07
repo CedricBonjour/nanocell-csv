@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Sheet } from '../app/js/Sheet.js';
-import { Dataframe } from '../app/js/Dataframe.js';
+import { Dataframe } from '../core/model/Dataframe.js';
 import { Setting } from '../app/js/Setting.js';
 import { build_dom, dom } from '../app/js/dom.js';
 import { StateManager } from '../app/js/StateManager.js';

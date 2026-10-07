@@ -3,75 +3,17 @@ const n_chars_for_separator_detection = 500;
 
 let currentAbort = false;
 
+import { CsvParser } from '../../core/csv/CsvParser.js';
+import { SeparatorDetector } from '../../core/csv/SeparatorDetector.js';
+
 function separatorDetection(txt) {
-  if (!txt || typeof txt !== 'string') return ',';
-  if (txt.length > n_chars_for_separator_detection) {
-    txt = txt.substring(0, n_chars_for_separator_detection);
-  }
-  const d = [',', '\t', ';', ':', '|'];
-  const n = [0, 0, 0, 0, 0];
-  let inQuotes = false;
-  for (let i = 0; i < txt.length; i++) {
-    const c = txt[i];
-    if (c === '"') {
-      if (inQuotes && i + 1 < txt.length && txt[i + 1] === '"') {
-        i++; // skip escaped quote
-      } else {
-        inQuotes = !inQuotes;
-      }
-    } else if (!inQuotes) {
-      for (let j = 0; j < d.length; j++) {
-        if (c === d[j]) n[j]++;
-      }
-    }
-  }
-  const maxCount = Math.max(...n);
-  if (maxCount === 0) return ',';
-  return d[n.indexOf(maxCount)];
+  return SeparatorDetector.detect(txt);
 }
 
 function csv_parse(s, d = ",") {
   if (!s || s.length === 0) return [];
-  const rows = [];
-  const lr = '\n';
-  let v = [];
-  const q = '"';
-  let f = false;
-  const len = s.length;
-  let c, j;
-  for (let i = 0; i < len; i++) {
-    c = s[i];
-    if (c === ' ') continue;
-    if (c === d) {
-      v.push("");
-      continue;
-    }
-    if (c === q) {
-      f = true;
-      i++;
-    }
-    j = i;
-    if (f) {
-      while (j < len && (s[j] !== q || (s[j] === q && s[j + 1] === q))) {
-        if (s[j] === q && s[j + 1] === q) j++;
-        j++;
-      }
-    } else {
-      while (j < len && s[j] !== d && s[j] !== lr) j++;
-      while (j > i && (s[j - 1] === ' ' || s[j - 1] === '\r')) j--;
-    }
-    v.push(s.substring(i, j).replace(/""/g, '"'));
-    if (f) j++;
-    i = j;
-    while (i < len && s[i] !== d && s[i] !== lr) i++;
-    f = false;
-    if (s[i] === lr || i === len) {
-      rows.push(v);
-      v = [];
-    }
-  }
-  if (v.length > 0) rows.push(v);
-  return rows;
+  const parser = new CsvParser({ delimiter: d });
+  return parser.parseChunk(s, true);
 }
 
 function postWorkerMessage(msg) {

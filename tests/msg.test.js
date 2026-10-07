@@ -163,7 +163,7 @@ describe('Msg Modern UI & Toast System Test Suite', () => {
   test('handleSWUpdatePrompt prompts user and executes reload if no unsaved changes', async () => {
     const { handleSWUpdatePrompt, setSheet } = await import('../app/js/main.js');
     const { Sheet } = await import('../app/js/Sheet.js');
-    const { Dataframe } = await import('../app/js/Dataframe.js');
+    const { Dataframe } = await import('../core/model/Dataframe.js');
 
     const testSheet = new Sheet(new Dataframe([['A', 'B']]));
     testSheet.df.isSaved = true;
@@ -184,7 +184,7 @@ describe('Msg Modern UI & Toast System Test Suite', () => {
   test('handleSWUpdatePrompt warns user and blocks reload when unsaved changes exist', async () => {
     const { handleSWUpdatePrompt, setSheet } = await import('../app/js/main.js');
     const { Sheet } = await import('../app/js/Sheet.js');
-    const { Dataframe } = await import('../app/js/Dataframe.js');
+    const { Dataframe } = await import('../core/model/Dataframe.js');
 
     const testSheet = new Sheet(new Dataframe([['A', 'B']]));
     testSheet.df.isSaved = false;

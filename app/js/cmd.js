@@ -9,6 +9,7 @@ import { Setting, stg } from './Setting.js';
 import { round } from './utils/misc.js';
 import { setIcon } from './icons.js';
 import { About } from './About.js';
+import { formatDate } from '../../core/utils/date.js';
 import './utils/DateExt.js';
 
 /**
@@ -63,7 +64,7 @@ const cmd = {
     run() {
       const s = getSheet();
       if (s) {
-        const todayStr = (new Date()).getFormated ? (new Date()).getFormated("yyyy-mm-dd") : new Date().toISOString().slice(0, 10);
+        const todayStr = formatDate(new Date(), 'yyyy-mm-dd');
         if (s.inputing && s.inputField) {
           const input = s.inputField;
           const start = input.selectionStart || 0;

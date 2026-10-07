@@ -64,7 +64,6 @@ export default defineConfig(({ command }) => ({
   test: {
     environment: 'jsdom',
     setupFiles: ['./tests/setup.js'],
-    exclude: ['tests/e2e/**', 'node_modules/**'],
     alias: {
       'virtual:pwa-register': resolve(__dirname, 'tests/mocks/pwa-register.js')
     }

@@ -6,6 +6,9 @@ import { ListInput } from './ui/input/ListInput.js';
 import { NumInput } from './ui/input/NumInput.js';
 
 const stg = {};
+if (typeof globalThis !== 'undefined') {
+  globalThis.stg = stg;
+}
 
 // Immediate FOUC prevention theme initialization on module load
 if (typeof document !== 'undefined') {

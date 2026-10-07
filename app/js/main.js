@@ -2,7 +2,7 @@ import { StateManager } from './StateManager.js';
 import './CMenu.js';
 import { buildCommands, buildMenu } from './cmd.js';
 import { CsvHandle } from './CsvHandle.js';
-import { Dataframe } from './Dataframe.js';
+import { Dataframe } from '../../core/model/Dataframe.js';
 import { build_dom } from './dom.js';
 import { buildKeys } from './key.js';
 import { Setting } from './Setting.js';

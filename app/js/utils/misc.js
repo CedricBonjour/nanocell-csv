@@ -9,16 +9,20 @@ function Timer(name) {
   this.name = name;
 }
 
-Node.prototype.empty = function () { while (this.firstChild) { this.removeChild(this.firstChild); } };
-Node.prototype.previous = function () { if (this.previousSibling) return this.previousSibling; else return this.parentNode.lastChild; };
-Node.prototype.next = function () { if (this.nextSibling) return this.nextSibling; else return this.parentNode.firstChild; };
-Node.prototype.position = function () { let e = this; let i = 0; while ((e = e.previousSibling) !== null) ++i; return i; };
-Node.prototype.addSpan = function (data, c) {
-  const s = document.createElement("span");
-  s.innerHTML = data;
-  if (c) s.classList.add(c);
-  this.appendChild(s);
-};
+if (typeof Node !== 'undefined') {
+  Node.prototype.empty = function () { while (this.firstChild) { this.removeChild(this.firstChild); } };
+  Node.prototype.previous = function () { if (this.previousSibling) return this.previousSibling; else return this.parentNode.lastChild; };
+  Node.prototype.next = function () { if (this.nextSibling) return this.nextSibling; else return this.parentNode.firstChild; };
+  Node.prototype.position = function () { let e = this; let i = 0; while ((e = e.previousSibling) !== null) ++i; return i; };
+  Node.prototype.addSpan = function (data, c) {
+    if (typeof document !== 'undefined') {
+      const s = document.createElement("span");
+      s.innerHTML = data;
+      if (c) s.classList.add(c);
+      this.appendChild(s);
+    }
+  };
+}
 
 function rndStr(n = 2) {
   let r = '';

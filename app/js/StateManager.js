@@ -1,8 +1,11 @@
 /**
  * StateManager - Central Vanilla JS State Manager using the Pub/Sub / Observer Pattern.
  * Manages central application state and decouples singletons and event handling.
+ * Dual-role bridge: typed EventBus pub-sub + key-value store emitting state:* events.
  * @module StateManager
  */
+import { EventBus } from '../../core/events/EventBus.js';
+
 class StateManager {
   static #defaultInstance = new StateManager();
 
@@ -64,6 +67,7 @@ class StateManager {
    * Instantiates a new StateManager instance with empty state and listeners maps.
    */
   constructor() {
+    this.coreBus = new EventBus(err => { throw err; });
     /** @type {Map<string, Set<Function>>} Map of event names to listener callback sets. */
     this.listeners = new Map();
     /** @type {Map<string, *>} Central key-value state store. */
@@ -101,6 +105,14 @@ class StateManager {
    * @param {*} [data] - Event payload data.
    */
   emit(event, data) {
+    // Notify core EventBus bridge if registered
+    if (this.coreBus) {
+      try {
+        this.coreBus.emit(event, data);
+      } catch (err) {
+        void err;
+      }
+    }
     if (this.listeners.has(event)) {
       const callbacks = Array.from(this.listeners.get(event));
       for (const cb of callbacks) {
@@ -142,4 +154,3 @@ class StateManager {
 
 export { StateManager };
 export default StateManager;
-

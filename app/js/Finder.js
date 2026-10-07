@@ -3,6 +3,7 @@ import { StateManager } from './StateManager.js';
 import { Table } from './ui/input/Table.js';
 import { BoolInput } from './ui/input/BoolInput.js';
 import { setIcon, iconMap } from './icons.js';
+import { SearchEngine } from '../../core/search/SearchEngine.js';
 
 
 class Finder extends HTMLElement {
@@ -234,14 +235,18 @@ class Finder extends HTMLElement {
       const yEnd = activeSheet ? activeSheet.df.height - 1 : 0;
       const xEnd = activeSheet ? activeSheet.df.width - 1 : 0;
 
-      if (activeSheet) {
-        for (let y = yStart; y <= yEnd; y++) {
-          for (let x = xStart; x <= xEnd; x++) {
-            const v = activeSheet.df.get(x, y);
-            this.exp.lastIndex = 0;
-            if (this.exp.test(v)) {
-              this.found.push({ x: x, y: y, v: v });
-            }
+      if (activeSheet && activeSheet.df) {
+        const engine = new SearchEngine();
+        const matches = engine.find(activeSheet.df, {
+          term: this.search,
+          caseSensitive: Boolean(this.caseSensitive.value)
+        });
+        const seen = new Set();
+        for (const m of matches) {
+          const key = `${m.x}:${m.y}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            this.found.push({ x: m.x, y: m.y, v: m.value });
           }
         }
       }
@@ -325,6 +330,7 @@ class Finder extends HTMLElement {
     let i = 0;
     this.listTable.style.display = "block";
     while (this.listTable.rows.length > 0) this.listTable.rows[0].remove();
+    const escapeHtml = (str) => String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
     for (const e of this.found) {
       i++;
       if (i > 500) return;
@@ -333,7 +339,10 @@ class Finder extends HTMLElement {
       this.listTable.push(e.y + 1);
       const safeSearch = (typeof this.search === 'string') ? this.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '';
       const exp = this.exp || new RegExp(safeSearch, this.caseSensitive.value ? 'g' : 'gi');
-      this.listTable.push(e.v.replace(exp, "<b>" + this.search + "</b>"));
+      const escapedVal = escapeHtml(e.v);
+      const escapedSearch = escapeHtml(this.search);
+      const escapedRegex = new RegExp(escapedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), this.caseSensitive.value ? 'g' : 'gi');
+      this.listTable.push(escapedVal.replace(escapedRegex, "<b>" + escapedSearch + "</b>"));
     }
   }
 

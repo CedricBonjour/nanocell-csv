@@ -1,16 +1,22 @@
-class Scroller extends HTMLElement {
+const BaseElement = typeof HTMLElement !== 'undefined' ? HTMLElement : class {};
+
+class Scroller extends BaseElement {
   constructor(vertical = true) {
     super();
     this.vertical = vertical;
-    this.classList.add(vertical ? "vertical" : "horizontal");
+    if (this.classList) {
+      this.classList.add(vertical ? "vertical" : "horizontal");
+    }
   }
 
   connectedCallback() {
-    this.classList.add(this.vertical ? "vertical" : "horizontal");
+    if (this.classList) {
+      this.classList.add(this.vertical ? "vertical" : "horizontal");
+    }
   }
 }
 
-if (!customElements.get('ui-scroller')) {
+if (typeof customElements !== 'undefined' && !customElements.get('ui-scroller')) {
   customElements.define('ui-scroller', Scroller);
 }
 

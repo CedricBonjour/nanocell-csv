@@ -3,12 +3,12 @@
  * Manages loading, streaming parsing via Web Worker, saving, and exporting 2D data matrices.
  * @module CsvHandle
  */
-import { Dataframe } from './Dataframe.js';
+import { Dataframe } from '../../core/model/Dataframe.js';
 import { StateManager } from './StateManager.js';
 import { Msg } from './Msg.js';
-import { stg } from './Setting.js';
 import { Sheet } from './Sheet.js';
-
+import { stg } from './Setting.js';
+import { CsvSerializer } from '../../core/csv/CsvSerializer.js';
 import CsvWorker from './csv_worker.js?worker';
 
 /**
@@ -277,26 +277,13 @@ class CsvHandle {
     let isStrict = stg.save_strict;
     let fw = stg.save_fixed_width_size;
     let sep = stg.delimiter;
-    let spaces = " ".repeat(fw);
-    if (sep == "TAB") sep = '\t';
-    const newMat = [];
-    for (const row of matrix) {
-      const newRow = [];
-      for (const cell of row) {
-        let data = String(cell);
-        let quote = false;
-        for (let i = 0; i < data.length; i++) {
-          if (data[i] === "," || data[i] === "\n") quote = true;
-          if (data[i] === '"') { quote = true; data = data.slice(0, i) + '"' + data.slice(i); i++; }
-        }
-        if (quote && isStrict) throw "Strict csv format not respected <br><br> save aborted";
-        if (quote) data = '"' + data + '"';
-        if (fw > data.length) data = (spaces + data).slice(-fw);
-        newRow.push(data);
-      }
-      newMat.push(newRow.join(sep));
-    }
-    return newMat.join('\n');
+    if (sep === "TAB") sep = '\t';
+    const serializer = new CsvSerializer({
+      delimiter: sep,
+      isStrict: isStrict,
+      fixedWidth: fw
+    });
+    return serializer.serialize(matrix);
   }
 }
 

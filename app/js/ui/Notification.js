@@ -215,7 +215,7 @@ if (!customElements.get('ui-msg')) {
   customElements.define('ui-msg', Notification);
 }
 if (!customElements.get('ui-notification')) {
-  customElements.define('ui-notification', Notification);
+  customElements.define('ui-notification', class extends Notification {});
 }
 
 const Msg = Notification;

@@ -1,5 +1,5 @@
 import { cmd } from './CommandRegistry.js';
-import { dom } from '../utils/dom.js';
+import { dom } from '../ui/AppLayout.js';
 import { StateManager } from '../StateManager.js';
 import { stg } from '../ui/settings/Setting.js';
 

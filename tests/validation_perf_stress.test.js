@@ -3,7 +3,7 @@ import '../app/js/ui/ValidationPane.js';
 import { Dataframe } from '../core/model/Dataframe.js';
 import { Sheet } from '../app/js/sheet/Sheet.js';
 import { Setting } from '../app/js/ui/settings/Setting.js';
-import { build_dom, dom } from '../app/js/utils/dom.js';
+import { build_dom, dom } from '../app/js/ui/AppLayout.js';
 import { ValidationPane } from '../app/js/ui/ValidationPane.js';
 import { StateManager } from '../app/js/StateManager.js';
 

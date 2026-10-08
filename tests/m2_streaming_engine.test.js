@@ -3,7 +3,7 @@ import { StateManager } from '../app/js/StateManager.js';
 import { Dataframe } from '../core/model/Dataframe.js';
 import { Sheet } from '../app/js/sheet/Sheet.js';
 import { Setting, stg } from '../app/js/ui/settings/Setting.js';
-import { build_dom, dom } from '../app/js/utils/dom.js';
+import { build_dom, dom } from '../app/js/ui/AppLayout.js';
 import { CsvHandle } from '../app/js/io/CsvHandle.js';
 import { csv_parse, separatorDetection, loadcsv } from '../app/js/io/csv_worker.js';
 

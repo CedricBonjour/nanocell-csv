@@ -7,7 +7,7 @@ import { Sheet } from '../app/js/sheet/Sheet.js';
 import { CsvHandle } from '../app/js/io/CsvHandle.js';
 import { Finder } from '../app/js/ui/FinderDialog.js';
 import { Setting, stg } from '../app/js/ui/settings/Setting.js';
-import { build_dom } from '../app/js/utils/dom.js';
+import { build_dom } from '../app/js/ui/AppLayout.js';
 import { setSheet } from '../app/js/main.js';
 
 describe('Real-World Application Scenarios & Fixture Integration', () => {

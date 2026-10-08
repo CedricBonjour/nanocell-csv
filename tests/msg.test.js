@@ -1,6 +1,6 @@
 ﻿import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Msg } from '../app/js/ui/Notification.js';
-import { build_dom, dom } from '../app/js/utils/dom.js';
+import { build_dom, dom } from '../app/js/ui/AppLayout.js';
 
 describe('Msg Modern UI & Toast System Test Suite', () => {
   beforeEach(() => {

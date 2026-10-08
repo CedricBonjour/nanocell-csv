@@ -4,7 +4,7 @@ import { buildCommands } from './interaction/CommandRegistry.js';
 import { buildMenu } from './ui/MenuBar.js';
 import { CsvHandle } from './io/CsvHandle.js';
 import { Dataframe } from '../../core/model/Dataframe.js';
-import { build_dom } from './utils/dom.js';
+import { build_dom } from './ui/AppLayout.js';
 import { buildKeys } from './interaction/KeyboardRouter.js';
 import { Setting } from './ui/settings/Setting.js';
 import { Sheet } from './sheet/Sheet.js';

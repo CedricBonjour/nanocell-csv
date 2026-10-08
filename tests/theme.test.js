@@ -1,6 +1,6 @@
 ﻿import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { Setting, stg } from '../app/js/ui/settings/Setting.js';
-import { build_dom, dom } from '../app/js/utils/dom.js';
+import { build_dom, dom } from '../app/js/ui/AppLayout.js';
 import { StateManager } from '../app/js/StateManager.js';
 import { cmd, buildMenu, getCommandTooltip } from '../app/js/interaction/CommandRegistry.js';
 import '../app/js/ui/CommandPalette.js';

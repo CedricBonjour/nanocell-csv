@@ -1,4 +1,4 @@
-import { dom } from '../../utils/dom.js';
+import { dom } from '../AppLayout.js';
 import { StateManager } from '../../StateManager.js';
 import { ThemeManager } from './ThemeManager.js';
 import { SettingDialog } from './SettingDialog.js';

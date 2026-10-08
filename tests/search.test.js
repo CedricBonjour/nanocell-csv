@@ -3,7 +3,7 @@ import { Dataframe } from '../core/model/Dataframe.js';
 import { Sheet } from '../app/js/sheet/Sheet.js';
 import { Finder } from '../app/js/ui/FinderDialog.js';
 import { Setting } from '../app/js/ui/settings/Setting.js';
-import { build_dom } from '../app/js/utils/dom.js';
+import { build_dom } from '../app/js/ui/AppLayout.js';
 import { setSheet } from '../app/js/main.js';
 
 describe('Finder Search & Replace Operations', () => {

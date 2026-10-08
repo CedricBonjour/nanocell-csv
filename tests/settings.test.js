@@ -1,6 +1,6 @@
 ﻿import { describe, test, expect, beforeEach } from 'vitest';
 import { Setting, stg } from '../app/js/ui/settings/Setting.js';
-import { build_dom, dom } from '../app/js/utils/dom.js';
+import { build_dom, dom } from '../app/js/ui/AppLayout.js';
 import { BoolInput } from '../app/js/ui/controls/BoolInput.js';
 import { ListInput } from '../app/js/ui/controls/ListInput.js';
 import { NumInput } from '../app/js/ui/controls/NumInput.js';

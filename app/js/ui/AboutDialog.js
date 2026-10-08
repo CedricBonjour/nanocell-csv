@@ -1,4 +1,4 @@
-import { dom } from '../utils/dom.js';
+import { dom } from './AppLayout.js';
 import { setIcon } from '../utils/icons.js';
 import { Notification, Msg } from './Notification.js';
 

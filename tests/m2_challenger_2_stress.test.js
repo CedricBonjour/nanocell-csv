@@ -5,7 +5,7 @@ import { Finder } from '../app/js/ui/FinderDialog.js';
 import { Table } from '../app/js/ui/controls/Table.js';
 import { Dataframe } from '../core/model/Dataframe.js';
 import { Sheet } from '../app/js/sheet/Sheet.js';
-import { build_dom, dom } from '../app/js/utils/dom.js';
+import { build_dom, dom } from '../app/js/ui/AppLayout.js';
 import { ValidationPane } from '../app/js/ui/ValidationPane.js';
 
 describe('Milestone 2 Challenger 2 — Adversarial Empirical Stress & Robustness Suite', () => {

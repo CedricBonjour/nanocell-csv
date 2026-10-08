@@ -3,7 +3,7 @@ import { StateManager } from '../app/js/StateManager.js';
 import { Dataframe } from '../core/model/Dataframe.js';
 import { Sheet } from '../app/js/sheet/Sheet.js';
 import { Setting, stg } from '../app/js/ui/settings/Setting.js';
-import { build_dom, dom } from '../app/js/utils/dom.js';
+import { build_dom, dom } from '../app/js/ui/AppLayout.js';
 import { getTargetType, TargetType } from '../app/js/interaction/MouseRouter.js';
 import { CMenu } from '../app/js/ui/ContextMenu.js';
 import { CsvHandle } from '../app/js/io/CsvHandle.js';

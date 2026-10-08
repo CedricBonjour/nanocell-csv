@@ -1,11 +1,11 @@
-import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
-import { Sheet } from '../app/js/Sheet.js';
+﻿import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
+import { Sheet } from '../app/js/sheet/Sheet.js';
 import { Dataframe } from '../core/model/Dataframe.js';
-import { Setting } from '../app/js/Setting.js';
-import { build_dom, dom } from '../app/js/dom.js';
+import { Setting } from '../app/js/ui/settings/Setting.js';
+import { build_dom, dom } from '../app/js/utils/dom.js';
 import { StateManager } from '../app/js/StateManager.js';
-import { cmd, buildMenu } from '../app/js/cmd.js';
-import { Msg } from '../app/js/Msg.js';
+import { cmd, buildMenu } from '../app/js/interaction/CommandRegistry.js';
+import { Msg } from '../app/js/ui/Notification.js';
 import { parseDateCandidate, parseYearFirstDate, isValidCalendarDate } from '../app/js/utils/DateExt.js';
 
 

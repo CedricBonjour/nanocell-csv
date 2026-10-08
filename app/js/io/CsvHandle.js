@@ -3,12 +3,12 @@
  * Manages loading, streaming parsing via Web Worker, saving, and exporting 2D data matrices.
  * @module CsvHandle
  */
-import { Dataframe } from '../../core/model/Dataframe.js';
-import { StateManager } from './StateManager.js';
-import { Msg } from './Msg.js';
-import { Sheet } from './Sheet.js';
-import { stg } from './Setting.js';
-import { CsvSerializer } from '../../core/csv/CsvSerializer.js';
+import { Dataframe } from '../../../core/model/Dataframe.js';
+import { StateManager } from '../StateManager.js';
+import { Notification as Msg } from '../ui/Notification.js';
+import { Sheet } from '../sheet/Sheet.js';
+import { stg } from '../ui/settings/Setting.js';
+import { CsvSerializer } from '../../../core/csv/CsvSerializer.js';
 import CsvWorker from './csv_worker.js?worker';
 
 /**

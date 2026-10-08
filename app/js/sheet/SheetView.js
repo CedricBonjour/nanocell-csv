@@ -3,9 +3,9 @@
  * Handles DOM rendering, virtualized cell loading, header updates, and scrollbar calculations.
  * @module SheetView
  */
-import { dom } from '../dom.js';
+import { dom } from '../utils/dom.js';
 import { StateManager } from '../StateManager.js';
-import { stg } from '../Setting.js';
+import { stg } from '../ui/settings/Setting.js';
 import { isValidUrl, isIsoDate } from '../utils/misc.js';
 
 /**

@@ -1,16 +1,16 @@
-import { describe, test, expect, beforeEach, vi } from 'vitest';
+﻿import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { StateManager } from '../app/js/StateManager.js';
 import { Dataframe } from '../core/model/Dataframe.js';
-import { Sheet } from '../app/js/Sheet.js';
-import { Setting, stg } from '../app/js/Setting.js';
-import { build_dom, dom } from '../app/js/dom.js';
-import { getTargetType, TargetType } from '../app/js/mouse.js';
-import { CMenu } from '../app/js/CMenu.js';
-import { CsvHandle } from '../app/js/CsvHandle.js';
-import { csv_parse, separatorDetection, loadcsv } from '../app/js/csv_worker.js';
+import { Sheet } from '../app/js/sheet/Sheet.js';
+import { Setting, stg } from '../app/js/ui/settings/Setting.js';
+import { build_dom, dom } from '../app/js/utils/dom.js';
+import { getTargetType, TargetType } from '../app/js/interaction/MouseRouter.js';
+import { CMenu } from '../app/js/ui/ContextMenu.js';
+import { CsvHandle } from '../app/js/io/CsvHandle.js';
+import { csv_parse, separatorDetection, loadcsv } from '../app/js/io/csv_worker.js';
 import { CommandPalette } from '../app/js/ui/CommandPalette.js';
-import { buildKeys } from '../app/js/key.js';
-import { cmd, buildCommands } from '../app/js/cmd.js';
+import { buildKeys } from '../app/js/interaction/KeyboardRouter.js';
+import { cmd, buildCommands } from '../app/js/interaction/CommandRegistry.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -584,7 +584,7 @@ describe('Phase 2 Requirements (R1-R4) - Comprehensive Test Suite', () => {
     });
 
     test('Keys pressed while inside Finder do not leak into sheet cell navigation', async () => {
-      const { Finder } = await import('../app/js/Finder.js');
+      const { Finder } = await import('../app/js/ui/FinderDialog.js');
       const finder = new Finder(sheet);
       document.body.appendChild(finder);
       finder.show();
@@ -606,7 +606,7 @@ describe('Phase 2 Requirements (R1-R4) - Comprehensive Test Suite', () => {
     });
 
     test('Escape in modal dialog dismisses dialog and does not alter sheet cells', async () => {
-      const { Setting } = await import('../app/js/Setting.js');
+      const { Setting } = await import('../app/js/ui/settings/Setting.js');
       Setting.show();
       expect(dom.dialog.children.length).toBeGreaterThan(0);
 

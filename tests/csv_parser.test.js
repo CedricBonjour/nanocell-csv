@@ -1,7 +1,7 @@
-import { describe, test, expect, beforeEach } from 'vitest';
-import { csv_parse, separatorDetection, load_csv_view_only } from '../app/js/csv_worker.js';
-import { CsvHandle } from '../app/js/CsvHandle.js';
-import { stg } from '../app/js/Setting.js';
+﻿import { describe, test, expect, beforeEach } from 'vitest';
+import { csv_parse, separatorDetection, load_csv_view_only } from '../app/js/io/csv_worker.js';
+import { CsvHandle } from '../app/js/io/CsvHandle.js';
+import { stg } from '../app/js/ui/settings/Setting.js';
 
 describe('CSV Parser & Serializer Core Operations', () => {
   beforeEach(() => {

@@ -1,6 +1,6 @@
-import { cmd } from './cmd.js';
-import { dom } from './dom.js';
-import { StateManager } from './StateManager.js';
+import { cmd } from './CommandRegistry.js';
+import { dom } from '../utils/dom.js';
+import { StateManager } from '../StateManager.js';
 
 const getSheet = () => StateManager.getState('sheet');
 const getCmd = () => StateManager.getState('cmd') || cmd;

@@ -3,8 +3,8 @@ const n_chars_for_separator_detection = 500;
 
 let currentAbort = false;
 
-import { CsvParser } from '../../core/csv/CsvParser.js';
-import { SeparatorDetector } from '../../core/csv/SeparatorDetector.js';
+import { CsvParser } from '../../../core/csv/CsvParser.js';
+import { SeparatorDetector } from '../../../core/csv/SeparatorDetector.js';
 
 function separatorDetection(txt) {
   return SeparatorDetector.detect(txt);

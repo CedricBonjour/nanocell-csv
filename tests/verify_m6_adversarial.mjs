@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Standalone Pure Node.js Tier 5 Adversarial Stress Verification Script
  *
  * Usage: node tests/verify_m6_adversarial.mjs
@@ -33,7 +33,7 @@ export async function runVerifyM6Adversarial() {
   // Single source of truth: Dataframe directly from core
   const AppDataframe = Dataframe;
 
-  const csvWorkerModule = await server.ssrLoadModule('./app/js/csv_worker.js');
+  const csvWorkerModule = await server.ssrLoadModule('./app/js/io/csv_worker.js');
   const csv_parse = csvWorkerModule.csv_parse;
 
   await server.close();

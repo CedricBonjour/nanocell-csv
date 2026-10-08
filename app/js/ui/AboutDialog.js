@@ -1,8 +1,11 @@
-import { dom } from './dom.js';
-import { setIcon } from './icons.js';
-import { Msg } from './Msg.js';
+import { dom } from '../utils/dom.js';
+import { setIcon } from '../utils/icons.js';
+import { Notification, Msg } from './Notification.js';
 
-class About extends HTMLElement {
+/**
+ * About and application information modal dialog.
+ */
+class AboutDialog extends HTMLElement {
   constructor() {
     super();
     this.initElements();
@@ -55,7 +58,7 @@ class About extends HTMLElement {
       }
       setIcon(this.copyBtn, 'on');
       setTimeout(() => setIcon(this.copyBtn, 'copy'), 1500);
-      Msg.quick(`Copied: ${textToCopy}`);
+      Notification.quick(`Copied: ${textToCopy}`);
     };
 
     this.logoEl = document.createElement("img");
@@ -123,7 +126,9 @@ class About extends HTMLElement {
 }
 
 if (!customElements.get('ui-about')) {
-  customElements.define('ui-about', About);
+  customElements.define('ui-about', AboutDialog);
 }
 
-export { About };
+const About = AboutDialog;
+
+export { AboutDialog, About };

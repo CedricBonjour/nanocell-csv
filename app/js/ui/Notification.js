@@ -1,6 +1,6 @@
-import { setIcon } from './icons.js';
+import { setIcon } from '../utils/icons.js';
 
-class Msg extends HTMLElement {
+class Notification extends HTMLElement {
   constructor(txt = "Empty message", opt = {}) {
     super();
     this.txt = txt;
@@ -200,19 +200,24 @@ class Msg extends HTMLElement {
     }, 150);
   }
 
-  static quick(txt) { const m = new Msg(txt, { id: 0, t: 1500, type: 'info' }); return m.show(); }
-  static long(txt) { const m = new Msg(txt, { id: 1, t: 3500, type: 'info' }); return m.show(); }
-  static confirm(txt, cb) { const m = new Msg(txt, { id: 2, cbt: cb, type: 'info' }); return m.show(); }
-  static choice(txt, cbTrue, cbFalse) { const m = new Msg(txt, { id: 3, cbt: cbTrue, cbf: cbFalse, type: 'warning' }); return m.show(); }
+  static quick(txt) { const m = new Notification(txt, { id: 0, t: 1500, type: 'info' }); return m.show(); }
+  static long(txt) { const m = new Notification(txt, { id: 1, t: 3500, type: 'info' }); return m.show(); }
+  static confirm(txt, cb) { const m = new Notification(txt, { id: 2, cbt: cb, type: 'info' }); return m.show(); }
+  static choice(txt, cbTrue, cbFalse) { const m = new Notification(txt, { id: 3, cbt: cbTrue, cbf: cbFalse, type: 'warning' }); return m.show(); }
 
-  static info(txt, title = 'Information') { const m = new Msg(txt, { t: 3000, type: 'info', title }); return m.show(); }
-  static success(txt, title = 'Success') { const m = new Msg(txt, { t: 3000, type: 'success', title }); return m.show(); }
-  static warning(txt, title = 'Warning') { const m = new Msg(txt, { t: 4000, type: 'warning', title }); return m.show(); }
-  static error(txt, title = 'Error') { const m = new Msg(txt, { id: 2, type: 'error', title }); return m.show(); }
+  static info(txt, title = 'Information') { const m = new Notification(txt, { t: 3000, type: 'info', title }); return m.show(); }
+  static success(txt, title = 'Success') { const m = new Notification(txt, { t: 3000, type: 'success', title }); return m.show(); }
+  static warning(txt, title = 'Warning') { const m = new Notification(txt, { t: 4000, type: 'warning', title }); return m.show(); }
+  static error(txt, title = 'Error') { const m = new Notification(txt, { id: 2, type: 'error', title }); return m.show(); }
 }
 
 if (!customElements.get('ui-msg')) {
-  customElements.define('ui-msg', Msg);
+  customElements.define('ui-msg', Notification);
+}
+if (!customElements.get('ui-notification')) {
+  customElements.define('ui-notification', Notification);
 }
 
-export { Msg };
+const Msg = Notification;
+
+export { Notification, Msg };

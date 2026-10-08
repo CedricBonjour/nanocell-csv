@@ -1,10 +1,10 @@
-import { Dataframe } from '../../core/model/Dataframe.js';
-import { dom } from './dom.js';
-import { Finder } from './Finder.js';
-import { StateManager } from './StateManager.js';
-import { stg } from './Setting.js';
-import { SheetView } from './sheet/SheetView.js';
-import { SheetController } from './sheet/SheetController.js';
+import { Dataframe } from '../../../core/model/Dataframe.js';
+import { dom } from '../utils/dom.js';
+import { FinderDialog as Finder } from '../ui/FinderDialog.js';
+import { StateManager } from '../StateManager.js';
+import { stg } from '../ui/settings/Setting.js';
+import { SheetView } from './SheetView.js';
+import { SheetController } from './SheetController.js';
 
 class Sheet extends HTMLElement {
   constructor(df = new Dataframe()) {

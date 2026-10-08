@@ -1,6 +1,6 @@
-import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
-import { Msg } from '../app/js/Msg.js';
-import { build_dom, dom } from '../app/js/dom.js';
+﻿import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
+import { Msg } from '../app/js/ui/Notification.js';
+import { build_dom, dom } from '../app/js/utils/dom.js';
 
 describe('Msg Modern UI & Toast System Test Suite', () => {
   beforeEach(() => {
@@ -162,7 +162,7 @@ describe('Msg Modern UI & Toast System Test Suite', () => {
 
   test('handleSWUpdatePrompt prompts user and executes reload if no unsaved changes', async () => {
     const { handleSWUpdatePrompt, setSheet } = await import('../app/js/main.js');
-    const { Sheet } = await import('../app/js/Sheet.js');
+    const { Sheet } = await import('../app/js/sheet/Sheet.js');
     const { Dataframe } = await import('../core/model/Dataframe.js');
 
     const testSheet = new Sheet(new Dataframe([['A', 'B']]));
@@ -183,7 +183,7 @@ describe('Msg Modern UI & Toast System Test Suite', () => {
 
   test('handleSWUpdatePrompt warns user and blocks reload when unsaved changes exist', async () => {
     const { handleSWUpdatePrompt, setSheet } = await import('../app/js/main.js');
-    const { Sheet } = await import('../app/js/Sheet.js');
+    const { Sheet } = await import('../app/js/sheet/Sheet.js');
     const { Dataframe } = await import('../core/model/Dataframe.js');
 
     const testSheet = new Sheet(new Dataframe([['A', 'B']]));

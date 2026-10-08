@@ -1,8 +1,8 @@
-import { describe, test, expect, beforeEach, vi } from 'vitest';
+﻿import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { Dataframe } from '../core/model/Dataframe.js';
-import { Sheet } from '../app/js/Sheet.js';
-import { Setting } from '../app/js/Setting.js';
-import { build_dom } from '../app/js/dom.js';
+import { Sheet } from '../app/js/sheet/Sheet.js';
+import { Setting } from '../app/js/ui/settings/Setting.js';
+import { build_dom } from '../app/js/utils/dom.js';
 
 describe('Undo / Redo Command Stack Operations', () => {
   let df;

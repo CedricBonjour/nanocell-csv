@@ -1,11 +1,11 @@
-import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
+﻿import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { StateManager } from '../app/js/StateManager.js';
 import { Dataframe } from '../core/model/Dataframe.js';
-import { Sheet } from '../app/js/Sheet.js';
-import { Setting, stg } from '../app/js/Setting.js';
-import { build_dom, dom } from '../app/js/dom.js';
-import { CsvHandle } from '../app/js/CsvHandle.js';
-import { csv_parse, separatorDetection, loadcsv } from '../app/js/csv_worker.js';
+import { Sheet } from '../app/js/sheet/Sheet.js';
+import { Setting, stg } from '../app/js/ui/settings/Setting.js';
+import { build_dom, dom } from '../app/js/utils/dom.js';
+import { CsvHandle } from '../app/js/io/CsvHandle.js';
+import { csv_parse, separatorDetection, loadcsv } from '../app/js/io/csv_worker.js';
 
 describe('Milestone 2 (R2) — Streaming File Loading Engine Test Suite', () => {
   beforeEach(() => {

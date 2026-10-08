@@ -1,9 +1,9 @@
-import { describe, test, expect, beforeEach } from 'vitest';
-import { Setting, stg } from '../app/js/Setting.js';
-import { Finder } from '../app/js/Finder.js';
+﻿import { describe, test, expect, beforeEach } from 'vitest';
+import { Setting, stg } from '../app/js/ui/settings/Setting.js';
+import { Finder } from '../app/js/ui/FinderDialog.js';
 import { Dataframe } from '../core/model/Dataframe.js';
-import { Sheet } from '../app/js/Sheet.js';
-import { build_dom } from '../app/js/dom.js';
+import { Sheet } from '../app/js/sheet/Sheet.js';
+import { build_dom } from '../app/js/utils/dom.js';
 import { setSheet } from '../app/js/main.js';
 
 describe('Challenger M1/M3 Comprehensive Empirical Stress Test Suite', () => {

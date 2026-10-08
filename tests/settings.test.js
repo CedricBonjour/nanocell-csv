@@ -1,11 +1,11 @@
-import { describe, test, expect, beforeEach } from 'vitest';
-import { Setting, stg } from '../app/js/Setting.js';
-import { build_dom, dom } from '../app/js/dom.js';
-import { BoolInput } from '../app/js/ui/input/BoolInput.js';
-import { ListInput } from '../app/js/ui/input/ListInput.js';
-import { NumInput } from '../app/js/ui/input/NumInput.js';
-import { About } from '../app/js/About.js';
-import { cmd } from '../app/js/cmd.js';
+﻿import { describe, test, expect, beforeEach } from 'vitest';
+import { Setting, stg } from '../app/js/ui/settings/Setting.js';
+import { build_dom, dom } from '../app/js/utils/dom.js';
+import { BoolInput } from '../app/js/ui/controls/BoolInput.js';
+import { ListInput } from '../app/js/ui/controls/ListInput.js';
+import { NumInput } from '../app/js/ui/controls/NumInput.js';
+import { About } from '../app/js/ui/AboutDialog.js';
+import { cmd } from '../app/js/interaction/CommandRegistry.js';
 
 describe('Settings Management & Input Components Test Suite', () => {
   beforeEach(() => {
@@ -187,7 +187,7 @@ describe('Settings Management & Input Components Test Suite', () => {
   });
 
   test('Mousedown inside ui-about does not preventDefault to permit text selection', async () => {
-    await import('../app/js/mouse.js');
+    await import('../app/js/interaction/MouseRouter.js');
     const el = About.show();
     const versionEl = el.querySelector('h3');
     expect(versionEl).not.toBeNull();

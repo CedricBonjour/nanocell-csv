@@ -1,4 +1,4 @@
-import { setIcon } from '../../icons.js';
+import { setIcon } from '../../utils/icons.js';
 
 class NumInput extends HTMLElement {
   constructor(start = 0, min = 0, max = 999) {

@@ -1,11 +1,10 @@
-import { dom } from './dom.js';
-import { StateManager } from './StateManager.js';
-import { Table } from './ui/input/Table.js';
-import { setIcon } from './icons.js';
-import { SearchEngine } from '../../core/search/SearchEngine.js';
+import { dom } from '../utils/dom.js';
+import { StateManager } from '../StateManager.js';
+import { Table } from './controls/Table.js';
+import { setIcon } from '../utils/icons.js';
+import { SearchEngine } from '../../../core/search/SearchEngine.js';
 
-
-class Finder extends HTMLElement {
+class FinderDialog extends HTMLElement {
   constructor(sheet) {
     super();
     this.sheet = sheet;
@@ -371,7 +370,9 @@ class Finder extends HTMLElement {
 }
 
 if (!customElements.get('ui-finder')) {
-  customElements.define('ui-finder', Finder);
+  customElements.define('ui-finder', FinderDialog);
 }
 
-export { Finder };
+const Finder = FinderDialog;
+
+export { FinderDialog, Finder };

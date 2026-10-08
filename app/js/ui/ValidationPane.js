@@ -1,5 +1,5 @@
 import { StateManager } from '../StateManager.js';
-import { setIcon } from '../icons.js';
+import { setIcon } from '../utils/icons.js';
 
 /**
  * Custom Element `<ui-validation-pane>` for virtualized rendering of proposed cell validation edits,

@@ -1,8 +1,8 @@
-import { describe, test, expect, beforeEach, vi } from 'vitest';
-import { Setting, stg } from '../app/js/Setting.js';
-import { build_dom, dom } from '../app/js/dom.js';
+﻿import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { Setting, stg } from '../app/js/ui/settings/Setting.js';
+import { build_dom, dom } from '../app/js/utils/dom.js';
 import { StateManager } from '../app/js/StateManager.js';
-import { cmd, buildMenu, getCommandTooltip } from '../app/js/cmd.js';
+import { cmd, buildMenu, getCommandTooltip } from '../app/js/interaction/CommandRegistry.js';
 import '../app/js/ui/CommandPalette.js';
 
 describe('Theming & UI Settings Operations', () => {
@@ -350,8 +350,8 @@ describe('Theming & UI Settings Operations', () => {
   });
 
   test('Opening About or Settings dialog dismisses active finder widget so it does not stay above', async () => {
-    const { Finder } = await import('../app/js/Finder.js');
-    const { About } = await import('../app/js/About.js');
+    const { Finder } = await import('../app/js/ui/FinderDialog.js');
+    const { About } = await import('../app/js/ui/AboutDialog.js');
 
     const finder = new Finder();
     document.body.appendChild(finder);

@@ -1,7 +1,7 @@
-import { cmd } from './cmd.js';
-import { dom } from './dom.js';
-import { StateManager } from './StateManager.js';
-import { stg } from './Setting.js';
+import { cmd } from './CommandRegistry.js';
+import { dom } from '../utils/dom.js';
+import { StateManager } from '../StateManager.js';
+import { stg } from '../ui/settings/Setting.js';
 
 const getSheet = () => StateManager.getState('sheet');
 

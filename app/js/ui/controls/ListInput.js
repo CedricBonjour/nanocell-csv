@@ -1,4 +1,4 @@
-import { setIcon } from '../../icons.js';
+import { setIcon } from '../../utils/icons.js';
 
 class ListInput extends HTMLElement {
   constructor(list = [], hide = false) {

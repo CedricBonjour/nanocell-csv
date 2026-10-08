@@ -1,12 +1,12 @@
-import { describe, test, expect, beforeEach, vi } from 'vitest';
+﻿import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { Dataframe } from '../core/model/Dataframe.js';
-import { Sheet } from '../app/js/Sheet.js';
-import { Setting, stg } from '../app/js/Setting.js';
-import { build_dom, dom } from '../app/js/dom.js';
+import { Sheet } from '../app/js/sheet/Sheet.js';
+import { Setting, stg } from '../app/js/ui/settings/Setting.js';
+import { build_dom, dom } from '../app/js/utils/dom.js';
 import { StateManager } from '../app/js/StateManager.js';
-import { CsvHandle } from '../app/js/CsvHandle.js';
-import { Finder } from '../app/js/Finder.js';
-import { CMenu } from '../app/js/CMenu.js';
+import { CsvHandle } from '../app/js/io/CsvHandle.js';
+import { Finder } from '../app/js/ui/FinderDialog.js';
+import { CMenu } from '../app/js/ui/ContextMenu.js';
 import { isValidUrl, round, signOf, isAlphanumeric, rndStr } from '../app/js/utils/misc.js';
 import '../app/js/utils/DateExt.js';
 

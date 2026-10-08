@@ -1,11 +1,11 @@
-import { describe, test, expect, beforeEach } from 'vitest';
-import '../app/js/CMenu.js'; // Ensure custom element is registered before build_dom
+﻿import { describe, test, expect, beforeEach } from 'vitest';
+import '../app/js/ui/ContextMenu.js'; // Ensure custom element is registered before build_dom
 import { Dataframe } from '../core/model/Dataframe.js';
-import { Sheet } from '../app/js/Sheet.js';
-import { Setting } from '../app/js/Setting.js';
-import { build_dom, dom } from '../app/js/dom.js';
-import { getTargetType, TargetType } from '../app/js/mouse.js';
-import { CMenu } from '../app/js/CMenu.js';
+import { Sheet } from '../app/js/sheet/Sheet.js';
+import { Setting } from '../app/js/ui/settings/Setting.js';
+import { build_dom, dom } from '../app/js/utils/dom.js';
+import { getTargetType, TargetType } from '../app/js/interaction/MouseRouter.js';
+import { CMenu } from '../app/js/ui/ContextMenu.js';
 import { StateManager } from '../app/js/StateManager.js';
 
 describe('Milestone 1 — UI & Layout Fixes (Requirement R1)', () => {

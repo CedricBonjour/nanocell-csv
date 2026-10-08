@@ -1,10 +1,13 @@
-import { StateManager } from './StateManager.js';
-import { TargetType, getTargetType } from './mouse.js';
-import { Table } from './ui/input/Table.js';
+import { StateManager } from '../StateManager.js';
+import { TargetType, getTargetType } from '../interaction/MouseRouter.js';
+import { Table } from './controls/Table.js';
 
 const getCmd = () => StateManager.getState('cmd');
 
-class CMenu extends HTMLElement {
+/**
+ * Context menu custom element displayed on right-click over cells, columns, and rows.
+ */
+class ContextMenu extends HTMLElement {
   constructor() {
     super();
     this.table = new Table();
@@ -109,6 +112,10 @@ class CMenu extends HTMLElement {
   }
 }
 
-customElements.define('ui-cmenu', CMenu);
+if (!customElements.get('ui-cmenu')) {
+  customElements.define('ui-cmenu', ContextMenu);
+}
 
-export { CMenu };
+const CMenu = ContextMenu;
+
+export { ContextMenu, CMenu };

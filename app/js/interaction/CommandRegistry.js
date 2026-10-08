@@ -1,24 +1,22 @@
 /**
  * Command Registry and Global Action Handlers for NanoCell CSV.
  * Defines standard keyboard shortcuts and actions for file operations, editing, formatting, and UI options.
- * @module cmd
+ * @module CommandRegistry
  */
-import { dom } from './dom.js';
-import { StateManager } from './StateManager.js';
-import { Setting, stg } from './Setting.js';
-import { setIcon } from './icons.js';
-import { About } from './About.js';
-import { formatDate } from '../../core/utils/date.js';
+import { StateManager } from '../StateManager.js';
+import { Setting, stg } from '../ui/settings/Setting.js';
+import { AboutDialog } from '../ui/AboutDialog.js';
+import { formatDate } from '../../../core/utils/date.js';
 
 /**
  * Helper to get the active Sheet instance from StateManager.
- * @returns {import('./Sheet.js').Sheet|undefined} The active Sheet instance.
+ * @returns {import('../sheet/Sheet.js').Sheet|undefined} The active Sheet instance.
  */
 const getSheet = () => StateManager.getState('sheet');
 
 /**
  * Helper to get the active CsvHandle instance from StateManager.
- * @returns {import('./CsvHandle.js').CsvHandle|undefined} The active CsvHandle instance.
+ * @returns {import('../io/CsvHandle.js').CsvHandle|undefined} The active CsvHandle instance.
  */
 const getCsvHandle = () => StateManager.getState('csvHandle');
 
@@ -38,15 +36,15 @@ const getCsvHandle = () => StateManager.getState('csvHandle');
  * @type {Record<string, CommandDefinition>}
  */
 const cmd = {
-  about: { label: "About", k: "H", ctrl: true, run() { About.show() }, description: "About" },
-  new: { label: "New Sheet", k: "N", ctrl: true, run() { getCsvHandle()?.new() }, description: "New sheet" },
-  deleteRow: { label: "Delete Row", k: "BACKSPACE", ctrl: true, run() { getSheet()?.deleteRows() }, description: "Delete Row" },
-  deleteCol: { label: "Delete Col", k: "BACKSPACE", ctrl: true, shift: true, run() { getSheet()?.deleteCols() }, description: "Delete Col" },
+  about: { label: "About", k: "H", ctrl: true, run() { AboutDialog.show(); }, description: "About" },
+  new: { label: "New Sheet", k: "N", ctrl: true, run() { getCsvHandle()?.new(); }, description: "New sheet" },
+  deleteRow: { label: "Delete Row", k: "BACKSPACE", ctrl: true, run() { getSheet()?.deleteRows(); }, description: "Delete Row" },
+  deleteCol: { label: "Delete Col", k: "BACKSPACE", ctrl: true, shift: true, run() { getSheet()?.deleteCols(); }, description: "Delete Col" },
   delete: { label: "Delete Selection", k: "BACKSPACE", run() { const s = getSheet(); if (s) { s.rangeEdit(''); s.refresh(); } }, description: "Delete Selection" },
   delete2: { label: "Delete Selection", k: "DELETE", run() { const s = getSheet(); if (s) { s.rangeEdit(''); s.refresh(); } }, description: "Delete Selection" },
-  settings: { label: "Settings", k: "G", ctrl: true, run() { Setting.show() }, description: "Display Settings" },
+  settings: { label: "Settings", k: "G", ctrl: true, run() { Setting.show(); }, description: "Display Settings" },
   shortcuts: { label: "Command Palette", k: "K", ctrl: true, run() { cmd.commandPalette.run(); }, description: "Command Palette" },
-  slctAll: { label: "Select All", k: "A", ctrl: true, run() { getSheet()?.slctAll() }, description: "Select All" },
+  slctAll: { label: "Select All", k: "A", ctrl: true, run() { getSheet()?.slctAll(); }, description: "Select All" },
   transpose: { label: "Transpose Selection", k: "T", ctrl: true, shift: true, run() { const s = getSheet(); if (s) { s.rangeTranspose(); s.refresh(); } }, description: "Transpose Selection" },
   trim: { label: "Trim Empty Rows/Cols", k: "T", ctrl: true, shift: true, run() { const s = getSheet(); if (s) { s.df.trimAll(); s.refresh(); } }, description: "Trim : remove all empty rows/cols" },
   integer: { label: "Round to Integer", k: "I", ctrl: true, run() { const s = getSheet(); if (s) { s.round(true); s.refresh(); } }, description: "Round selection to integer" },
@@ -87,27 +85,27 @@ const cmd = {
   find: { label: "Find & Match", k: "F", ctrl: true, run() { const s = getSheet(); if (s) { s.finder.findMenu(s.getSlctFirstValue(), false); s.scrollbarRefresh(); } }, description: "Quick find / match" },
   findAdvanced: { label: "Advanced Find / Replace", k: "F", ctrl: true, shift: true, run() { const s = getSheet(); if (s) s.finder.findMenu(s.getSlctFirstValue(), true); }, description: "Advanced find / replace (work in progress)" },
   menubar: { label: "Toggle Menu Bar", k: "M", ctrl: true, run() { stg.actionBar = (stg.actionBar !== false) ? false : true; }, description: "Toggle action bar display" },
-  open: { label: "Open File", k: "O", ctrl: true, run() { getCsvHandle()?.open() }, description: "Open a CSV file from the file finder" },
-  save: { label: "Save", k: "S", ctrl: true, run() { getCsvHandle()?.save() }, description: "Save" },
-  saveAs: { label: "Save As", k: "S", ctrl: true, shift: true, run() { getCsvHandle()?.saveAs() }, description: "Save As" },
-  reloadFile: { label: "Reload File", k: "R", ctrl: true, run() { getCsvHandle()?.reloadFile() }, description: "Reload file from last save" },
-  expand: { label: "Expand Row", k: "E", ctrl: true, run() { getSheet()?.expand() }, description: "Expand first row to selection" },
+  open: { label: "Open File", k: "O", ctrl: true, run() { getCsvHandle()?.open(); }, description: "Open a CSV file from the file finder" },
+  save: { label: "Save", k: "S", ctrl: true, run() { getCsvHandle()?.save(); }, description: "Save" },
+  saveAs: { label: "Save As", k: "S", ctrl: true, shift: true, run() { getCsvHandle()?.saveAs(); }, description: "Save As" },
+  reloadFile: { label: "Reload File", k: "R", ctrl: true, run() { getCsvHandle()?.reloadFile(); }, description: "Reload file from last save" },
+  expand: { label: "Expand Row", k: "E", ctrl: true, run() { getSheet()?.expand(); }, description: "Expand first row to selection" },
   commandPalette: { label: "Command Palette", k: "P", ctrl: true, run() { let palette = document.querySelector('ui-command-palette'); if (!palette && typeof document !== 'undefined') { palette = document.createElement('ui-command-palette'); document.body.appendChild(palette); } if (palette && typeof palette.toggle === 'function') palette.toggle(); }, description: "Command Palette" },
-  validate_data: { label: "Validate Data (CSV)", k: "P", ctrl: true, shift: true, run() { getSheet()?.validate_data() }, description: "Validate and format data to respect csv standards" },
-  validate_headers: { label: "Validate Headers (SQL)", k: "H", ctrl: true, shift: true, run() { getSheet()?.validate_headers() }, description: "Validate and format header to respect SQL standards" },
-  next_occurance: { label: "Next Occurrence", k: "D", ctrl: true, run() { getSheet()?.go_to_next() }, description: "Go to next occurence of cell value" },
+  validate_data: { label: "Validate Data (CSV)", k: "P", ctrl: true, shift: true, run() { getSheet()?.validate_data(); }, description: "Validate and format data to respect csv standards" },
+  validate_headers: { label: "Validate Headers (SQL)", k: "H", ctrl: true, shift: true, run() { getSheet()?.validate_headers(); }, description: "Validate and format header to respect SQL standards" },
+  next_occurance: { label: "Next Occurrence", k: "D", ctrl: true, run() { getSheet()?.go_to_next(); }, description: "Go to next occurence of cell value" },
   sort: { label: "Sort Ascending", k: "L", ctrl: true, run() { const s = getSheet(); if (s) s.sort(s.x, true); }, description: "Sort rows based on active column (ascending order)" },
   sort_reverse: { label: "Sort Descending", k: "L", ctrl: true, shift: true, run() { const s = getSheet(); if (s) s.sort(s.x, false); }, description: "Sort rows based on active column (descending order)" },
 
-  shiftUp: { label: "Shift Row Up", k: "ARROWUP", alt: true, run(dir) { getSheet()?.shift(0) }, description: "Shift row up" },
-  shiftDown: { label: "Shift Row Down", k: "ARROWDOWN", alt: true, run(dir) { getSheet()?.shift(2) }, description: "Shift row down" },
-  shiftRight: { label: "Shift Col Right", k: "ARROWRIGHT", alt: true, run(dir) { getSheet()?.shift(1) }, description: "Shift col right" },
-  shiftLeft: { label: "Shift Col Left", k: "ARROWLEFT", alt: true, run(dir) { getSheet()?.shift(3) }, description: "Shift col left" },
+  shiftUp: { label: "Shift Row Up", k: "ARROWUP", alt: true, run() { getSheet()?.shift(0); }, description: "Shift row up" },
+  shiftDown: { label: "Shift Row Down", k: "ARROWDOWN", alt: true, run() { getSheet()?.shift(2); }, description: "Shift row down" },
+  shiftRight: { label: "Shift Col Right", k: "ARROWRIGHT", alt: true, run() { getSheet()?.shift(1); }, description: "Shift col right" },
+  shiftLeft: { label: "Shift Col Left", k: "ARROWLEFT", alt: true, run() { getSheet()?.shift(3); }, description: "Shift col left" },
 
-  insertUp: { label: "Insert Row Above", k: "ARROWUP", alt: true, shift: true, run(dir) { getSheet()?.insert(0) }, description: "Insert row above" },
-  insertDown: { label: "Insert Row Below", k: "ARROWDOWN", alt: true, shift: true, run(dir) { getSheet()?.insert(2) }, description: "Insert row below" },
-  insertRight: { label: "Insert Col Right", k: "ARROWRIGHT", alt: true, shift: true, run(dir) { getSheet()?.insert(1) }, description: "Insert col right" },
-  insertLeft: { label: "Insert Col Left", k: "ARROWLEFT", alt: true, shift: true, run(dir) { getSheet()?.insert(3) }, description: "Insert col left" },
+  insertUp: { label: "Insert Row Above", k: "ARROWUP", alt: true, shift: true, run() { getSheet()?.insert(0); }, description: "Insert row above" },
+  insertDown: { label: "Insert Row Below", k: "ARROWDOWN", alt: true, shift: true, run() { getSheet()?.insert(2); }, description: "Insert row below" },
+  insertRight: { label: "Insert Col Right", k: "ARROWRIGHT", alt: true, shift: true, run() { getSheet()?.insert(1); }, description: "Insert col right" },
+  insertLeft: { label: "Insert Col Left", k: "ARROWLEFT", alt: true, shift: true, run() { getSheet()?.insert(3); }, description: "Insert col left" },
 
   scrollLeft: { label: "Scroll Left", k: "scroll ARROWUP ", alt: true, description: "Scroll left" },
   scrollRight: { label: "Scroll Right", k: "scroll ARROWDOWN ", alt: true, description: "Scroll right" },
@@ -151,34 +149,5 @@ function buildCommands() {
   }
 }
 
-/**
- * Populates the application header with action buttons and icons corresponding to commands.
- */
-function buildMenu() {
-  const menuItems = [
-    "new", "open", "save", "reloadFile", "",
-    "undo", "redo", "fixTop", "sort", "sort_reverse", "transpose", "trim", "date", "date_checker", "integer", "decimal", "validate_headers", "validate_data",
-    "", "find", "about", "settings", "shortcuts"];
-  function buildMenuItem(item) {
-    if (item === "") {
-      const spacer = document.createElement("div");
-      spacer.className = "header-spacer grow";
-      return dom.header.appendChild(spacer);
-    }
-    const c = cmd[item];
-    const tooltip = getCommandTooltip(c, item);
-    const icon = document.createElement("span");
-    icon.className = "icon";
-    icon.setAttribute("data-icon", item);
-    setIcon(icon, item);
-    icon.setAttribute("title", tooltip);
-    icon.setAttribute("aria-label", tooltip);
-    icon.setAttribute("role", "button");
-    icon.addEventListener("click", function () { cmd[item].run() });
-    dom.header.appendChild(icon);
-  }
-  for (const m of menuItems) buildMenuItem(m);
-}
-
-export { cmd, buildCommands, buildMenu, getCommandTooltip };
-
+export { cmd, buildCommands, getCommandTooltip };
+export { buildMenu } from '../ui/MenuBar.js';

@@ -1,6 +1,6 @@
-import { cmd } from '../cmd.js';
+import { cmd } from '../interaction/CommandRegistry.js';
 import { StateManager } from '../StateManager.js';
-import { setIcon } from '../icons.js';
+import { setIcon } from '../utils/icons.js';
 
 /**
  * Weighted fuzzy scoring function for search matching.

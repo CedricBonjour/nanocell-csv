@@ -1,7 +1,7 @@
-import { describe, test, expect, beforeEach } from 'vitest';
-import { Setting, stg } from '../app/js/Setting.js';
+﻿import { describe, test, expect, beforeEach } from 'vitest';
+import { Setting, stg } from '../app/js/ui/settings/Setting.js';
 import { StateManager } from '../app/js/StateManager.js';
-import { build_dom, dom } from '../app/js/dom.js';
+import { build_dom, dom } from '../app/js/utils/dom.js';
 
 describe('Milestone 4 Empirical Theme Stress & State Consistency Suite', () => {
   beforeEach(() => {

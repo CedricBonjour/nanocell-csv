@@ -1,5 +1,5 @@
-import { StateManager } from './StateManager.js';
-import { Scroller } from './ui/input/Scroller.js';
+import { StateManager } from '../StateManager.js';
+import { Scroller } from '../ui/controls/Scroller.js';
 import { setIcon } from './icons.js';
 
 let dom = undefined;

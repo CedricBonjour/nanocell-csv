@@ -1,11 +1,11 @@
-import { describe, test, expect, beforeEach, vi } from 'vitest';
+﻿import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { StateManager } from '../app/js/StateManager.js';
-import { Setting, stg } from '../app/js/Setting.js';
-import { Finder } from '../app/js/Finder.js';
-import { Table } from '../app/js/ui/input/Table.js';
+import { Setting, stg } from '../app/js/ui/settings/Setting.js';
+import { Finder } from '../app/js/ui/FinderDialog.js';
+import { Table } from '../app/js/ui/controls/Table.js';
 import { Dataframe } from '../core/model/Dataframe.js';
-import { Sheet } from '../app/js/Sheet.js';
-import { build_dom, dom } from '../app/js/dom.js';
+import { Sheet } from '../app/js/sheet/Sheet.js';
+import { build_dom, dom } from '../app/js/utils/dom.js';
 import { ValidationPane } from '../app/js/ui/ValidationPane.js';
 
 describe('Milestone 2 Challenger 2 — Adversarial Empirical Stress & Robustness Suite', () => {

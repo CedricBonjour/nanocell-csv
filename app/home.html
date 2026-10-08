@@ -14,7 +14,7 @@
   <script>
     (function() {
       try {
-        const t = localStorage.getItem('theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'night' : 'light');
+        const t = localStorage.getItem('theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'nord' : 'light');
         document.documentElement.setAttribute('data-theme', t);
         if (document.body) document.body.setAttribute('data-theme', t);
         else document.addEventListener('DOMContentLoaded', function() { if (document.body) document.body.setAttribute('data-theme', t); });

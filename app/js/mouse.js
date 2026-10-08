@@ -10,10 +10,6 @@ let RBT = undefined;
 let mouseX = 0;
 let mouseY = 0;
 
-let mouseXstart = 0;
-let mouseYstart = 0;
-let mouseTargetStart = 0;
-
 const TargetType = Object.freeze({
   na: undefined,
   cell: 0,
@@ -55,9 +51,6 @@ let getTargetType = function (e) {
 };
 
 document.addEventListener("mousedown", e => {
-  mouseXstart = e.clientX;
-  mouseYstart = e.clientY;
-  mouseTargetStart = e.target;
   if (e.button === 0) LBT = getTargetType(e);
   if (e.button === 2) RBT = getTargetType(e);
   const isSelectable = Boolean(e.target.closest && e.target.closest('ui-about'));
@@ -144,4 +137,4 @@ function check_for_outofbound_scroll() {
   }, 100);
 }
 
-export { LBT, RBT, mouseX, mouseY, mouseXstart, mouseYstart, mouseTargetStart, TargetType, getTargetType, check_for_outofbound_scroll };
+export { LBT, RBT, mouseX, mouseY, TargetType, getTargetType, check_for_outofbound_scroll };

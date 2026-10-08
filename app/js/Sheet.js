@@ -5,16 +5,12 @@ import { StateManager } from './StateManager.js';
 import { stg } from './Setting.js';
 import { SheetView } from './sheet/SheetView.js';
 import { SheetController } from './sheet/SheetController.js';
-import './utils/DateExt.js';
 
 class Sheet extends HTMLElement {
   constructor(df = new Dataframe()) {
     super();
     this.df = df;
-    StateManager.setState('sheet', this);
-    StateManager.setState('activeSheet', this);
-    StateManager.setState('dataframe', this.df);
-    StateManager.setState('activeDataframe', this.df);
+    StateManager.setActiveSheet(this);
 
     this.finder = new Finder(this);
     this.inputField = document.createElement("input");

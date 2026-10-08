@@ -5,9 +5,8 @@
  */
 import { dom } from '../dom.js';
 import { StateManager } from '../StateManager.js';
-import { Setting, stg } from '../Setting.js';
-import { isValidUrl } from '../utils/misc.js';
-import '../utils/DateExt.js';
+import { stg } from '../Setting.js';
+import { isValidUrl, isIsoDate } from '../utils/misc.js';
 
 /**
  * Manages table DOM element generation, viewport cell rendering, and UI updates for Sheet.
@@ -108,7 +107,7 @@ export class SheetView {
     let txt = d.replaceAll('&', '&amp;').replaceAll('<', '&lt;');
     if (txt[0] === '!') div.classList.add("error");
     if (txt !== '' && !isNaN(txt)) div.classList.add("num");
-    if (txt !== '' && Date.isDate(txt)) div.classList.add("date");
+    if (txt !== '' && isIsoDate(txt)) div.classList.add("date");
     if (isValidUrl(txt)) div.classList.add("url");
     if (stg.purple && txt !== '' && (txt.includes(',') || txt.includes('"') || txt.includes('\n'))) div.classList.add("noComply");
     

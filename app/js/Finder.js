@@ -1,8 +1,7 @@
 import { dom } from './dom.js';
 import { StateManager } from './StateManager.js';
 import { Table } from './ui/input/Table.js';
-import { BoolInput } from './ui/input/BoolInput.js';
-import { setIcon, iconMap } from './icons.js';
+import { setIcon } from './icons.js';
 import { SearchEngine } from '../../core/search/SearchEngine.js';
 
 
@@ -229,11 +228,6 @@ class Finder extends HTMLElement {
       this.found = [];
       const safeSearch = (typeof this.search === 'string') ? this.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '';
       this.exp = new RegExp(safeSearch, this.caseSensitive.value ? 'g' : 'gi');
-
-      const yStart = 0;
-      const xStart = 0;
-      const yEnd = activeSheet ? activeSheet.df.height - 1 : 0;
-      const xEnd = activeSheet ? activeSheet.df.width - 1 : 0;
 
       if (activeSheet && activeSheet.df) {
         const engine = new SearchEngine();

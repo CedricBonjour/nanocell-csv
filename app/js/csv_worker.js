@@ -310,18 +310,20 @@ function load_csv_view_only(data) {
   seek();
 }
 
-addEventListener("message", e => {
-  if (!e.data) return;
-  switch (e.data.cmd) {
-    case "read":
-      currentAbort = false;
-      loadcsv(e.data.data);
-      break;
-    case "abort":
-    case "cancel":
-      currentAbort = true;
-      break;
-  }
-});
+if (typeof self !== 'undefined' && typeof self.addEventListener === 'function') {
+  self.addEventListener("message", e => {
+    if (!e.data) return;
+    switch (e.data.cmd) {
+      case "read":
+        currentAbort = false;
+        loadcsv(e.data.data);
+        break;
+      case "abort":
+      case "cancel":
+        currentAbort = true;
+        break;
+    }
+  });
+}
 
 export { csv_parse, separatorDetection, loadcsv, load_csv_view_only };

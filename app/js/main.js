@@ -29,10 +29,7 @@ let sampleData = [
   ["Hello World", ""]
 ];
 
-let isOSX = navigator.userAgent.includes('Macintosh');
-let is_installed = window.matchMedia ? window.matchMedia('(display-mode: standalone)').matches : false;
 let sheet = undefined;
-let overview = undefined;
 let csvHandle = new CsvHandle();
 StateManager.setState('csvHandle', csvHandle);
 
@@ -111,17 +108,12 @@ export const updateSW = registerSW({
 
 export function setSheet(s) {
   sheet = s;
-  StateManager.setState('sheet', s);
-  StateManager.setState('activeSheet', s);
-  if (s) {
-    StateManager.setState('dataframe', s.df);
-    StateManager.setState('activeDataframe', s.df);
-  }
+  StateManager.setActiveSheet(s);
 }
 
 export function getSheet() {
   return StateManager.getState('sheet') || sheet;
 }
 
-export { sampleData, isOSX, is_installed, sheet, overview, csvHandle, launchFileOnInitDone, nanocell_cleanStart };
+export { sampleData, sheet, csvHandle, launchFileOnInitDone, nanocell_cleanStart };
 

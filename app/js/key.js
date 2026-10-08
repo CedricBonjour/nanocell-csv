@@ -4,7 +4,6 @@ import { StateManager } from './StateManager.js';
 import { stg } from './Setting.js';
 
 const getSheet = () => StateManager.getState('sheet');
-const isOSX = typeof navigator !== 'undefined' && navigator.userAgent.includes('Macintosh');
 
 let buildKeys = function () {
   // Prevent browser default actions for registered app shortcuts

@@ -15,7 +15,7 @@ if (typeof document !== 'undefined') {
   try {
     let initialTheme = localStorage.getItem('theme');
     if (!initialTheme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      initialTheme = 'night';
+      initialTheme = 'nord';
     }
     initialTheme = initialTheme || 'light';
     if (document.body) {
@@ -207,34 +207,6 @@ class Setting {
 
     content.appendChild(body);
     content.appendChild(footer);
-
-    // Tab navigation looping across all focusable settings controls
-    content.addEventListener("keydown", (e) => {
-      if (e.key === "Tab") {
-        const dialog = dom?.dialog || content.parentElement || content;
-        const selector = '.ui-list, .ui-num, .ui-bool-toggle, ui-bool, button:not([tabindex="-1"]), input:not([tabindex="-1"]), select:not([tabindex="-1"]), textarea:not([tabindex="-1"]), #closeDialog, [tabindex="0"]';
-        const all = Array.from(dialog.querySelectorAll(selector));
-        const focusable = all.filter(el => {
-          if (el.disabled) return false;
-          if (el.style.display === 'none') return false;
-          if (el.closest && el.closest('.hidden')) return false;
-          return true;
-        }).filter((el, _, arr) => !arr.some(parent => parent !== el && parent.contains(el)));
-
-        if (focusable.length === 0) return;
-
-        e.preventDefault();
-        const active = document.activeElement;
-        const currentIndex = focusable.indexOf(active);
-        let nextIndex;
-        if (e.shiftKey) {
-          nextIndex = (currentIndex <= 0) ? focusable.length - 1 : currentIndex - 1;
-        } else {
-          nextIndex = (currentIndex === -1 || currentIndex >= focusable.length - 1) ? 0 : currentIndex + 1;
-        }
-        focusable[nextIndex].focus();
-      }
-    });
 
     dom.dialog.push(content, true);
 

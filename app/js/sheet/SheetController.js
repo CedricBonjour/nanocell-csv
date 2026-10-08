@@ -4,10 +4,10 @@
  * @module SheetController
  */
 import { StateManager } from '../StateManager.js';
-import { Setting, stg } from '../Setting.js';
+import { stg } from '../Setting.js';
 import { Msg } from '../Msg.js';
 import { LBT, TargetType } from '../mouse.js';
-import { parseDateCandidate, parseYearFirstDate } from '../utils/DateExt.js';
+import { round } from '../utils/misc.js';
 import { HeaderValidator } from '../../../core/validation/HeaderValidator.js';
 import { DataValidator } from '../../../core/validation/DataValidator.js';
 import { DateValidator } from '../../../core/validation/DateValidator.js';
@@ -397,12 +397,8 @@ export class SheetController {
    * @returns {{xmin: number, xmax: number, ymin: number, ymax: number}} Bounded coordinate object.
    */
   rangeOrdered() {
-    if (this.sheet.rangeEnd === undefined) return { xmin: this.sheet.x, xmax: this.sheet.x, ymin: this.sheet.y, ymax: this.sheet.y };
-    let xStart = Math.min(this.sheet.x, this.sheet.rangeEnd.x);
-    let yStart = Math.min(this.sheet.y, this.sheet.rangeEnd.y);
-    let xEnd = Math.max(this.sheet.x, this.sheet.rangeEnd.x);
-    let yEnd = Math.max(this.sheet.y, this.sheet.rangeEnd.y);
-    return { xmin: xStart, xmax: xEnd, ymin: yStart, ymax: yEnd };
+    const end = this.sheet.rangeEnd || { x: this.sheet.x, y: this.sheet.y };
+    return createRange(this.sheet.x, this.sheet.y, end.x, end.y);
   }
 
   /**
@@ -652,20 +648,11 @@ export class SheetController {
    */
   round(integer = true) {
     this.rangeApply((x, y) => {
-      let n = this.sheet.df.get(x, y);
-      if (!isNaN(n) && n !== '') {
-        n = Number(n);
-        if (n == Number.POSITIVE_INFINITY || n == Number.NEGATIVE_INFINITY) return;
-        if (!integer) n *= 100;
-        n = Math.round(n + Number.EPSILON);
-        if (!integer) {
-          n /= 100;
-          n += 0.001;
-          n = Math.round(n * 1000) / 1000;
-          n = String(n).slice(0, -1);
-        }
+      const val = this.sheet.df.get(x, y);
+      const rounded = round(val, integer);
+      if (rounded !== val) {
+        this.sheet.df.edit(x, y, rounded);
       }
-      this.sheet.df.edit(x, y, n);
     });
   }
 

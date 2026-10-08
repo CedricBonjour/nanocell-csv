@@ -30,8 +30,8 @@ export async function runVerifyM6Adversarial() {
   const CsvSerializer = core.CsvSerializer;
   const SeparatorDetector = core.SeparatorDetector;
 
-  const appDataframeModule = await server.ssrLoadModule('./app/js/Dataframe.js');
-  const AppDataframe = appDataframeModule.Dataframe;
+  // Single source of truth: Dataframe directly from core
+  const AppDataframe = Dataframe;
 
   const csvWorkerModule = await server.ssrLoadModule('./app/js/csv_worker.js');
   const csv_parse = csvWorkerModule.csv_parse;
@@ -364,11 +364,11 @@ export async function runVerifyM6Adversarial() {
     history.undo(model);
     assert.equal(model.get(0, 0), 'B');
 
-    // Facade Dataframe redo stack eviction verification
+    // Dataframe redo stack eviction verification
     const facadeDf = new AppDataframe([['INIT']]);
-    facadeDf.edit(0, 0, 'F1');
-    facadeDf.edit(0, 0, 'F2');
-    facadeDf.edit(0, 0, 'F3');
+    facadeDf.create({ type: 'EDIT_CELL', timestamp: 1000, payload: { x: 0, y: 0, oldValue: 'INIT', newValue: 'F1' } });
+    facadeDf.create({ type: 'EDIT_CELL', timestamp: 1200, payload: { x: 0, y: 0, oldValue: 'F1', newValue: 'F2' } });
+    facadeDf.create({ type: 'EDIT_CELL', timestamp: 1400, payload: { x: 0, y: 0, oldValue: 'F2', newValue: 'F3' } });
     assert.equal(facadeDf.undoStack.length, 3);
 
     facadeDf.undo();

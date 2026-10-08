@@ -70,10 +70,7 @@ class CsvHandle {
       let df = new Dataframe(matrix);
       let s = new Sheet(df);
 
-      StateManager.setState('sheet', s);
-      StateManager.setState('activeSheet', s);
-      StateManager.setState('dataframe', s.df);
-      StateManager.setState('activeDataframe', s.df);
+      StateManager.setActiveSheet(s);
       StateManager.setState('fileStatus', { handle: this.handle, file: this.file, viewOnly: this.viewOnly, isStreaming: d.status < 1 });
       StateManager.setState('fileLoadingState', d.status >= 1 ? 'complete' : 'streaming');
 

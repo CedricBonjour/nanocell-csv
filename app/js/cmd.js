@@ -6,11 +6,9 @@
 import { dom } from './dom.js';
 import { StateManager } from './StateManager.js';
 import { Setting, stg } from './Setting.js';
-import { round } from './utils/misc.js';
 import { setIcon } from './icons.js';
 import { About } from './About.js';
 import { formatDate } from '../../core/utils/date.js';
-import './utils/DateExt.js';
 
 /**
  * Helper to get the active Sheet instance from StateManager.

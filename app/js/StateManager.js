@@ -57,6 +57,35 @@ class StateManager {
   }
 
   /**
+   * Sets the active Sheet and updates associated dataframe state properties.
+   * @param {*} sheet - Active Sheet instance.
+   */
+  static setActiveSheet(sheet) {
+    StateManager.setState('sheet', sheet);
+    StateManager.setState('activeSheet', sheet);
+    if (sheet?.df) {
+      StateManager.setState('dataframe', sheet.df);
+      StateManager.setState('activeDataframe', sheet.df);
+    }
+  }
+
+  /**
+   * Convenience getter for the active Sheet instance.
+   * @returns {*}
+   */
+  static getSheet() {
+    return StateManager.getState('sheet');
+  }
+
+  /**
+   * Convenience getter for the active Dataframe instance.
+   * @returns {*}
+   */
+  static getDataframe() {
+    return StateManager.getState('dataframe');
+  }
+
+  /**
    * Resets all state values and clears all event listeners on the singleton instance.
    */
   static clear() {

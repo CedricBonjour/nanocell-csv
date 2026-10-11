@@ -1,64 +1,46 @@
-import { StateManager } from './StateManager.js';
-import './CMenu.js';
-import { buildCommands, buildMenu } from './cmd.js';
-import { CsvHandle } from './CsvHandle.js';
-import { Dataframe } from './Dataframe.js';
-import { build_dom } from './dom.js';
-import { buildKeys } from './key.js';
-import { Setting } from './Setting.js';
-import { Sheet } from './Sheet.js';
-import './ui/input/BoolInput.js';
-import './ui/input/ListInput.js';
-import './ui/input/NumInput.js';
-import './ui/input/Scroller.js';
-import './ui/input/Table.js';
+import { getSheet, setCsvHandle, getCsvHandle } from './appContext.js';
+import './ui/ContextMenu.js';
+import { buildMenu } from './ui/MenuBar.js';
+import { CsvHandle } from './io/CsvHandle.js';
+import { Dataframe } from '../../core/model/Dataframe.js';
+import { AppLayout } from './ui/AppLayout.js';
+import { buildKeys } from './interaction/KeyboardRouter.js';
+import { Setting } from './ui/settings/Setting.js';
+import { Sheet } from './sheet/Sheet.js';
 import './ui/CommandPalette.js';
-import './About.js';
-import './Finder.js';
-import './Msg.js';
-import './Shortcuts.js';
-
+import './ui/ValidationPane.js';
+import './ui/AboutDialog.js';
+import './ui/FinderDialog.js';
+import { Notification } from './ui/Notification.js';
+import './interaction/MouseRouter.js';
 import { registerSW } from 'virtual:pwa-register';
 
+
+//on window/tab close, prompts the user for confirmation if currentSheet is not saved
 window.addEventListener('beforeunload', function (e) {
   const currentSheet = getSheet();
   if (currentSheet?.df && !currentSheet.df.isSaved) e.preventDefault();
 });
 
-let sampleData = [
-  ["Hello World", ""]
-];
-
-let isOSX = navigator.userAgent.includes('Macintosh');
-let is_installed = window.matchMedia ? window.matchMedia('(display-mode: standalone)').matches : false;
-let sheet = undefined;
-let overview = undefined;
-let csvHandle = new CsvHandle();
-StateManager.setState('csvHandle', csvHandle);
 
 let launchFileOnInitDone = function () {
   window.launchQueue?.setConsumer(async (params) => {
-    console.log(params);
     const [handle] = params.files;
-    if (handle) csvHandle.launchFile(handle);
+    if (handle) getCsvHandle()?.launchFile(handle);
   });
 
   window.addEventListener('message', (event) => {
-    if (event.data && event.data.fileHandle) csvHandle.launchFile(event.data.fileHandle);
+    if (event.data && event.data.fileHandle) getCsvHandle()?.launchFile(event.data.fileHandle);
   });
 };
 
 let nanocell_cleanStart = function () {
-  csvHandle = new CsvHandle();
-  StateManager.setState('csvHandle', csvHandle);
-  Setting.log();
+  setCsvHandle(new CsvHandle());
   Setting.init();
-  build_dom();
-  buildCommands();
+  AppLayout.init();
   buildMenu();
   buildKeys();
-  const newSheet = new Sheet(new Dataframe(sampleData));
-  setSheet(newSheet);
+  new Sheet(new Dataframe([["Hello World"]]));
   Setting.runAll();
   launchFileOnInitDone();
 };
@@ -66,21 +48,45 @@ let nanocell_cleanStart = function () {
 window.addEventListener('DOMContentLoaded', () => {
   nanocell_cleanStart();
 });
-registerSW({ immediate: true });
+export function handleSWUpdatePrompt(updateSWFn = updateSW) {
+  const currentSheet = getSheet();
+  const hasUnsaved = currentSheet?.df && !currentSheet.df.isSaved;
+  const message = hasUnsaved
+    ? "A new update is available. You have unsaved changes. Please save your file before updating."
+    : "A new update is available. Reload to update?";
 
-export function setSheet(s) {
-  sheet = s;
-  StateManager.setState('sheet', s);
-  StateManager.setState('activeSheet', s);
-  if (s) {
-    StateManager.setState('dataframe', s.df);
-    StateManager.setState('activeDataframe', s.df);
+  return new Notification(message, {
+    id: 3,
+    type: hasUnsaved ? 'warning' : 'info',
+    title: 'Update Available',
+    okText: 'Reload',
+    cancelText: 'Later',
+    defaultFocus: hasUnsaved ? 'cancel' : 'ok',
+    cbt: () => {
+      const sheetNow = getSheet();
+      if (sheetNow?.df && !sheetNow.df.isSaved) {
+        Notification.warning("Please save your changes before reloading.", "Unsaved Changes");
+        return;
+      }
+      if (typeof updateSWFn === 'function') {
+        updateSWFn(true);
+      }
+    }
+  }).show();
+}
+
+export const updateSW = registerSW({
+  immediate: true,
+  onNeedRefresh() {
+    handleSWUpdatePrompt(updateSW);
+  },
+  onOfflineReady() {
+    console.log('App ready to work offline');
+  },
+  onRegisteredSW(swUrl, registration) {
+    if (registration) {
+      setInterval(() => registration.update(), 60 * 60 * 1000);
+      window.addEventListener('focus', () => registration.update());
+    }
   }
-}
-
-export function getSheet() {
-  return StateManager.getState('sheet') || sheet;
-}
-
-export { sampleData, isOSX, is_installed, sheet, overview, csvHandle, launchFileOnInitDone, nanocell_cleanStart };
-
+});

@@ -1,5 +1,4 @@
-import { cmd } from '../cmd.js';
-import { StateManager } from '../StateManager.js';
+import { setIcon } from '../utils/icons.js';
 
 /**
  * Weighted fuzzy scoring function for search matching.
@@ -57,14 +56,36 @@ function fuzzyScore(query, text) {
 }
 
 class CommandPalette extends HTMLElement {
+  static _defaultCommands = null;
+
+  /**
+   * Sets static default command registry for all CommandPalette instances.
+   * @param {Object} commands 
+   */
+  static setDefaultCommands(commands) {
+    CommandPalette._defaultCommands = commands;
+    const existing = typeof document !== 'undefined'
+      ? (document.getElementById('palette') || document.querySelector('ui-command-palette'))
+      : null;
+    if (existing) {
+      existing.commands = commands;
+    }
+  }
+
   constructor() {
     super();
+    this.commands = CommandPalette._defaultCommands || null;
     this.selectedIndex = 0;
     this.filteredCommands = [];
+    this.style.display = 'none';
+    this._initialized = false;
   }
 
   connectedCallback() {
     this.init();
+    if (!this.commands && CommandPalette._defaultCommands) {
+      this.commands = CommandPalette._defaultCommands;
+    }
   }
 
   init() {
@@ -75,21 +96,23 @@ class CommandPalette extends HTMLElement {
     this.setAttribute('aria-modal', 'true');
 
     this.innerHTML = `
-      <div class="cmd_palette_backdrop palette-backdrop" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: var(--modal-backdrop, rgba(0,0,0,0.5)); z-index: 9999;"></div>
-      <div class="cmd_palette_modal palette-container" style="position: fixed; top: 15%; left: 50%; transform: translateX(-50%); width: 500px; max-width: 90vw; background-color: var(--modal-bg, #ffffff); color: var(--txt, #333333); border: 1px solid var(--table-borders, #ccc); border-radius: 8px; box-shadow: var(--shadow-lg, 0 10px 25px rgba(0,0,0,0.3)); z-index: 10000; font-family: var(--font-family-ui, sans-serif); overflow: hidden; display: flex; flex-direction: column;">
-        <div class="cmd_palette_header" style="display: flex; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--table-borders, #ccc);">
-          <input type="text" class="cmd_palette_input palette-input" placeholder="Type a command or search..." style="flex: 1; border: none; background: transparent; color: inherit; font-size: 14px; font-family: var(--font-family-ui, sans-serif); outline: none; margin: 0; padding: 4px 8px; box-sizing: border-box;" autofocus />
-          <span class="cmd_palette_close" title="Close (Esc)" style="cursor: pointer; font-size: 18px; color: var(--grey, #888); padding: 0 4px;">&times;</span>
+      <div class="cmd_palette_backdrop palette-backdrop"></div>
+      <div class="cmd_palette_modal palette-container">
+        <div class="cmd_palette_header">
+          <input type="text" class="cmd_palette_input palette-input" placeholder="Type a command or search..." autofocus />
+          <span class="cmd_palette_close icon" role="button" title="Close (Esc)" aria-label="Close"></span>
         </div>
-        <ul class="cmd_palette_list command-list" role="listbox" style="max-height: 320px; overflow-y: auto; margin: 0; padding: 4px 0; list-style: none;"></ul>
-        <div class="cmd_palette_footer" style="display: flex; justify-content: space-around; padding: 8px 16px; border-top: 1px solid var(--table-borders, #ccc); font-size: 11px; color: var(--grey, #666); background-color: var(--fh-bg, #f5f5f5);">
-          <span><kbd style="font-family: var(--font-family-mono, monospace); background: var(--btn-bg, #eee); border: 1px solid var(--btn-border, #ccc); border-radius: 3px; padding: 1px 4px;">&uarr;</kbd><kbd style="font-family: var(--font-family-mono, monospace); background: var(--btn-bg, #eee); border: 1px solid var(--btn-border, #ccc); border-radius: 3px; padding: 1px 4px;">&darr;</kbd> Navigate</span>
-          <span><kbd style="font-family: var(--font-family-mono, monospace); background: var(--btn-bg, #eee); border: 1px solid var(--btn-border, #ccc); border-radius: 3px; padding: 1px 4px;">&crarr;</kbd> Select</span>
-          <span><kbd style="font-family: var(--font-family-mono, monospace); background: var(--btn-bg, #eee); border: 1px solid var(--btn-border, #ccc); border-radius: 3px; padding: 1px 4px;">Esc</kbd> Dismiss</span>
+        <ul class="cmd_palette_list command-list" role="listbox"></ul>
+        <div class="cmd_palette_footer">
+          <span><kbd>&uarr;</kbd><kbd>&darr;</kbd> Navigate</span>
+          <span><kbd>&crarr;</kbd> Select</span>
+          <span><kbd>Esc</kbd> Dismiss</span>
         </div>
       </div>
     `;
 
+    this.classList.remove('open');
+    this.removeAttribute('open');
     this.style.display = 'none';
 
     this.backdropEl = this.querySelector('.cmd_palette_backdrop');
@@ -101,6 +124,7 @@ class CommandPalette extends HTMLElement {
       this.backdropEl.addEventListener('click', () => this.close());
     }
     if (this.closeBtn) {
+      setIcon(this.closeBtn, 'off');
       this.closeBtn.addEventListener('click', () => this.close());
     }
 
@@ -110,27 +134,28 @@ class CommandPalette extends HTMLElement {
     }
   }
 
-  getAttribute(name) {
-    this.init();
-    return super.getAttribute(name);
-  }
-
-  connectedCallback() {
-    this.init();
+  get isOpen() {
+    return Boolean(this.classList.contains('open') || this.hasAttribute('open') || this.style.display === 'block');
   }
 
   getCommands() {
-    const commandMap = StateManager.getState('cmd') || cmd;
-    return Object.entries(commandMap).map(([id, c]) => ({
-      id,
-      description: c.description || id,
-      key: c.k ? `${c.ctrl ? 'Ctrl+' : ''}${c.shift ? 'Shift+' : ''}${c.alt ? 'Alt+' : ''}${c.k}` : '',
-      run: c.run
-    }));
+    const commandMap = this.commands || CommandPalette._defaultCommands || {};
+    return Object.entries(commandMap)
+      .filter(([id, c]) => c && typeof c.run === 'function')
+      .map(([id, c]) => ({
+        id,
+        label: c.label || id,
+        description: c.description || c.label || id,
+        key: c.k ? `${c.ctrl ? 'Ctrl+' : ''}${c.shift ? 'Shift+' : ''}${c.alt ? 'Alt+' : ''}${c.k}` : '',
+        run: c.run
+      }));
   }
 
   filterCommands() {
     this.init();
+    if (!this.commands && CommandPalette._defaultCommands) {
+      this.commands = CommandPalette._defaultCommands;
+    }
     const query = (this.inputEl ? this.inputEl.value : '').trim();
     const all = this.getCommands();
     if (!query) {
@@ -138,10 +163,11 @@ class CommandPalette extends HTMLElement {
     } else {
       const scored = all.map(c => {
         const descScore = fuzzyScore(query, c.description);
+        const labelScore = fuzzyScore(query, c.label || '') * 0.95;
         const idScore = fuzzyScore(query, c.id) * 0.9;
         return {
           cmd: c,
-          score: Math.max(descScore, idScore)
+          score: Math.max(descScore, labelScore, idScore)
         };
       }).filter(item => item.score > 0);
 
@@ -152,29 +178,58 @@ class CommandPalette extends HTMLElement {
     this.renderList();
   }
 
+  setSelectedIndex(idx, scrollIntoView = true) {
+    if (idx < 0 || idx >= this.filteredCommands.length) return;
+    if (this.listEl && this.listEl.children.length > 0) {
+      const prev = this.listEl.children[this.selectedIndex];
+      if (prev) {
+        prev.classList.remove('selected');
+        prev.setAttribute('aria-selected', 'false');
+      }
+      this.selectedIndex = idx;
+      const current = this.listEl.children[this.selectedIndex];
+      if (current) {
+        current.classList.add('selected');
+        current.setAttribute('aria-selected', 'true');
+        if (scrollIntoView) {
+          try {
+            if (typeof current.scrollIntoView === 'function') {
+              current.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+            }
+          } catch (e) {
+            console.debug?.(e);
+          }
+        }
+      }
+    } else {
+      this.selectedIndex = idx;
+    }
+  }
+
   renderList() {
     this.init();
     if (!this.listEl) return;
     this.listEl.innerHTML = '';
+
+    if (this.filteredCommands.length === 0) {
+      const emptyLi = document.createElement('li');
+      emptyLi.className = 'cmd_palette_empty';
+      emptyLi.textContent = 'No matching commands';
+      this.listEl.appendChild(emptyLi);
+      return;
+    }
+
     this.filteredCommands.forEach((cmdItem, idx) => {
       const li = document.createElement('li');
       li.className = `cmd_palette_item command-item ${idx === this.selectedIndex ? 'selected' : ''}`;
       li.setAttribute('role', 'option');
       li.setAttribute('aria-selected', idx === this.selectedIndex ? 'true' : 'false');
       li.setAttribute('data-index', idx);
-      li.style.padding = '10px 16px';
-      li.style.display = 'flex';
-      li.style.justifyContent = 'space-between';
-      li.style.alignItems = 'center';
-      li.style.cursor = 'pointer';
-      li.style.fontSize = '13px';
-      if (idx === this.selectedIndex) {
-        li.style.backgroundColor = 'var(--slct-bg, #d4e3f1)';
-      }
       li.innerHTML = `
-        <span class="cmd_palette_item_label">${cmdItem.description}</span>
-        ${cmdItem.key ? `<span class="cmd_palette_item_shortcut command-key" style="font-family: var(--font-family-mono, monospace); font-size: 11px; opacity: 0.8; background: var(--btn-bg, #eee); color: var(--btn-txt, #333); border: 1px solid var(--btn-border, #ccc); padding: 2px 6px; border-radius: 4px;">${cmdItem.key}</span>` : ''}
+        <span class="cmd_palette_item_label">${this.escapeHtml(cmdItem.description)}</span>
+        ${cmdItem.key ? `<span class="cmd_palette_item_shortcut command-key">${this.escapeHtml(cmdItem.key)}</span>` : ''}
       `;
+      li.addEventListener('mouseenter', () => this.setSelectedIndex(idx, false));
       li.addEventListener('click', () => this.executeIndex(idx));
       this.listEl.appendChild(li);
     });
@@ -196,14 +251,14 @@ class CommandPalette extends HTMLElement {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       if (this.filteredCommands.length > 0) {
-        this.selectedIndex = (this.selectedIndex + 1) % this.filteredCommands.length;
-        this.renderList();
+        const nextIdx = (this.selectedIndex + 1) % this.filteredCommands.length;
+        this.setSelectedIndex(nextIdx, true);
       }
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       if (this.filteredCommands.length > 0) {
-        this.selectedIndex = (this.selectedIndex - 1 + this.filteredCommands.length) % this.filteredCommands.length;
-        this.renderList();
+        const prevIdx = (this.selectedIndex - 1 + this.filteredCommands.length) % this.filteredCommands.length;
+        this.setSelectedIndex(prevIdx, true);
       }
     } else if (e.key === 'Enter') {
       e.preventDefault();
@@ -224,6 +279,11 @@ class CommandPalette extends HTMLElement {
 
   open() {
     this.init();
+    if (!this.commands && CommandPalette._defaultCommands) {
+      this.commands = CommandPalette._defaultCommands;
+    }
+    this.classList.add('open');
+    this.setAttribute('open', '');
     this.style.display = 'block';
     if (this.inputEl) {
       this.inputEl.value = '';
@@ -232,22 +292,60 @@ class CommandPalette extends HTMLElement {
     if (this.inputEl) {
       setTimeout(() => this.inputEl.focus(), 10);
     }
-    StateManager.setState('commandPaletteOpen', true);
   }
 
   close() {
     this.init();
+    this.classList.remove('open');
+    this.removeAttribute('open');
     this.style.display = 'none';
-    StateManager.setState('commandPaletteOpen', false);
   }
 
   toggle() {
     this.init();
-    if (this.style.display === 'none' || !this.style.display) {
-      this.open();
-    } else {
+    if (this.isOpen) {
       this.close();
+    } else {
+      this.open();
     }
+  }
+
+  escapeHtml(str) {
+    if (typeof str !== 'string') str = String(str ?? '');
+    if (!str.includes('&') && !str.includes('<') && !str.includes('>') && !str.includes('"') && !str.includes("'")) {
+      return str;
+    }
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  /**
+   * Toggles the global singleton command palette dialog.
+   * Creates and appends element to document body if absent.
+   * @param {Object} [commands] - Command registry dictionary to populate palette with.
+   * @returns {CommandPalette} The command palette element instance.
+   */
+  static toggle(commands = null) {
+    let palette = (typeof document !== 'undefined')
+      ? (document.getElementById('palette') || document.querySelector('ui-command-palette'))
+      : null;
+    if (!palette && typeof document !== 'undefined') {
+      palette = document.createElement('ui-command-palette');
+      palette.id = 'palette';
+      document.body.appendChild(palette);
+    }
+    const cmds = commands || CommandPalette._defaultCommands;
+    if (cmds && palette) {
+      palette.commands = cmds;
+    }
+    if (palette && typeof palette.toggle === 'function') {
+      palette.toggle();
+    }
+    return palette;
   }
 }
 
@@ -256,4 +354,3 @@ if (!customElements.get('ui-command-palette')) {
 }
 
 export { CommandPalette };
-

@@ -1,8 +1,8 @@
 .agents/
 app/test/
 test/csv_files/
-test/
 private/
+marketing/
 
 *TODO.md
 
@@ -22,6 +22,7 @@ blob-report/
 # Vite & Testing
 .vite/
 coverage/
+test/files/
 
 # Environment
 .env
@@ -30,3 +31,7 @@ coverage/
 # Misc
 .DS_Store
 dev-dist/
+
+# Build outputs
+dist/
+out/

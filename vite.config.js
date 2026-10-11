@@ -1,40 +1,101 @@
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import { resolve } from 'path';
 import { spawnSync } from 'child_process';
+import { readFileSync, copyFileSync, existsSync } from 'fs';
 
-const generateHtmlPlugin = () => ({
+const pkg = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf-8'));
+
+let commitHash = '';
+let commitCount = '';
+try {
+  const gitRes = spawnSync('git', ['rev-parse', '--short', 'HEAD'], { encoding: 'utf-8' });
+  if (gitRes.status === 0 && gitRes.stdout) {
+    commitHash = gitRes.stdout.trim();
+  }
+  const countRes = spawnSync('git', ['rev-list', '--count', 'HEAD'], { encoding: 'utf-8' });
+  if (countRes.status === 0 && countRes.stdout) {
+    commitCount = countRes.stdout.trim();
+  }
+} catch {
+  // fallback if git command fails
+}
+if (!commitHash) {
+  commitHash = process.env.GIT_COMMIT || process.env.VITE_COMMIT || 'dev';
+}
+
+const parts = (pkg.version || '1.0.0').replace(/^v/, '').split('.');
+const major = parts[0] || '1';
+const minor = parts[1] || '0';
+const patch = commitCount || parts[2] || '0';
+const appVersion = `v${major}.${minor}.${patch}-${commitHash}`;
+
+const devServerRoutingPlugin = () => ({
+  name: 'dev-server-routing',
+  configureServer(server) {
+    server.middlewares.use((req, res, next) => {
+      const url = req.url ? req.url.split('?')[0] : '';
+      const query = req.url && req.url.includes('?') ? '?' + req.url.split('?')[1] : '';
+      if (url === '/' || url === '/index.html') {
+        req.url = '/web/index.html' + query;
+      } else if (url === '/theme.css') {
+        req.url = '/web/theme.css' + query;
+      }
+      next();
+    });
+  }
+});
+
+const generateHtmlPlugin = (command) => ({
   name: 'generate-html',
   closeBundle() {
-    console.log('Running scripts/generate_html.js...');
-    spawnSync('node', ['scripts/generate_html.js'], { stdio: 'inherit' });
+    if (command === 'build') {
+      const webDist = resolve(__dirname, 'dist/web/index.html');
+      const rootDist = resolve(__dirname, 'dist/index.html');
+      if (existsSync(webDist)) {
+        copyFileSync(webDist, rootDist);
+        console.log(`Copied ${webDist} to ${rootDist}`);
+      }
+      console.log('Running design/scripts/generate_html.js...');
+      spawnSync('node', ['design/scripts/generate_html.js'], { stdio: 'inherit' });
+    }
+  }
+});
+
+const htmlVersionPlugin = () => ({
+  name: 'html-version-transform',
+  transformIndexHtml(html) {
+    return html.replace(/__APP_VERSION__/g, appVersion);
   }
 });
 
 export default defineConfig(({ command }) => ({
+  define: {
+    __APP_VERSION__: JSON.stringify(appVersion)
+  },
   build: {
+    target: 'chrome120',
     outDir: resolve(__dirname, 'dist'),
     emptyOutDir: true,
     rollupOptions: {
       input: {
-        // Points to the index.html at the ROOT of your project
-        main: resolve(__dirname, 'index.html'),
+        // Points to the landing page inside web folder
+        web: resolve(__dirname, 'web/index.html'),
         // Points to the home.html inside the app folder
         app: resolve(__dirname, 'app/home.html')
       }
     }
   },
-  test: {
-    environment: 'jsdom',
-    setupFiles: ['./tests/setup.js'],
-    exclude: ['tests/e2e/**', 'node_modules/**']
-  },
   plugins: [
-    generateHtmlPlugin(),
+    devServerRoutingPlugin(),
+    htmlVersionPlugin(),
+    generateHtmlPlugin(command),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       includeAssets: ['**/*.{png,svg,webp,ico}'],
       workbox: {
+        cacheId: appVersion,
+        cleanupOutdatedCaches: true,
         navigateFallback: null,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,ttf}']
       },
@@ -42,7 +103,7 @@ export default defineConfig(({ command }) => ({
       // ENABLE PWA IN DEV MODE
       devOptions: {
         enabled: true,
-        type: 'module',
+        type: 'module'
       },
 
       manifest: {
@@ -58,8 +119,9 @@ export default defineConfig(({ command }) => ({
         id: '/app/',
         icons: [
           { src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
-          { src: '/favicon-192x192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/favicon-512x512.png', sizes: '512x512', type: 'image/png' }
+          { src: '/favicon-96x96.png', sizes: '96x96', type: 'image/png', purpose: 'any' },
+          { src: '/favicon-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: '/favicon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any' }
         ],
         lang: "en",
         dir: "ltr",

@@ -7,39 +7,38 @@
   <meta name="theme-color" content="#1e1e1e">
   <meta name="robots" content="noindex, nofollow, noarchive">
   <title>csv</title>
-  <link rel="icon" href="logo/nanocell.svg">
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/palettes/light.css" id="palette" style="display:none">
-  <link rel="stylesheet" href="css/themes/light.css" id="theme" style="display:none">
+  <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="stylesheet" href="style.css">
   <script>
     (function() {
       try {
-        const t = localStorage.getItem('theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'night' : 'light');
+        const t = localStorage.getItem('theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'nord' : 'light');
         document.documentElement.setAttribute('data-theme', t);
-        if (document.body) document.body.setAttribute('data-theme', t);
-        else document.addEventListener('DOMContentLoaded', function() { if (document.body) document.body.setAttribute('data-theme', t); });
       } catch(e) { console.warn('Theme preference init failed:', e); }
     })();
   </script>
-
-
 </head>
 
 <body id="body" class="flexCol">
   <header id="header"></header>
   <div id="content" class="flexMain">
-    <ui-sheet id="sheet"></ui-sheet>
+    <div id="main-container">
+      <ui-sheet id="sheet"></ui-sheet>
+    </div>
+    <ui-validation-pane id="validation-pane"></ui-validation-pane>
   </div>
   <footer>
-    <section id="dialog" class="scroll"></section>
     <section id="footer">
       <section id="footerLeft">Left</section>
       <section id="footerCenter" class="flexMain">Center</section>
       <section id="footerRight">Right</section>
-      <img id="lock" src="icn/edit.svg" alt="editing file">
+      <span id="lock" class="icon" role="img" aria-label="editing file" data-src="edit_square"></span>
     </section>
   </footer>
-  <ui-command-palette></ui-command-palette>
+  <section id="dialog" class="scroll"></section>
+  <ui-command-palette id="palette"></ui-command-palette>
   <script type="module" src="js/main.js"></script>
 </body>
 

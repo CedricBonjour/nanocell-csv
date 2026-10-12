@@ -130,6 +130,13 @@ export default defineConfig(({ command }) => ({
           "utilities",
           "business"
         ],
+        prefer_related_applications: false,
+        related_applications: [
+          {
+            platform: "webapp",
+            url: "/manifest.webmanifest"
+          }
+        ],
         launch_handler: {
           client_mode: "auto"
         },

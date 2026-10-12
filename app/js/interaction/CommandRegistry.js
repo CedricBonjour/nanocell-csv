@@ -8,6 +8,7 @@ import { Setting } from '../ui/settings/Setting.js';
 import { SettingDialog } from '../ui/settings/SettingDialog.js';
 import { AboutDialog } from '../ui/AboutDialog.js';
 import { CommandPalette } from '../ui/CommandPalette.js';
+import { triggerInstallPrompt } from '../utils/misc.js';
 
 /**
  * Command descriptor object definition.
@@ -26,6 +27,7 @@ import { CommandPalette } from '../ui/CommandPalette.js';
  */
 const cmd = {
   about: { label: "About", k: "H", ctrl: true, shift: false, alt: false, run() { AboutDialog.show(); }, description: "About" },
+  installApp: { label: "Install Desktop App", ctrl: false, shift: false, alt: false, run() { triggerInstallPrompt(); }, description: "Install NanoCell as standalone desktop app" },
   new: { label: "New Sheet", k: "N", ctrl: true, shift: false, alt: false, run() { getCsvHandle()?.new(); }, description: "New sheet" },
   deleteRow: { label: "Delete Row", k: "BACKSPACE", ctrl: true, shift: false, alt: false, run() { getSheet()?.deleteRows(); }, description: "Delete Row" },
   deleteCol: { label: "Delete Col", k: "BACKSPACE", ctrl: true, shift: true, alt: false, run() { getSheet()?.deleteCols(); }, description: "Delete Col" },

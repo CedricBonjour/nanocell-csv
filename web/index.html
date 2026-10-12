@@ -16,6 +16,7 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="shortcut icon" href="/favicon.ico" />
   <link rel="apple-touch-icon" href="/favicon-192x192.png" />
+  <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="theme-color" content="#48a741" />
   <meta name="application-name" content="NanoCell" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -646,26 +647,10 @@
     </footer>
   </main>
 
-
-
-
-
-
-
   <script type="text/javascript">
     let installPrompt = null;
-    let installButton = document.getElementById('install').children[0];
-    window.addEventListener("beforeinstallprompt", (event) => { installPrompt = event });
-
-    document.getElementById('install').addEventListener("click", handleInstallPrompt);
-
-    async function handleInstallPrompt() {
-      if (!installPrompt) return;
-      const result = await installPrompt.prompt();
-      console.log(`Install prompt was: ${result.outcome}`);
-      if (result.outcome == "accepted") window.location.href = "/app/home.html";
-    }
-
+    const installButton = document.getElementById('install')?.children[0];
+    const PWA_INSTALLED_KEY = 'nanocell_pwa_installed';
 
     function isMobile() {
       return /Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -674,10 +659,148 @@
     function isSafari() {
       return /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     }
+
     function isFirefox() {
       return /firefox/i.test(navigator.userAgent);
     }
 
+    function isStandaloneMode() {
+      return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    }
+
+    function markAppAsInstalled() {
+      try { localStorage.setItem(PWA_INSTALLED_KEY, 'true'); } catch (e) {}
+    }
+
+    function isAppInstalledSync() {
+      if (isStandaloneMode()) {
+        markAppAsInstalled();
+        return true;
+      }
+      try {
+        return localStorage.getItem(PWA_INSTALLED_KEY) === 'true';
+      } catch (e) {
+        return false;
+      }
+    }
+
+    async function isAppInstalled() {
+      if (isStandaloneMode()) {
+        markAppAsInstalled();
+        return true;
+      }
+      if (typeof navigator !== 'undefined' && typeof navigator.getInstalledRelatedApps === 'function') {
+        try {
+          const apps = await navigator.getInstalledRelatedApps();
+          if (Array.isArray(apps) && apps.length > 0) {
+            markAppAsInstalled();
+            return true;
+          } else if (Array.isArray(apps) && apps.length === 0) {
+            try { localStorage.removeItem(PWA_INSTALLED_KEY); } catch (e) {}
+            return false;
+          }
+        } catch (e) {
+          console.debug('getInstalledRelatedApps check failed:', e);
+        }
+      }
+      return isAppInstalledSync();
+    }
+
+    function openStandaloneApp() {
+      if (isStandaloneMode()) {
+        window.location.href = "/app/home.html";
+        return;
+      }
+      // Open in a standalone app window without browser omnibox or browser toolbars
+      const popupFeatures = "popup=yes,width=1200,height=800,menubar=no,toolbar=no,location=no,status=no";
+      const appWindow = window.open("/app/home.html", "_blank", popupFeatures);
+      if (!appWindow) {
+        window.location.href = "/app/home.html";
+      }
+    }
+
+    function applyInstallState(installed) {
+      const testBrowserNav = document.getElementById("test-browser-nav");
+      if (!installButton) return;
+
+      if (installed) {
+        if (testBrowserNav) testBrowserNav.style.display = "none";
+        installButton.classList.remove("isMobileDnld");
+        installButton.innerHTML = "Open App";
+        return;
+      }
+
+      if (isMobile()) {
+        if (testBrowserNav) testBrowserNav.style.display = "none";
+        installButton.classList.add("isMobileDnld");
+        installButton.innerHTML = "Download available on Desktop only";
+      } else if (isSafari() || isFirefox()) {
+        if (testBrowserNav) testBrowserNav.style.display = "";
+        installButton.classList.remove("isMobileDnld");
+        installButton.innerHTML = "Install available on Chrome & Edge";
+      } else {
+        if (testBrowserNav) testBrowserNav.style.display = "";
+        installButton.classList.remove("isMobileDnld");
+        installButton.innerHTML = 'Install<div id="version">Beta version</div>';
+      }
+    }
+
+    // Synchronous immediate check (avoids UI flicker)
+    applyInstallState(isAppInstalledSync());
+
+    // Asynchronous check via getInstalledRelatedApps()
+    isAppInstalled().then((installed) => {
+      applyInstallState(installed);
+    });
+
+    window.addEventListener("beforeinstallprompt", (event) => {
+      event.preventDefault();
+      installPrompt = event;
+      try { localStorage.removeItem(PWA_INSTALLED_KEY); } catch (e) {}
+      applyInstallState(false);
+    });
+
+    window.addEventListener("appinstalled", () => {
+      installPrompt = null;
+      markAppAsInstalled();
+      applyInstallState(true);
+    });
+
+    const installContainer = document.getElementById('install');
+    if (installContainer) {
+      installContainer.addEventListener("click", handleInstallPrompt);
+    }
+
+    async function handleInstallPrompt() {
+      if (isAppInstalledSync()) {
+        openStandaloneApp();
+        return;
+      }
+      if (installPrompt) {
+        const result = await installPrompt.prompt();
+        console.log(`Install prompt was: ${result.outcome}`);
+        if (result.outcome === "accepted") {
+          installPrompt = null;
+          markAppAsInstalled();
+          applyInstallState(true);
+          openStandaloneApp();
+        }
+      } else {
+        openStandaloneApp();
+      }
+    }
+
+    function adaptShortcutsForMac() {
+      const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+      if (isMac) {
+        document.querySelectorAll('kbd.key').forEach(k => {
+          if (k.textContent.trim() === 'Ctrl') {
+            k.textContent = '⌘';
+          }
+        });
+      }
+    }
+    adaptShortcutsForMac();
 
     function buildSmoothAnchorScroll() {
       document.querySelectorAll('a[href^="#"]').forEach(anchor => {
@@ -691,15 +814,20 @@
       });
     }
 
-
-    document.getElementById("email").addEventListener("click", () => {
+    document.getElementById("email").addEventListener("click", async () => {
       const toast = document.getElementById("copy_toast");
-      navigator.clipboard.writeText(document.getElementById("email").innerText);
-      toast.style.transition = "none";
-      toast.style.opacity = ".3";
-      void toast.offsetWidth;
-      toast.style.transition = null;
-      toast.style.opacity = "0";
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(document.getElementById("email").innerText.trim());
+          toast.style.transition = "none";
+          toast.style.opacity = ".3";
+          void toast.offsetWidth;
+          toast.style.transition = null;
+          toast.style.opacity = "0";
+        }
+      } catch (err) {
+        console.warn("Clipboard copy failed:", err);
+      }
     });
 
     // Discrete 'More tips' sliding toggle
@@ -711,7 +839,6 @@
         content.classList.toggle('open', isExpanded);
       }
     }
-
 
     buildSmoothAnchorScroll();
 
@@ -727,15 +854,6 @@
       });
     }
     buildKeyFeaturesCardScroll();
-
-    if (isMobile()) {
-      const testBrowserNav = document.getElementById("test-browser-nav");
-      if (testBrowserNav) testBrowserNav.style.display = "none";
-      installButton.classList.add("isMobileDnld");
-      installButton.innerHTML = "Download available on Desktop only";
-    }
-    else if (isSafari()) installButton.innerHTML = "Download available on chrome based browsers";
-    else if (isFirefox()) installButton.innerHTML = "Download available on chrome based browsers";
 
     function initIssueLinks() {
       const versionEl = document.getElementById('footer-version');

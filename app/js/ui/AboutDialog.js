@@ -1,8 +1,7 @@
-import { dom } from './AppLayout.js';
 import { setIcon } from '../utils/icons.js';
 import { Notification } from './Notification.js';
 import { DialogManager } from './DialogManager.js';
-import { getNewIssueUrl } from '../utils/misc.js';
+import { getNewIssueUrl, isStandaloneMode } from '../utils/misc.js';
 
 /**
  * About and application information modal dialog.
@@ -28,7 +27,6 @@ class AboutDialog extends HTMLElement {
     this.copyBtn.setAttribute("title", "Copy version");
     this.copyBtn.setAttribute("aria-label", "Copy version");
     setIcon(this.copyBtn, 'copy');
-    this.buttonCopy = this.copyBtn;
 
     this.copyBtn.onclick = async () => {
       const appName = this.titleEl?.innerText?.trim() || "Nanocell CSV Editor";
@@ -53,7 +51,6 @@ class AboutDialog extends HTMLElement {
     this.buttonBugReport.setAttribute("title", "Bug Report");
     this.buttonBugReport.setAttribute("aria-label", "Bug Report");
     setIcon(this.buttonBugReport, 'bug');
-    this.bugIcon = this.buttonBugReport;
     this.aboutFooter = document.createElement("div");
 
     this.titleEl.innerHTML = "Nanocell CSV Editor";
@@ -79,6 +76,14 @@ class AboutDialog extends HTMLElement {
     this.bugLink.href = getNewIssueUrl(version);
     this.versionContainer.appendChild(this.versionEl);
     this.versionContainer.appendChild(this.copyBtn);
+
+    if (isStandaloneMode()) {
+      const modeBadge = document.createElement("span");
+      modeBadge.className = "about-mode-badge";
+      modeBadge.style.cssText = "font-size: 0.85em; opacity: 0.8; margin-left: 8px;";
+      modeBadge.textContent = "(Desktop App)";
+      this.versionContainer.appendChild(modeBadge);
+    }
 
     this.appendChild(this.logoEl);
     this.appendChild(this.titleEl);

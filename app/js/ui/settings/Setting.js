@@ -24,7 +24,12 @@ if (typeof globalThis !== 'undefined') {
  */
 class Setting {
   constructor(s) {
-    let stored_val = localStorage.getItem(s.key);
+    let stored_val = null;
+    try {
+      stored_val = (typeof localStorage !== 'undefined') ? localStorage.getItem(s.key) : null;
+    } catch (e) {
+      console.warn('localStorage access failed:', e);
+    }
     if (stored_val !== null && stored_val !== '' && !isNaN(stored_val)) {
       stored_val = Number(stored_val);
     }
@@ -49,7 +54,11 @@ class Setting {
       get: () => { return this.value; },
       set: (e) => {
         this.value = e;
-        localStorage.setItem(this.key, e);
+        try {
+          if (typeof localStorage !== 'undefined') localStorage.setItem(this.key, e);
+        } catch (err) {
+          console.warn('localStorage set failed:', err);
+        }
         if (this.cb) this.cb(this.value);
       },
       configurable: true

@@ -139,6 +139,10 @@ class CommandPalette extends HTMLElement {
   }
 
   getCommands() {
+    const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform || navigator.userAgent || '');
+    const mod = isMac ? '⌘' : 'Ctrl+';
+    const shiftMod = isMac ? '⇧' : 'Shift+';
+    const altMod = isMac ? '⌥' : 'Alt+';
     const commandMap = this.commands || CommandPalette._defaultCommands || {};
     return Object.entries(commandMap)
       .filter(([id, c]) => c && typeof c.run === 'function')
@@ -146,7 +150,7 @@ class CommandPalette extends HTMLElement {
         id,
         label: c.label || id,
         description: c.description || c.label || id,
-        key: c.k ? `${c.ctrl ? 'Ctrl+' : ''}${c.shift ? 'Shift+' : ''}${c.alt ? 'Alt+' : ''}${c.k}` : '',
+        key: c.k ? `${c.ctrl ? mod : ''}${c.alt ? altMod : ''}${c.shift ? shiftMod : ''}${c.k}` : '',
         run: c.run
       }));
   }

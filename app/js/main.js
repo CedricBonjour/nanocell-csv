@@ -14,6 +14,7 @@ import './ui/FinderDialog.js';
 import { Notification } from './ui/Notification.js';
 import './interaction/MouseRouter.js';
 import { registerSW } from 'virtual:pwa-register';
+import { isFileSystemAccessSupported, showBrowserCompatibilityNotice } from './utils/misc.js';
 
 
 //on window/tab close, prompts the user for confirmation if currentSheet is not saved
@@ -24,13 +25,46 @@ window.addEventListener('beforeunload', function (e) {
 
 
 let launchFileOnInitDone = function () {
-  window.launchQueue?.setConsumer(async (params) => {
-    const [handle] = params.files;
-    if (handle) getCsvHandle()?.launchFile(handle);
-  });
+  if ('launchQueue' in window && typeof window.launchQueue?.setConsumer === 'function') {
+    try {
+      window.launchQueue.setConsumer(async (params) => {
+        const [handle] = params.files;
+        if (handle) getCsvHandle()?.launchFile(handle);
+      });
+    } catch (err) {
+      console.warn('LaunchQueue setup failed:', err);
+    }
+  }
 
   window.addEventListener('message', (event) => {
     if (event.data && event.data.fileHandle) getCsvHandle()?.launchFile(event.data.fileHandle);
+  });
+};
+
+let initDragAndDrop = function () {
+  if (typeof window === 'undefined') return;
+  window.addEventListener('dragover', (e) => {
+    e.preventDefault();
+  });
+  window.addEventListener('dragenter', (e) => {
+    e.preventDefault();
+  });
+  window.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+  });
+  window.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      const csvHandle = getCsvHandle();
+      if (csvHandle) {
+        document.title = file.name;
+        csvHandle.file = file;
+        csvHandle.handle = null;
+        csvHandle.read(file);
+      }
+    }
   });
 };
 
@@ -43,6 +77,10 @@ let nanocell_cleanStart = function () {
   new Sheet(new Dataframe([["Hello World"]]));
   Setting.runAll();
   launchFileOnInitDone();
+  initDragAndDrop();
+  if (!isFileSystemAccessSupported()) {
+    showBrowserCompatibilityNotice();
+  }
 };
 
 window.addEventListener('DOMContentLoaded', () => {

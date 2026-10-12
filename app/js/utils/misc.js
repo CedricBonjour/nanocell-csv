@@ -2,36 +2,15 @@
  * General helper utilities for Nanocell CSV application.
  * @module utils/misc
  */
-import { roundNumericString, isUrl } from '../../../core/model/Cell.js';
+import { isUrl } from '../../../core/model/Cell.js';
 import { isIsoDate } from '../../../core/utils/date.js';
-
-export const signOf = value => (value >= 0 ? 1 : -1);
-export const isAlphanumeric = char => /^[a-zA-Z0-9_]$/.test(char);
-export const rndStr = (n = 2) => {
-  let r = '';
-  const abc = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  for (let i = 0; i < n; i++) r += abc.charAt(Math.floor(Math.random() * abc.length));
-  return r;
-};
+import { Notification } from '../ui/Notification.js';
 
 /** Canonical URL validator re-exported from core/model/Cell.js */
 export const isValidUrl = isUrl;
 
 /** Canonical ISO date validator re-exported from core/utils/date.js */
 export { isIsoDate };
-
-
-/**
- * Rounds numeric values to an integer or to two decimal places.
- * @param {number|string} n - Input value.
- * @param {boolean} [integer=true] - True for integer rounding, false for 2 decimal places.
- * @returns {number|string}
- */
-export function round(n, integer = true) {
-  if (isNaN(n) || n === '') return n;
-  if (integer) return Math.round(Number(n));
-  return roundNumericString(String(n), 2);
-}
 
 /**
  * Detects browser model, version, and operating system.
@@ -105,3 +84,156 @@ export function getNewIssueUrl(appVersion) {
 
   return `https://github.com/CedricBonjour/nanocell-csv/issues/new?body=${encodeURIComponent(body)}`;
 }
+
+/**
+ * Checks whether the browser supports the File System Access API.
+ * @returns {boolean}
+ */
+export function isFileSystemAccessSupported() {
+  return typeof window !== 'undefined' &&
+    typeof window.showOpenFilePicker === 'function' &&
+    typeof window.showSaveFilePicker === 'function';
+}
+
+let activeCompatToast = null;
+
+/**
+ * Displays a persistent confirmation notification explaining File System Access API support.
+ */
+export function showBrowserCompatibilityNotice() {
+  if (typeof document === 'undefined') return;
+  if (activeCompatToast && activeCompatToast.parentNode) return;
+
+  const messageHtml = `
+    <div>
+      Direct in-place file saving requires the modern <strong>File System Access API</strong>, which is not supported in this browser.
+      <div style="margin-top: 6px;">NanoCell is running in <strong>compatibility mode</strong>:</div>
+      <ul style="margin: 4px 0 6px 18px; padding: 0; line-height: 1.4;">
+        <li><strong>Open:</strong> File picker upload and drag-and-drop are supported.</li>
+        <li><strong>Save:</strong> Files are saved by downloading them to your device.</li>
+      </ul>
+      <div style="font-size: 0.9em; opacity: 0.85; margin-top: 6px;">
+        Direct in-place file editing is supported in Chrome, Edge, Brave, and Opera.
+      </div>
+    </div>
+  `;
+
+  activeCompatToast = new Notification(messageHtml, {
+    id: 2,
+    type: 'info',
+    title: 'Browser Compatibility Notice'
+  });
+  activeCompatToast.show();
+}
+
+export const PWA_INSTALLED_KEY = 'nanocell_pwa_installed';
+
+let deferredInstallPrompt = null;
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    try {
+      localStorage.removeItem(PWA_INSTALLED_KEY);
+    } catch (err) {}
+  });
+
+  window.addEventListener('appinstalled', () => {
+    deferredInstallPrompt = null;
+    markAppAsInstalled();
+    Notification.quick("NanoCell installed successfully!");
+  });
+}
+
+/**
+ * Marks the application as installed in persistent local storage.
+ */
+export function markAppAsInstalled() {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(PWA_INSTALLED_KEY, 'true');
+    }
+  } catch (e) {}
+}
+
+/**
+ * Checks whether the application is running in standalone mode (PWA installed).
+ * @returns {boolean}
+ */
+export function isStandaloneMode() {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+/**
+ * Synchronously checks whether the application is installed (via standalone mode or persistent flag).
+ * @returns {boolean}
+ */
+export function isAppInstalledSync() {
+  if (isStandaloneMode()) {
+    markAppAsInstalled();
+    return true;
+  }
+  try {
+    if (typeof localStorage !== 'undefined') {
+      return localStorage.getItem(PWA_INSTALLED_KEY) === 'true';
+    }
+  } catch (e) {}
+  return false;
+}
+
+/**
+ * Asynchronously checks whether the application is installed on the user's operating system,
+ * querying navigator.getInstalledRelatedApps() if available.
+ * @returns {Promise<boolean>}
+ */
+export async function isAppInstalled() {
+  if (isStandaloneMode()) {
+    markAppAsInstalled();
+    return true;
+  }
+
+  if (typeof navigator !== 'undefined' && typeof navigator.getInstalledRelatedApps === 'function') {
+    try {
+      const apps = await navigator.getInstalledRelatedApps();
+      if (Array.isArray(apps) && apps.length > 0) {
+        markAppAsInstalled();
+        return true;
+      } else if (Array.isArray(apps) && apps.length === 0) {
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.removeItem(PWA_INSTALLED_KEY);
+          }
+        } catch (e) {}
+        return false;
+      }
+    } catch (err) {
+      console.debug('getInstalledRelatedApps check failed:', err);
+    }
+  }
+
+  return isAppInstalledSync();
+}
+
+/**
+ * Triggers the browser PWA install prompt or displays installation instructions.
+ */
+export async function triggerInstallPrompt() {
+  if (isAppInstalledSync()) {
+    Notification.quick("NanoCell is already installed.");
+    return;
+  }
+  if (!deferredInstallPrompt) {
+    Notification.confirm("To install NanoCell, click the install icon in your browser address bar or browser menu.");
+    return;
+  }
+  deferredInstallPrompt.prompt();
+  const { outcome } = await deferredInstallPrompt.userChoice;
+  if (outcome === 'accepted') {
+    deferredInstallPrompt = null;
+    markAppAsInstalled();
+  }
+}
+
+

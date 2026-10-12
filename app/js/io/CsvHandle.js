@@ -10,6 +10,7 @@ import { Sheet } from '../sheet/Sheet.js';
 import { stg } from '../ui/settings/Setting.js';
 import { CsvSerializer } from '../../../core/csv/CsvSerializer.js';
 import CsvWorker from './csv_worker.js?worker';
+import { showBrowserCompatibilityNotice } from '../utils/misc.js';
 
 /**
  * Handles CSV file lifecycle operations including opening, worker-based streaming, saving, and CSV serialization.
@@ -171,20 +172,59 @@ class CsvHandle {
   pipe(cmd, data) { if (this.worker) this.worker.postMessage({ cmd: cmd, data: data }); }
 
   /**
+   * Fallback file picker using standard hidden file input for browsers without File System Access API.
+   */
+  openFallback() {
+    if (typeof document === 'undefined') return;
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain';
+    input.style.display = 'none';
+    input.onchange = (e) => {
+      const file = e.target?.files?.[0];
+      if (file) {
+        document.title = file.name;
+        this.file = file;
+        this.handle = null;
+        console.log("Loading via fallback:", file.name);
+        this.read(file);
+      }
+      input.remove();
+    };
+    document.body.appendChild(input);
+    input.click();
+  }
+
+  /**
    * Prompts the user with a file picker to open a new CSV file in a new window.
-   * Uses the native File System Access API.
+   * Uses the native File System Access API, with fallback for unsupported browsers.
    * @returns {Promise<void>}
    */
   async open() {
+    if (typeof window === 'undefined' || typeof window.showOpenFilePicker !== 'function') {
+      showBrowserCompatibilityNotice();
+      this.openFallback();
+      return;
+    }
     try {
       let [fileHandle] = await window.showOpenFilePicker(CsvHandle.pickerOptions);
       const newWindow = window.open('./home.html', "_blank", 'width=800,height=600');
+      if (!newWindow) {
+        // Fall back to opening in the current window if popup was blocked or in standalone mode
+        this.launchFile(fileHandle);
+        return;
+      }
       const channel = new MessageChannel();
       newWindow.onload = () => {
         newWindow.postMessage({ fileHandle }, '*', [channel.port2]);
       };
     } catch (err) {
       if (err.name === 'AbortError') return;
+      if (err instanceof TypeError || typeof window.showOpenFilePicker !== 'function') {
+        showBrowserCompatibilityNotice();
+        this.openFallback();
+        return;
+      }
       console.error('An unexpected error occurred:', err);
     }
   }
@@ -210,15 +250,26 @@ class CsvHandle {
 
   /**
    * Triggers the native save file picker dialog to save the current dataset under a new file path.
+   * Falls back to export download on browsers without File System Access API.
    * @returns {Promise<void>}
    */
   async saveAs() {
     if (this.viewOnly) return;
+    if (typeof window === 'undefined' || typeof window.showSaveFilePicker !== 'function') {
+      showBrowserCompatibilityNotice();
+      this.exportDownload();
+      return;
+    }
     try {
       this.handle = await window.showSaveFilePicker(CsvHandle.pickerOptions);
       this.save();
     } catch (err) {
       if (err.name === 'AbortError') return;
+      if (err instanceof TypeError || typeof window.showSaveFilePicker !== 'function') {
+        showBrowserCompatibilityNotice();
+        this.exportDownload();
+        return;
+      }
       console.error('An unexpected error occurred:', err);
     }
   }
@@ -231,6 +282,11 @@ class CsvHandle {
     if (this.viewOnly) return;
     if (this.handle === null) {
       this.saveAs();
+      return;
+    }
+    if (typeof this.handle?.createWritable !== 'function') {
+      showBrowserCompatibilityNotice();
+      this.exportDownload();
       return;
     }
     try {
@@ -346,9 +402,14 @@ class CsvHandle {
     if (!sheet) return;
     const serializer = new CsvSerializer();
     const md = serializer.serializeMarkdown(sheet.rangeArray(), { hasHeader: Boolean(stg.set_headers) });
-    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(md);
-      Notification.quick("Copied selection as Markdown table");
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(md);
+        Notification.quick("Copied selection as Markdown table");
+      }
+    } catch (err) {
+      console.warn("Clipboard copy markdown failed:", err);
+      Notification.quick("Clipboard copy not permitted by browser");
     }
   }
 
@@ -361,9 +422,14 @@ class CsvHandle {
     if (!sheet) return;
     const serializer = new CsvSerializer();
     const json = serializer.serializeJson(sheet.rangeArray(), { pretty: true, hasHeader: Boolean(stg.set_headers) });
-    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(json);
-      Notification.quick("Copied selection as JSON to clipboard");
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(json);
+        Notification.quick("Copied selection as JSON to clipboard");
+      }
+    } catch (err) {
+      console.warn("Clipboard copy json failed:", err);
+      Notification.quick("Clipboard copy not permitted by browser");
     }
   }
 

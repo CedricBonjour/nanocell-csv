@@ -4,53 +4,126 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>NanoCell - CSV file Viewer & Editor</title>
-  <link rel="stylesheet" type="text/css" href="/web/theme.css">
+  <title>NanoCell - Free Fast CSV Viewer &amp; Editor | Online &amp; Offline</title>
+  <meta name="description" content="Fast, free, and privacy-first CSV viewer and editor. Inspect massive files in O(1) time without corrupting leading zeros, formatting, or sending data to servers.">
+  <meta name="keywords" content="csv viewer, csv editor, view large csv, edit csv online, offline csv editor, fast csv viewer, csv validator, transpose csv, pwa csv, data accuracy">
+  <meta name="author" content="Cedric Bonjour">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <link rel="canonical" href="https://nanocell-csv.com/">
 
+  <!-- Favicons & Mobile Web App -->
   <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" href="/favicon-192x192.png" />
+  <meta name="theme-color" content="#48a741" />
+  <meta name="application-name" content="NanoCell" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="NanoCell" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 
-  <meta property="og:title" content="NanoCell - CSV file Viewer & Editor" />
+  <!-- Open Graph / Social Media -->
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://nanocell-csv.com" />
+  <meta property="og:site_name" content="NanoCell CSV" />
+  <meta property="og:url" content="https://nanocell-csv.com/" />
+  <meta property="og:title" content="NanoCell - Free Fast CSV Viewer &amp; Editor | Online &amp; Offline" />
+  <meta property="og:description" content="Fast, free, and privacy-first CSV viewer and editor. Inspect massive files in O(1) time without corrupting leading zeros, formatting, or sending data to servers." />
   <meta property="og:image" content="https://nanocell-csv.com/img/screenshot/screenshot_light_logo.webp" />
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="NC logo & screenshot">
-  <meta property="og:description"
-    content="Nanocell - CSV file Viewer & Editor : free, fast, simple, lightweight, offline, cross platform, and data accurate">
-  <meta name="description"
-    content="Nanocell - CSV file Viewer & Editor : free, fast, simple, lightweight, offline, cross platform, and data accurate">
+  <meta property="og:image:secure_url" content="https://nanocell-csv.com/img/screenshot/screenshot_light_logo.webp" />
+  <meta property="og:image:type" content="image/webp" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="NanoCell CSV Viewer and Editor interface preview" />
+  <meta property="og:locale" content="en_US" />
 
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="NanoCell - Free Fast CSV Viewer &amp; Editor" />
+  <meta name="twitter:description" content="Fast, lightweight, privacy-first CSV viewer and editor. Inspect multi-GB files in O(1) time with 100% offline security." />
+  <meta name="twitter:image" content="https://nanocell-csv.com/img/screenshot/screenshot_light_logo.webp" />
+  <meta name="twitter:image:alt" content="NanoCell CSV Viewer and Editor interface preview" />
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" type="text/css" href="/web/theme.css">
+
+  <!-- Structured Data: JSON-LD Schema.org -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://nanocell-csv.com/#website",
+        "url": "https://nanocell-csv.com/",
+        "name": "NanoCell CSV",
+        "description": "Fast, free, and privacy-first CSV viewer and editor.",
+        "inLanguage": "en-US"
+      },
+      {
+        "@type": "WebApplication",
+        "@id": "https://nanocell-csv.com/#webapp",
+        "name": "NanoCell - CSV Viewer & Editor",
+        "alternateName": ["NanoCell", "NanoCell CSV", "nanocell-csv"],
+        "url": "https://nanocell-csv.com/",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "All (Web, Windows, macOS, Linux, ChromeOS)",
+        "browserRequirements": "Requires Chromium, Firefox, WebKit, or modern browser with HTML5 and Web Worker support",
+        "description": "Fast, privacy-first, offline CSV viewer and editor. Inspect massive files in O(1) time without corrupting leading zeros, formatting, or sending data to servers.",
+        "image": "https://nanocell-csv.com/img/screenshot/screenshot_light_logo.webp",
+        "screenshot": "https://nanocell-csv.com/img/screenshot/screenshot_light.webp",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "featureList": [
+          "Instant O(1) preview of multi-gigabyte CSV files",
+          "100% client-side privacy with zero telemetry",
+          "Verbatim text accuracy preserving leading zeros and phone number signs",
+          "Interactive validation pane for headers and data formats",
+          "Matrix transposition and dynamic row/column shifting",
+          "PWA installable for offline desktop productivity"
+        ],
+        "author": {
+          "@type": "Person",
+          "name": "Cedric Bonjour",
+          "url": "https://CedricBonjour.github.io/"
+        }
+      }
+    ]
+  }
+  </script>
 </head>
 
 <body>
-  <nav>
+  <nav aria-label="Main Navigation">
     <a class="nav_element navTitleBlock" href="#"
       onclick="document.getElementById('container').scrollTo({ top: 0, behavior: 'smooth' });">
-      <img id="navLogo" src="/logo.svg" alt="nc_logo" />
+      <img id="navLogo" src="/logo.svg" alt="NanoCell CSV Editor Logo" />
       <span id="navTitle">NanoCell - csv editor</span>
     </a>
     <div class="grow"></div>
     <a class="nav_element hide_tablet" href="#about">About</a>
-    <a class="nav_element hide_tablet" href="#docs">Features</a>
+    <a class="nav_element hide_tablet" href="#features">Features</a>
     <div class="nav_element hide_phone" id="test-browser-nav">
-      <a class="btn-test-browser" href="/app/home.html" target="_blank">Test it in the browser</a>
+      <a class="nav-button btn-test-browser" href="/app/home.html" target="_blank">Test it in the browser</a>
     </div>
-    <div class="nav_element" id="install"><button>Install<br>
+    <div class="nav_element" id="install">
+      <button class="nav-button btn-install">Install
         <div id="version">Beta version</div>
-      </button> </div>
+      </button>
+    </div>
   </nav>
-  <div id="container">
+  <main id="container">
     <header id="header">
-      <h1>CSV Viewer & Editor</h1>
-      <a href="https://github.com/CedricBonjour/nanocell-csv" target="_blank">
-        <img src="https://img.shields.io/github/stars/CedricBonjour/nanocell-csv?style=social" alt="GitHub stars">
+      <h1>NanoCell CSV Viewer &amp; Editor</h1>
+      <a href="https://github.com/CedricBonjour/nanocell-csv" target="_blank" rel="noopener noreferrer" aria-label="NanoCell CSV GitHub repository">
+        <img src="https://img.shields.io/github/stars/CedricBonjour/nanocell-csv?style=social" alt="GitHub stars" width="100" height="20" decoding="async">
       </a>
       <div id="screenshots" class="hide_phone">
-        <img id="lightShot" src="/img/screenshot/screenshot_light.webp" alt="screenshot light" />
-        <img id="darkShot" src="/img/screenshot/screenshot_dark.webp" alt="screenshot dark" />
+        <img id="lightShot" src="/img/screenshot/screenshot_light.webp" alt="NanoCell CSV Editor light theme interface preview" fetchpriority="high" decoding="async" />
+        <img id="darkShot" src="/img/screenshot/screenshot_dark.webp" alt="NanoCell CSV Editor dark theme interface preview" decoding="async" />
       </div>
       <div id="keyWords">
         <span>Free</span>
@@ -75,7 +148,7 @@
       <div class="launch-banner">
         <h2>Ready to See It in Action?</h2>
         <p>Open NanoCell directly in your browser. <br/> No sign-up, no downloads, zero setup required.</p>
-        <a class="anchorButton" href="/app/home.html" target="_blank" style="font-size: 1.1em; padding: 0.9em 2em;">
+        <a class="anchorButton" href="/app/home.html" target="_blank">
           Launch NanoCell CSV Editor
         </a>
         <div style="margin-top: 1.2em; font-size: 0.9em; color: #15803d;">
@@ -87,17 +160,17 @@
 
 
 
-    <section id="features" style="padding: 7vh 1rem 6vh 1rem; scroll-margin-top: 75px;">
-      <div class="doc-section-content" style="width: 100%; box-sizing: border-box;">
+    <section class="doc-section" id="features">
+      <div class="doc-section-content">
         <h2 style="text-align: center; margin-bottom: 0.8em;">Key features</h2>
         <div class="essentials-grid">
           <div class="essential-card" role="button" tabindex="0" data-target="client-privacy" onclick="if (!event.target.closest('a')) document.getElementById('client-privacy')?.scrollIntoView({ behavior: 'smooth' });">
             <div>
               <strong>Data privacy</strong>
-              <p>Nanocell-csv works 100% off-line, your data is never leaving your computer.
+              <p>Nanocell-csv works 100% offline, your data never leaves your computer.
                 Nanocell-csv.com runs on a static server which, by design, only sends data on request but cannot register any
-                data. Don't take my word for it, checkout the source code <a
-                  href="https://github.com/CedricBonjour/nanocell-csv">[here]</a>.</p>
+                data. Don't take our word for it, check out the <a
+                  href="https://github.com/CedricBonjour/nanocell-csv" target="_blank" rel="noopener noreferrer">source code on GitHub</a>.</p>
             </div>
           </div>
           <div class="essential-card" role="button" tabindex="0" data-target="data-accuracy" onclick="if (!event.target.closest('a')) document.getElementById('data-accuracy')?.scrollIntoView({ behavior: 'smooth' });">
@@ -137,17 +210,7 @@
       </div>
     </section>
 
-    <!-- DOCUMENTATION SECTION -->
-    <div id="docs">
-      <div class="quick-jump-nav">
-        <a class="jump-pill" href="#large-files">⚡ Instant Gigabyte Preview</a>
-        <a class="jump-pill" href="#data-accuracy">🛡️ Zero Data Corruption</a>
-        <a class="jump-pill" href="#data-validation">🧹 One-Click Data Validation</a>
-        <a class="jump-pill" href="#client-privacy">🔒 100% Offline Privacy</a>
-        <a class="jump-pill" href="#essentials">⌨️ Essentials &amp; Shortcuts</a>
-      </div>
-
-      <!-- 1. LARGE FILES -->
+    <!-- 1. LARGE FILES -->
       <section class="doc-section" id="large-files">
         <div class="doc-section-content">
           <h2>Instant Large File View</h2>
@@ -176,155 +239,6 @@
               </div>
             </div>
           </div>
-
-          <!-- Visual Example Table with Row Headers and Regular Interval Dividers -->
-          <div class="example-card">
-            <div class="example-header">
-              <span class="example-title">Stream Sampling of <code>production_events_3gb.csv</code> <span style="font-size: 0.85em; font-weight: normal; color: #64748b;">(scroll to inspect)</span></span>
-              <span class="example-badge">Locked in View-Only Mode</span>
-            </div>
-            <div class="example-table-container scrollable-stream-container">
-              <table class="example-table">
-                <thead>
-                  <tr>
-                    <th class="row-header-th">#</th>
-                    <th>id</th>
-                    <th>event_uuid</th>
-                    <th>timestamp</th>
-                    <th>status_code</th>
-                    <th>latency_ms</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td class="row-header">1</td>
-                    <td>1001</td>
-                    <td>e7a9-410c</td>
-                    <td>2026-10-02T11:00:15Z</td>
-                    <td>200</td>
-                    <td>42</td>
-                  </tr>
-                  <tr>
-                    <td class="row-header">2</td>
-                    <td>1002</td>
-                    <td>b214-99a1</td>
-                    <td>2026-10-02T11:00:18Z</td>
-                    <td>200</td>
-                    <td>35</td>
-                  </tr>
-                  <tr>
-                    <td class="row-header">3</td>
-                    <td>1003</td>
-                    <td>fa80-112e</td>
-                    <td>2026-10-02T11:00:23Z</td>
-                    <td>304</td>
-                    <td>19</td>
-                  </tr>
-                  <tr>
-                    <td class="row-header">4</td>
-                    <td>1004</td>
-                    <td>c019-48bb</td>
-                    <td>2026-10-02T11:00:29Z</td>
-                    <td>200</td>
-                    <td>51</td>
-                  </tr>
-                  <tr>
-                    <td class="row-header">5</td>
-                    <td>1005</td>
-                    <td>de33-771f</td>
-                    <td>2026-10-02T11:00:34Z</td>
-                    <td>500</td>
-                    <td>890</td>
-                  </tr>
-                  <tr>
-                    <td class="row-header" style="text-align: center !important;">...</td>
-                    <td colspan="5" class="stream-row-gap">! [...] ! &nbsp; 950,000 ROWS SAMPLED AT REGULAR INTERVALS &nbsp; ! [...] !</td>
-                  </tr>
-                  <tr>
-                    <td class="row-header">950001</td>
-                    <td>950001</td>
-                    <td>d912-4011</td>
-                    <td>2026-10-02T13:12:00Z</td>
-                    <td>200</td>
-                    <td>28</td>
-                  </tr>
-                  <tr>
-                    <td class="row-header">950002</td>
-                    <td>950002</td>
-                    <td>bb31-6204</td>
-                    <td>2026-10-02T13:12:04Z</td>
-                    <td>200</td>
-                    <td>32</td>
-                  </tr>
-                  <tr>
-                    <td class="row-header">950003</td>
-                    <td>950003</td>
-                    <td>ac78-1992</td>
-                    <td>2026-10-02T13:12:09Z</td>
-                    <td>304</td>
-                    <td>15</td>
-                  </tr>
-                  <tr>
-                    <td class="row-header" style="text-align: center !important;">...</td>
-                    <td colspan="5" class="stream-row-gap">! [...] ! &nbsp; 950,000 ROWS SAMPLED AT REGULAR INTERVALS &nbsp; ! [...] !</td>
-                  </tr>
-                  <tr>
-                    <td class="row-header">1900001</td>
-                    <td>1900001</td>
-                    <td>c490-112d</td>
-                    <td>2026-10-02T15:20:04Z</td>
-                    <td>200</td>
-                    <td>36</td>
-                  </tr>
-                  <tr>
-                    <td class="row-header">1900002</td>
-                    <td>1900002</td>
-                    <td>aa10-8843</td>
-                    <td>2026-10-02T15:20:09Z</td>
-                    <td>200</td>
-                    <td>41</td>
-                  </tr>
-                  <tr>
-                    <td class="row-header">1900003</td>
-                    <td>1900003</td>
-                    <td>f140-5201</td>
-                    <td>2026-10-02T15:20:14Z</td>
-                    <td>502</td>
-                    <td>1100</td>
-                  </tr>
-                  <tr>
-                    <td class="row-header" style="text-align: center !important;">...</td>
-                    <td colspan="5" class="stream-row-gap">! [...] ! &nbsp; 950,000 ROWS SAMPLED AT REGULAR INTERVALS &nbsp; ! [...] !</td>
-                  </tr>
-                  <tr>
-                    <td class="row-header">3850198</td>
-                    <td>3850198</td>
-                    <td>ef01-9014</td>
-                    <td>2026-10-02T18:45:02Z</td>
-                    <td>200</td>
-                    <td>24</td>
-                  </tr>
-                  <tr>
-                    <td class="row-header">3850199</td>
-                    <td>3850199</td>
-                    <td>bc22-3108</td>
-                    <td>2026-10-02T18:45:08Z</td>
-                    <td>200</td>
-                    <td>30</td>
-                  </tr>
-                  <tr>
-                    <td class="row-header">3850200</td>
-                    <td>3850200</td>
-                    <td>f881-229a</td>
-                    <td>2026-10-02T18:45:12Z</td>
-                    <td>500</td>
-                    <td>1240</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
           <div class="more-tips-container">
             <button class="more-tips-toggle" type="button" aria-expanded="false" onclick="toggleMoreTips(this)">
               <span>More tips</span>
@@ -372,51 +286,6 @@
                 <p>CSV is text, and NanoCell handles every single cell as <strong>pure verbatim text</strong>. Zero unwanted type casting, zero loss of leading zeros or signs.</p>
                 <p>Pasting raw delimited text fills the grid predictably without triggering broken delimiter split dialogs or auto-formatting accidents. What you see is exactly what gets written back to disk.</p>
               </div>
-            </div>
-          </div>
-
-          <div class="example-card">
-            <div class="example-header">
-              <span class="example-title">What Happens When You Open and Save a CSV</span>
-              <span class="example-badge badge-safe-preview">✅ Verbatim Text Preserved</span>
-            </div>
-            <div class="example-table-container">
-              <table class="example-table">
-                <thead>
-                  <tr>
-                    <th>Field Type</th>
-                    <th>Raw CSV Text</th>
-                    <th>Standard Spreadsheet (Excel / Calc)</th>
-                    <th>NanoCell CSV</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>Postal Code / Area ID</td>
-                    <td><code>"004291"</code></td>
-                    <td><span class="tag-diff-del">4291</span> <span class="tag-note">(Leading zeros stripped!)</span></td>
-                    <td><span class="tag-diff-add">004291</span> <span class="tag-note">(Byte-exact preserved)</span></td>
-                  </tr>
-                  <tr>
-                    <td>International Phone</td>
-                    <td><code>"+44 7911 123456"</code></td>
-                    <td><span class="tag-diff-del">447911123456</span> <span class="tag-note">(+ sign lost!)</span></td>
-                    <td><span class="tag-diff-add">+44 7911 123456</span> <span class="tag-note">(Exact string)</span></td>
-                  </tr>
-                  <tr>
-                    <td>Product Part SKU</td>
-                    <td><code>"9876E5"</code></td>
-                    <td><span class="tag-diff-del">9.88E+08</span> <span class="tag-note">(Corrupted to float!)</span></td>
-                    <td><span class="tag-diff-add">9876E5</span> <span class="tag-note">(Untouched identifier)</span></td>
-                  </tr>
-                  <tr>
-                    <td>ISO Timestamp String</td>
-                    <td><code>"2026-05-12"</code></td>
-                    <td><span class="tag-diff-del">12/05/2026</span> <span class="tag-note">(Forced localized rewrite)</span></td>
-                    <td><span class="tag-diff-add">2026-05-12</span> <span class="tag-note">(Clean ISO preserved)</span></td>
-                  </tr>
-                </tbody>
-              </table>
             </div>
           </div>
 
@@ -469,58 +338,6 @@
               </div>
             </div>
           </div>
-
-          <!-- Concise 3-Column Visual Example Table (1 Issue Per Row) -->
-          <div class="example-card">
-            <div class="example-header">
-              <span class="example-title">Validation Rules &amp; Proposed Cell Transformations</span>
-              <span class="example-badge">Validation Engine</span>
-            </div>
-            <div class="example-table-container">
-              <table class="example-table">
-                <thead>
-                  <tr>
-                    <th>Issue Category</th>
-                    <th>Original Value (Dirty)</th>
-                    <th>Sanitized Value (Proposed Fix)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td><strong>Header Syntax</strong></td>
-                    <td><span class="tag-diff-del">"Customer First-Name"</span></td>
-                    <td><span class="tag-diff-add">customer_first_name</span> <span class="tag-note">(Converted to clean SQL identifier)</span></td>
-                  </tr>
-                  <tr>
-                    <td><strong>Duplicate Header</strong></td>
-                    <td><span class="tag-diff-del">"total"</span> <span class="tag-note">(Second occurrence)</span></td>
-                    <td><span class="tag-diff-add">total_c4</span> <span class="tag-note">(Auto-disambiguated with column index)</span></td>
-                  </tr>
-                  <tr>
-                    <td><strong>Whitespace Trimming</strong></td>
-                    <td><span class="tag-diff-del">"&nbsp;&nbsp;Paris, France&nbsp;&nbsp;"</span></td>
-                    <td><span class="tag-diff-add">"Paris, France"</span> <span class="tag-note">(Padded whitespace stripped)</span></td>
-                  </tr>
-                  <tr>
-                    <td><strong>Decimal Comma Coercion</strong></td>
-                    <td><span class="tag-diff-del">"149,95"</span></td>
-                    <td><span class="tag-diff-add">"149.95"</span> <span class="tag-note">(European decimal comma to dot in numbers)</span></td>
-                  </tr>
-                  <tr>
-                    <td><strong>Embedded Line Break</strong></td>
-                    <td><span class="tag-diff-del">"Building A\nSuite 4"</span></td>
-                    <td><span class="tag-diff-add">"Building A|Suite 4"</span> <span class="tag-note">(Dangerous newline replaced with pipe)</span></td>
-                  </tr>
-                  <tr>
-                    <td><strong>Date Standardization</strong></td>
-                    <td><span class="tag-diff-del">"24/09/2026"</span> <span class="tag-note">(DD/MM/YYYY)</span></td>
-                    <td><span class="tag-diff-add">"2026-09-24"</span> <span class="tag-note">(Standardized to ISO-8601 via &gt;12 rule)</span></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
           <div class="more-tips-container">
             <button class="more-tips-toggle" type="button" aria-expanded="false" onclick="toggleMoreTips(this)">
               <span>More tips</span>
@@ -544,20 +361,6 @@
                   </div>
                 </div>
 
-                <!-- Non-technical Bulleted Settings Box -->
-                <div class="settings-box">
-                  <span>⚙️</span>
-                  <div>
-                    <strong>In Settings (<kbd class="key">Ctrl</kbd>+<kbd class="key">G</kbd>):</strong> You can customize validation rules to fit your target requirements:
-                    <ul style="margin: 0.4em 0 0 0; padding-left: 1.2em; line-height: 1.55em;">
-                      <li>Turn European decimal commas into dots for numeric values</li>
-                      <li>Replace commas in text fields with dashes</li>
-                      <li>Convert double quotes into single quotes</li>
-                      <li>Replace line breaks inside cells with pipes (<code>|</code>)</li>
-                      <li>Force all text to lowercase</li>
-                    </ul>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -775,13 +578,12 @@
 
         </div>
       </section>
-    </div>
 
     <section class="launch-section" id="launch-bottom">
       <div class="launch-banner">
         <h2>Ready to See It in Action?</h2>
         <p>Open NanoCell directly in your browser. No sign-up, no downloads, zero setup required.</p>
-        <a class="anchorButton" href="/app/home.html" target="_blank" style="font-size: 1.1em; padding: 0.9em 2em;">
+        <a class="anchorButton" href="/app/home.html" target="_blank">
           Launch NanoCell CSV Editor
         </a>
         <div style="margin-top: 1.2em; font-size: 0.9em; color: #15803d;">
@@ -790,12 +592,12 @@
       </div>
     </section>
 
-    <section id="contribute" style="padding: 7vh 1rem 6vh 1rem; scroll-margin-top: 75px;">
-      <div class="doc-section-content" style="width: 100%; box-sizing: border-box;">
+    <section class="doc-section" id="contribute">
+      <div class="doc-section-content">
         <h2 style="text-align: center; margin-bottom: 0.4em;">Contribute</h2>
         <div style="text-align: center; margin-bottom: 1.5em;">
-          <a href="https://github.com/CedricBonjour/nanocell-csv" target="_blank" rel="noopener noreferrer" style="display: inline-block;">
-            <img src="https://img.shields.io/github/stars/CedricBonjour/nanocell-csv?style=social" alt="GitHub stars">
+          <a href="https://github.com/CedricBonjour/nanocell-csv" target="_blank" rel="noopener noreferrer" style="display: inline-block;" aria-label="Star NanoCell CSV on GitHub">
+            <img src="https://img.shields.io/github/stars/CedricBonjour/nanocell-csv?style=social" alt="GitHub stars" width="100" height="20" decoding="async">
           </a>
         </div>
         <div class="essentials-grid">
@@ -820,20 +622,20 @@
         </div>
       </div>
     </section>
-    <section id="footer">
+    <footer id="footer">
       <div>
         <strong>Links</strong>
-        <a href="#docs">Documentation</a>
+        <a href="#large-files">Documentation</a>
         <a href="/terms_of_use_and_license.html">Terms of use</a>
-        <a href="https://github.com/CedricBonjour/nanocell-csv/issues/new" target="_blank">Bug report </a>
-        <a href="https://github.com/CedricBonjour/nanocell-csv" target="_blank"> Github Repository</a>
+        <a href="https://github.com/CedricBonjour/nanocell-csv/issues/new" target="_blank" rel="noopener noreferrer">Bug report</a>
+        <a href="https://github.com/CedricBonjour/nanocell-csv" target="_blank" rel="noopener noreferrer">GitHub Repository</a>
       </div>
       <div>
         <strong>Contact</strong>
-        <a href="https://CedricBonjour.github.io/" target="_blank">About the author</a>
+        <a href="https://CedricBonjour.github.io/" target="_blank" rel="noopener noreferrer">About the author</a>
         <span>
           <a id="email">nanocell.csv@gmail.com</a>
-          <code id="copy_toast"> <img src="/img/cp.svg" alt="copy_icon"> copied to clipboard</code>
+          <code id="copy_toast"> <img src="/img/cp.svg" alt="Copy email address" width="16" height="16"> copied to clipboard</code>
         </span>
 
       </div>
@@ -841,8 +643,8 @@
         <strong>Version</strong>
         <span id="footer-version" style="margin: 1em; color: #475569; font-size: 0.95em;">__APP_VERSION__</span>
       </div>
-    </section>
-  </div>
+    </footer>
+  </main>
 
 
 
@@ -910,25 +712,6 @@
       }
     }
 
-    // Automatic section background alternator (applied everywhere)
-    function autoAlternateSectionBackgrounds() {
-      const sections = document.querySelectorAll('section');
-      sections.forEach((sec, idx) => {
-        if (idx % 2 === 0) {
-          sec.classList.remove('section-bg-white');
-          sec.classList.add('section-bg-grey');
-        } else {
-          sec.classList.remove('section-bg-grey');
-          sec.classList.add('section-bg-white');
-        }
-      });
-    }
-
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', autoAlternateSectionBackgrounds);
-    } else {
-      autoAlternateSectionBackgrounds();
-    }
 
     buildSmoothAnchorScroll();
 

@@ -1,2 +1,5 @@
 User-agent: *
+Allow: /
 Disallow: /app/
+
+Sitemap: https://nanocell-csv.com/sitemap.xml

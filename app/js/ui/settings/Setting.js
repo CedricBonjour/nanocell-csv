@@ -128,12 +128,6 @@ Object.defineProperty(Setting, 'list', {
     { key: "trim", dflt: false, name: "Remove empty rows and columns" },
     { key: "trim_unquoted", dflt: true, name: "Trim unquoted whitespace" },
 
-    { title: "Data Validation" },
-    { key: "dv_comma_num", dflt: true, name: "In numeric values : replace commas by a dot" },
-    { key: "dv_comma_txt", dflt: true, name: "In text values : replace commas by a dash " },
-    { key: "dv_quotes", dflt: true, name: "Replace double quotes by single quotes" },
-    { key: "dv_lr", dflt: true, name: "Replace line returns by a pipe (|)" },
-    { key: "dv_lower", dflt: false, name: "Force all text to lower case" },
 
     { title: "Csv View Only" },
     { key: "editMaxFileSize", dflt: 10, name: "Max editable file size (Mo)", min: 1, max: Infinity, stepMode: 'pow2' },

@@ -11,10 +11,10 @@ import './ui/CommandPalette.js';
 import './ui/ValidationPane.js';
 import './ui/AboutDialog.js';
 import './ui/FinderDialog.js';
-import { Notification } from './ui/Notification.js';
+import { Notification, showBrowserCompatibilityNotice } from './ui/Notification.js';
 import './interaction/MouseRouter.js';
 import { registerSW } from 'virtual:pwa-register';
-import { isFileSystemAccessSupported, showBrowserCompatibilityNotice } from './utils/misc.js';
+import { env } from './utils/misc.js';
 
 
 //on window/tab close, prompts the user for confirmation if currentSheet is not saved
@@ -78,7 +78,7 @@ let nanocell_cleanStart = function () {
   Setting.runAll();
   launchFileOnInitDone();
   initDragAndDrop();
-  if (!isFileSystemAccessSupported()) {
+  if (!env.supportsFileSystemAccess) {
     showBrowserCompatibilityNotice();
   }
 };

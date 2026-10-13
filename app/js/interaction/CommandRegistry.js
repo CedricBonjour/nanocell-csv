@@ -8,7 +8,8 @@ import { Setting } from '../ui/settings/Setting.js';
 import { SettingDialog } from '../ui/settings/SettingDialog.js';
 import { AboutDialog } from '../ui/AboutDialog.js';
 import { CommandPalette } from '../ui/CommandPalette.js';
-import { triggerInstallPrompt } from '../utils/misc.js';
+import { env } from '../utils/misc.js';
+import { triggerAppInstall } from '../ui/Notification.js';
 
 /**
  * Command descriptor object definition.
@@ -27,13 +28,13 @@ import { triggerInstallPrompt } from '../utils/misc.js';
  */
 const cmd = {
   about: { label: "About", k: "H", ctrl: true, shift: false, alt: false, run() { AboutDialog.show(); }, description: "About" },
-  installApp: { label: "Install Desktop App", ctrl: false, shift: false, alt: false, run() { triggerInstallPrompt(); }, description: "Install NanoCell as standalone desktop app" },
+  installApp: { label: "Install Desktop App", ctrl: false, shift: false, alt: false, run() { triggerAppInstall(); }, description: "Install NanoCell as standalone desktop app" },
   new: { label: "New Sheet", k: "N", ctrl: true, shift: false, alt: false, run() { getCsvHandle()?.new(); }, description: "New sheet" },
   deleteRow: { label: "Delete Row", k: "BACKSPACE", ctrl: true, shift: false, alt: false, run() { getSheet()?.deleteRows(); }, description: "Delete Row" },
   deleteCol: { label: "Delete Col", k: "BACKSPACE", ctrl: true, shift: true, alt: false, run() { getSheet()?.deleteCols(); }, description: "Delete Col" },
   delete: { label: "Delete Selection", k: "BACKSPACE", ctrl: false, shift: false, alt: false, run() { getSheet()?.deleteSelection(); }, description: "Delete Selection" },
   settings: { label: "Settings", k: "G", ctrl: true, shift: false, alt: false, run() { SettingDialog.show(); }, description: "Display Settings" },
-  shortcuts: { label: "Command Palette", k: "K", ctrl: true, shift: false, alt: false, run() { cmd.commandPalette.run(); }, description: "Command Palette" },
+  shortcuts: { label: "Command Palette", k: "P", ctrl: true, shift: false, alt: false, run() { CommandPalette.toggle(cmd); }, description: "Command Palette" },
   slctAll: { label: "Select All", k: "A", ctrl: true, shift: false, alt: false, run() { getSheet()?.slctAll(); }, description: "Select All" },
   transpose: { label: "Transpose", k: "T", ctrl: true, shift: true, alt: false, run() { getSheet()?.rangeTranspose(); }, description: "Transpose rows and columns (selection or whole sheet)" },
   trim: { label: "Trim Empty Rows/Cols", k: "T", ctrl: true, shift: false, alt: true, run() { getSheet()?.trim(); }, description: "Trim : remove all empty rows/cols" },
@@ -43,8 +44,7 @@ const cmd = {
   undo: { label: "Undo", k: "Z", ctrl: true, shift: false, alt: false, run() { getSheet()?.undo(); }, description: "Undo" },
   redo: { label: "Redo", k: "Z", ctrl: true, shift: true, alt: false, run() { getSheet()?.redo(); }, description: "Redo" },
   date: { label: "Insert Today's Date", k: ";", ctrl: true, shift: false, alt: false, run() { getSheet()?.insertDate(); }, description: "Insert today's date" },
-  date_checker: { label: "Validate Date Format", ctrl: false, shift: false, alt: false, run() { getSheet()?.validate_dates(); }, description: "Validate and standardize date formats to YYYY-mm-dd" },
-  validate_dates: { label: "Validate: Date Formats (YYYY-MM-DD)", ctrl: false, shift: false, alt: false, run() { getSheet()?.validate_dates(); }, description: "Standardize date formats across columns to YYYY-mm-dd" },
+  validate_dates: { label: "Validate: Date Formats (YYYY-MM-DD)", ctrl: false, shift: false, alt: false, run() { getSheet()?.validate_rule('dates'); }, description: "Standardize date formats across columns to YYYY-mm-dd" },
   validate_whitespace: { label: "Validate: Trim Whitespace", ctrl: false, shift: false, alt: false, run() { getSheet()?.validate_rule('trim_whitespace'); }, description: "Remove leading and trailing whitespace from cell text" },
   validate_comma_num: { label: "Validate: Decimal Comma -> Dot", ctrl: false, shift: false, alt: false, run() { getSheet()?.validate_rule('comma_decimals'); }, description: "Convert comma decimals (3,14) to dot notation in numeric fields" },
   validate_line_returns: { label: "Validate: Line Returns -> Pipe", ctrl: false, shift: false, alt: false, run() { getSheet()?.validate_rule('line_returns'); }, description: "Replace embedded newline line breaks with pipe character (|)" },
@@ -60,9 +60,8 @@ const cmd = {
   saveAs: { label: "Save As", k: "S", ctrl: true, shift: true, alt: false, run() { getCsvHandle()?.saveAs(); }, description: "Save As" },
   reloadFile: { label: "Reload File", k: "R", ctrl: true, shift: false, alt: false, run() { getCsvHandle()?.reloadFile(); }, description: "Reload file from last save" },
   expand: { label: "Expand Row", k: "E", ctrl: true, shift: false, alt: false, run() { getSheet()?.expand(); }, description: "Expand first row to selection" },
-  commandPalette: { label: "Command Palette", k: "P", ctrl: true, shift: false, alt: false, run() { CommandPalette.toggle(cmd); }, description: "Command Palette" },
   validate_data: { label: "Validate Data: Open Pane", k: "P", ctrl: true, shift: true, alt: false, run() { getSheet()?.open_validation_pane(); }, description: "Open data validation pane with all validation rules" },
-  validate_headers: { label: "Validate: Headers & SQL Compliance", k: "H", ctrl: true, shift: true, alt: false, run() { getSheet()?.validate_headers(); }, description: "Validate and sanitize column headers for SQL identifier standards and duplicates" },
+  validate_headers: { label: "Validate: Headers & SQL Compliance", k: "H", ctrl: true, shift: true, alt: false, run() { getSheet()?.validate_rule('headers'); }, description: "Validate and sanitize column headers for SQL identifier standards and duplicates" },
   next_occurance: { label: "Next Occurrence", k: "D", ctrl: true, shift: false, alt: false, run() { getSheet()?.go_to_next(); }, description: "Go to next occurence of cell value" },
   prev_occurance: { label: "Previous Occurrence", k: "D", ctrl: true, shift: true, alt: false, run() { getSheet()?.go_to_prev(); }, description: "Go to previous occurence of cell value" },
   goToCoordinate: { label: "Go to Coordinate", ctrl: false, shift: false, alt: false, run() { getSheet()?.startCoordEdit(); }, description: "Go to coordinate" },
@@ -78,9 +77,6 @@ const cmd = {
   insertDown: { label: "Insert Row Below", k: "ARROWDOWN", ctrl: false, shift: true, alt: true, run() { getSheet()?.insert(2); }, description: "Insert row below" },
   insertRight: { label: "Insert Col Right", k: "ARROWRIGHT", ctrl: false, shift: true, alt: true, run() { getSheet()?.insert(1); }, description: "Insert col right" },
   insertLeft: { label: "Insert Col Left", k: "ARROWLEFT", ctrl: false, shift: true, alt: true, run() { getSheet()?.insert(3); }, description: "Insert col left" },
-
-  scrollLeft: { label: "Scroll Left", k: "scroll ARROWUP ", ctrl: false, shift: false, alt: true, description: "Scroll left" },
-  scrollRight: { label: "Scroll Right", k: "scroll ARROWDOWN ", ctrl: false, shift: false, alt: true, description: "Scroll right" },
 
   exportJson: {
     label: "Export as JSON",
@@ -136,10 +132,9 @@ CommandPalette.setDefaultCommands(cmd);
  */
 function getCommandTooltip(c, fallbackKey = '') {
   if (!c) return fallbackKey;
-  const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform || navigator.userAgent || '');
-  const mod = isMac ? '⌘' : 'Ctrl+';
-  const shift = isMac ? '⇧' : 'Shift+';
-  const alt = isMac ? '⌥' : 'Alt+';
+  const mod = env.isMac ? '⌘' : 'Ctrl+';
+  const shift = env.isMac ? '⇧' : 'Shift+';
+  const alt = env.isMac ? '⌥' : 'Alt+';
 
   let shortcut = '';
   if (c.k) {

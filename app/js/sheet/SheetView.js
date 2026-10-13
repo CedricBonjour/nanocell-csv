@@ -6,7 +6,8 @@
 import { dom } from '../ui/AppLayout.js';
 import { getSheet, getCsvHandle } from '../appContext.js';
 import { stg } from '../ui/settings/Setting.js';
-import { isValidUrl, isIsoDate } from '../utils/misc.js';
+import { isUrl } from '../../../core/model/Cell.js';
+import { isIsoDate } from '../../../core/utils/date.js';
 import { Notification } from '../ui/Notification.js';
 import { setIcon } from '../utils/icons.js';
 import { createRange } from '../../../core/model/Range.js';
@@ -88,7 +89,7 @@ export class SheetView {
         this.loadLeftHeader(y, actualY);
         for (let x = 0; x < this.sheet.width; x++) this.loadCell(this.rows[y + 1].cells[x + 1], this.sheet.baseX + x, actualY);
       }
-      let cell = this.sheet.bestInputCell();
+      let cell = this.sheet.selection?.bestInputCell();
       if (this.sheet.inputing && cell && this.sheet.inputField.parentNode !== cell) {
         cell.appendChild(this.sheet.inputField);
       }
@@ -124,7 +125,7 @@ export class SheetView {
     if (d[0] === '!') cls += " error";
     if (!isNaN(d)) cls += " num";
     if (isIsoDate(d)) cls += " date";
-    if (isValidUrl(d)) cls += " url";
+    if (isUrl(d)) cls += " url";
     if (stg.purple && (d.includes(',') || d.includes('"') || d.includes('\n'))) cls += " noComply";
     
     div.className = cls.charCodeAt(0) === 32 ? cls.slice(1) : cls;
@@ -208,7 +209,7 @@ export class SheetView {
    */
   viewRangeRender() {
     if (!this.sheet.rangeEnd) return;
-    const r = this.sheet.rangeOrdered ? this.sheet.rangeOrdered() : createRange(this.sheet.x, this.sheet.y, this.sheet.rangeEnd.x, this.sheet.rangeEnd.y);
+    const r = this.sheet.selection ? this.sheet.selection.rangeOrdered() : createRange(this.sheet.x, this.sheet.y, this.sheet.rangeEnd.x, this.sheet.rangeEnd.y);
     const xStart = Math.max(0, r.xmin - this.sheet.baseX);
 
     const xEnd = Math.min(this.sheet.width - 1, r.xmax - this.sheet.baseX);
@@ -302,8 +303,8 @@ export class SheetView {
       this.sheet.slctRange = false;
       this.sheet.x = targetX;
       this.sheet.y = targetY;
-      this.sheet.slctFocus();
-      this.sheet.refresh();
+      this.sheet.selection.slctFocus();
+      this.refresh();
       this.sheet.selection.slctRefresh(false);
       this.footerUpdate();
     };

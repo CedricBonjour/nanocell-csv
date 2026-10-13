@@ -4,7 +4,7 @@
  * Styled in alignment with FinderDialog floating panel.
  * @module FilterDialog
  */
-import { dom } from './AppLayout.js';
+import { DialogManager } from './DialogManager.js';
 import { getSheet, getCsvHandle } from '../appContext.js';
 import { setIcon } from '../utils/icons.js';
 import { Notification } from './Notification.js';
@@ -119,19 +119,8 @@ class FilterDialog extends HTMLElement {
     // Tab trap
     this.widget.addEventListener('keydown', (e) => {
       if (e.key === 'Tab') {
-        const focusable = this.getFocusableElements();
-        if (focusable.length === 0) return;
-        e.preventDefault();
         e.stopPropagation();
-        const active = document.activeElement;
-        const currentIndex = focusable.indexOf(active);
-        let nextIndex;
-        if (e.shiftKey) {
-          nextIndex = (currentIndex <= 0) ? focusable.length - 1 : currentIndex - 1;
-        } else {
-          nextIndex = (currentIndex === -1 || currentIndex >= focusable.length - 1) ? 0 : currentIndex + 1;
-        }
-        focusable[nextIndex].focus();
+        DialogManager.cycleFocus(e, this.getFocusableElements());
       }
     });
   }

@@ -116,6 +116,22 @@ export class DialogManager {
   }
 
   /**
+   * Cycles keyboard focus through an ordered list of focusable elements on Tab / Shift+Tab.
+   * @param {KeyboardEvent} e - Keydown event.
+   * @param {HTMLElement[]} focusable - Ordered array of focusable elements.
+   */
+  static cycleFocus(e, focusable) {
+    if (!focusable || focusable.length === 0) return;
+    e.preventDefault();
+    const active = typeof document !== 'undefined' ? document.activeElement : null;
+    const currentIndex = focusable.indexOf(active);
+    const nextIndex = e.shiftKey
+      ? (currentIndex <= 0 ? focusable.length - 1 : currentIndex - 1)
+      : (currentIndex === -1 || currentIndex >= focusable.length - 1 ? 0 : currentIndex + 1);
+    focusable[nextIndex].focus();
+  }
+
+  /**
    * Handles keyboard navigation within the modal to cycle focus among interactive controls.
    * @param {KeyboardEvent} e - Keydown event.
    */
@@ -130,17 +146,6 @@ export class DialogManager {
       return true;
     }).filter((el, _, arr) => !arr.some(parent => parent !== el && parent.contains(el)));
 
-    if (focusable.length === 0) return;
-
-    e.preventDefault();
-    const active = document.activeElement;
-    const currentIndex = focusable.indexOf(active);
-    let nextIndex;
-    if (e.shiftKey) {
-      nextIndex = (currentIndex <= 0) ? focusable.length - 1 : currentIndex - 1;
-    } else {
-      nextIndex = (currentIndex === -1 || currentIndex >= focusable.length - 1) ? 0 : currentIndex + 1;
-    }
-    focusable[nextIndex].focus();
+    this.cycleFocus(e, focusable);
   }
 }

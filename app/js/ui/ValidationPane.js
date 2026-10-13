@@ -797,25 +797,6 @@ class ValidationPane extends HTMLElement {
   }
 
   /**
-   * Accepts all pending items in a category for API compatibility.
-   * @param {string} catKey
-   */
-  acceptCategory(catKey) {
-    this.applyBatchEdit(this.getPendingItems().filter(item => (item.category || 'OTHER') === catKey));
-    this.afterColumnMutation();
-  }
-
-  /**
-   * Rejects all pending items in a category for API compatibility.
-   * @param {string} catKey
-   */
-  rejectCategory(catKey) {
-    const categoryPending = this.getPendingItems().filter(item => (item.category || 'OTHER') === catKey);
-    categoryPending.forEach(item => { item.status = 'rejected'; });
-    this.afterColumnMutation();
-  }
-
-  /**
    * Accepts all pending validation items across all columns in a single RANGE_EDIT transaction payload.
    */
   acceptAll() {

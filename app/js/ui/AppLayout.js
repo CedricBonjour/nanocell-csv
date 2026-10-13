@@ -19,7 +19,6 @@ export class AppLayout {
 
     dom = {
       palette: typeof document !== 'undefined' ? (document.getElementById("palette") || document.querySelector('ui-command-palette')) : null,
-      theme: typeof document !== 'undefined' ? document.getElementById("theme") : null,
       header: typeof document !== 'undefined' ? document.getElementById("header") : null,
       body: typeof document !== 'undefined' ? (document.getElementById("body") || document.body) : null,
       content: typeof document !== 'undefined' ? document.getElementById("content") : null,
@@ -36,21 +35,8 @@ export class AppLayout {
       },
     };
 
-    const lockEl = dom.footerDiv.lock;
-    if (lockEl) {
-      let currentSrc = lockEl.getAttribute("src") || lockEl.getAttribute("data-src") || "edit_square";
-      Object.defineProperty(lockEl, 'src', {
-        get() { return currentSrc; },
-        set(v) {
-          currentSrc = v;
-          setIcon(lockEl, v);
-          if (lockEl.tagName === "IMG") lockEl.setAttribute("src", v);
-          lockEl.classList.toggle('warning', v === 'lock');
-        },
-        configurable: true
-      });
-      setIcon(lockEl, currentSrc);
-      lockEl.classList.toggle('warning', currentSrc === 'lock');
+    if (dom.footerDiv.lock) {
+      setIcon(dom.footerDiv.lock, "edit_square");
     }
 
     if (dom.content) {

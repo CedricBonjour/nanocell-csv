@@ -7,9 +7,6 @@ import { dom } from '../ui/AppLayout.js';
 import { stg } from '../ui/settings/Setting.js';
 import { Notification } from '../ui/Notification.js';
 import { LBT, TargetType } from '../interaction/MouseRouter.js';
-import { HeaderValidator } from '../../../core/validation/HeaderValidator.js';
-import { DataValidator } from '../../../core/validation/DataValidator.js';
-import { DateValidator } from '../../../core/validation/DateValidator.js';
 import { formatDate } from '../../../core/utils/date.js';
 import { isNumeric, roundNumericString } from '../../../core/model/Cell.js';
 import { SearchEngine } from '../../../core/search/SearchEngine.js';
@@ -46,15 +43,10 @@ export class SheetController {
         return;
       }
 
-      if ((e.ctrlKey || e.metaKey) && (e.key === ";" || k === "T")) {
+      if ((e.ctrlKey || e.metaKey) && e.key === ";") {
         e.preventDefault();
         e.stopPropagation();
-        const todayStr = formatDate(new Date(), 'yyyy-mm-dd');
-        const input = this.sheet.inputField;
-        const start = input.selectionStart || 0;
-        const end = input.selectionEnd || 0;
-        input.value = input.value.substring(0, start) + todayStr + input.value.substring(end);
-        input.selectionStart = input.selectionEnd = start + todayStr.length;
+        this.insertDate();
         return;
       }
 
@@ -135,7 +127,7 @@ export class SheetController {
         } else {
           this.sheet.expandedCol = colIdx;
         }
-        this.sheet.refresh();
+        this.view.refresh();
       }
     });
   }
@@ -383,9 +375,7 @@ export class SheetController {
       const newX = Math.min(this.sheet.y, Math.max(0, this.sheet.df.width - 1));
       const newY = Math.min(this.sheet.x, Math.max(0, this.sheet.df.height - 1));
       this.selection.focus_cell(newX, newY);
-      if (typeof this.sheet.scrollbarRefresh === 'function') {
-        this.sheet.scrollbarRefresh();
-      }
+      this.view.scrollbarRefresh();
       this.view.refresh();
       return;
     }
@@ -522,43 +512,5 @@ export class SheetController {
       if (typeof pane.show === 'function') pane.show();
       if (typeof pane.runRule === 'function') pane.runRule(ruleId);
     }
-  }
-
-  /**
-   * Retrieves validation pane component and displays validation edit proposals.
-   * @param {Array<Object>} items 
-   */
-  openValidationPaneWithItems(items = []) {
-    const pane = this.getValidationPane();
-    if (pane) {
-      if (typeof pane.loadItems === 'function') pane.loadItems(items);
-      if (typeof pane.showColumns === 'function') pane.showColumns();
-      else if (typeof pane.show === 'function') pane.show();
-    }
-  }
-
-  /**
-   * Performs validation scan over header row to propose standard SQL column naming fixes.
-   */
-  validate_headers() {
-    this.validate_rule('headers');
-  }
-
-  /**
-   * Validates and standardizes date cells in the sheet.
-   */
-  validate_dates() {
-    this.validate_rule('dates');
-  }
-
-  validate_date_format() {
-    this.validate_dates();
-  }
-
-  /**
-   * Opens validation pane with rule selector for user to choose validation type.
-   */
-  validate_data() {
-    this.open_validation_pane();
   }
 }

@@ -1,7 +1,7 @@
 import { setIcon } from '../utils/icons.js';
 import { Notification } from './Notification.js';
 import { DialogManager } from './DialogManager.js';
-import { getNewIssueUrl, isStandaloneMode } from '../utils/misc.js';
+import { getNewIssueUrl, pwa } from '../utils/misc.js';
 
 /**
  * About and application information modal dialog.
@@ -77,10 +77,9 @@ class AboutDialog extends HTMLElement {
     this.versionContainer.appendChild(this.versionEl);
     this.versionContainer.appendChild(this.copyBtn);
 
-    if (isStandaloneMode()) {
+    if (pwa.getState().isStandalone) {
       const modeBadge = document.createElement("span");
       modeBadge.className = "about-mode-badge";
-      modeBadge.style.cssText = "font-size: 0.85em; opacity: 0.8; margin-left: 8px;";
       modeBadge.textContent = "(Desktop App)";
       this.versionContainer.appendChild(modeBadge);
     }

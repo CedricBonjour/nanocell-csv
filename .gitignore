@@ -35,3 +35,6 @@ dev-dist/
 # Build outputs
 dist/
 out/
+tmp/
+
+ideas.md

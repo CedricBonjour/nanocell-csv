@@ -38,11 +38,14 @@ function getShortcutMap() {
     if (cmd.redo) {
       shortcutMap.set(getShortcutKey('Y', true, false, false), cmd.redo);
     }
+    if (cmd.shortcuts) {
+      shortcutMap.set(getShortcutKey('K', true, false, false), cmd.shortcuts);
+    }
   }
   return shortcutMap;
 }
 
-export  function buildKeys() {
+export function buildKeys() {
   shortcutMap = null;
   if (typeof document !== 'undefined') {
     if (activeKeyDownHandler) document.removeEventListener('keydown', activeKeyDownHandler);
@@ -106,8 +109,8 @@ export  function buildKeys() {
     // Open/Toggle Command Palette (Ctrl+P or Ctrl+K)
     if (ctrlDown && (k === "P" || k === "K") && !shift && !alt) {
       e.preventDefault();
-      if (cmd.commandPalette?.run) {
-        cmd.commandPalette.run();
+      if (cmd.shortcuts?.run) {
+        cmd.shortcuts.run();
       } else {
         const palette = document.getElementById('palette') || document.querySelector('ui-command-palette');
         if (palette && typeof palette.toggle === 'function') palette.toggle();
@@ -136,7 +139,7 @@ export  function buildKeys() {
       // Allow Ctrl+F or Ctrl+Shift+F to refocus/toggle find while in finder
       if (ctrlDown && k === "F") {
         e.preventDefault();
-        if (activeSheet?.finder) activeSheet.finder.findMenu(activeSheet.getSlctFirstValue(), shift);
+        if (activeSheet) activeSheet.find(shift);
         return;
       }
       return;
@@ -173,12 +176,6 @@ export  function buildKeys() {
 
     // Context 5: Active inline cell editing
     if (isCellInput) {
-      // Direct date insertion into the active cell editor (Ctrl+; or fallback Ctrl+T)
-      if (ctrlDown && (e.key === ";" || k === ";" || k === "T") && !shift && !alt) {
-        e.preventDefault();
-        cmd.date.run();
-        return;
-      }
       // Allow global shortcuts like Save, Open, or Filter to commit cell and execute
       if (ctrlDown && (k === "S" || k === "O" || k === "Q")) {
         e.preventDefault();
@@ -264,13 +261,6 @@ export  function buildKeys() {
         case "ARROWDOWN": e.preventDefault(); activeSheet.y = maxY; activeSheet.slctRefresh(); return;
         case "ARROWLEFT": e.preventDefault(); activeSheet.x = 0; activeSheet.slctRefresh(); return;
       }
-    }
-
-    // Date shortcut explicit handler (Ctrl+; or fallback Ctrl+T)
-    if (ctrlDown && (e.key === ";" || k === ";" || k === "T") && !shift && !alt) {
-      e.preventDefault();
-      cmd.date.run();
-      return;
     }
 
     // Command registry execution via O(1) shortcut map
@@ -377,10 +367,8 @@ export  function buildKeys() {
     if (!rawText) return;
 
     const delimiter = rawText.includes('\t') ? '\t' : SeparatorDetector.detect(rawText);
-    const trimUnquotedWhitespace = (typeof stg !== 'undefined' && stg.trim_unquoted !== undefined) ? Boolean(stg.trim_unquoted) : false;
-    const commentChar = (typeof stg !== 'undefined' && stg.comment_char && stg.comment_char !== 'None') ? stg.comment_char : '';
-    const escapeChar = (typeof stg !== 'undefined' && (stg.open_escape_char === '\\' || stg.escape_char === '\\')) ? '\\' : '"';
-    const parser = new CsvParser({ delimiter, trimUnquotedWhitespace, commentChar, escapeChar });
+    const trimUnquotedWhitespace = Boolean(stg?.trim_unquoted);
+    const parser = new CsvParser({ delimiter, trimUnquotedWhitespace });
     const matrix = parser.parse(rawText);
     if (matrix && matrix.length > 0) {
       activeSheet.paste(matrix);

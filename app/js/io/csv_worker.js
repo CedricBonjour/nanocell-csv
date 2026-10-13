@@ -5,10 +5,6 @@ let currentAbort = false;
 import { CsvParser } from '../../../core/csv/CsvParser.js';
 import { SeparatorDetector } from '../../../core/csv/SeparatorDetector.js';
 
-function separatorDetection(txt) {
-  return SeparatorDetector.detect(txt);
-}
-
 function csv_parse(s, d = ",", trimUnquoted = false, commentChar = '', escapeChar = '"') {
   if (!s || s.length === 0) return [];
   const parser = new CsvParser({
@@ -77,7 +73,7 @@ function loadcsv(data) {
     }
 
     if (!sepDetected && rawText.length > 0) {
-      sep = separatorDetection(rawText);
+      sep = SeparatorDetector.detect(rawText);
       sepDetected = true;
       parser = new CsvParser({ delimiter: sep, trimUnquotedWhitespace: trimUnquoted, commentChar: commentChar, escapeChar: escapeChar });
     } else if (!parser) {
@@ -190,7 +186,7 @@ function load_csv_view_only(data) {
     let result = e.target.result || "";
     let status = iteration / vo_n_chunks;
     if (iteration === 1) {
-      sep = separatorDetection(result);
+      sep = SeparatorDetector.detect(result);
     } else {
       const firstNl = result.indexOf('\n');
       if (firstNl !== -1 && firstNl < result.length - 1) {
@@ -258,4 +254,4 @@ if (typeof self !== 'undefined' && typeof self.addEventListener === 'function') 
   });
 }
 
-export { csv_parse, separatorDetection, loadcsv, load_csv_view_only };
+export { csv_parse, loadcsv, load_csv_view_only };

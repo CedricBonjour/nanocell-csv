@@ -25,9 +25,6 @@ class FinderDialog extends HTMLElement {
           self.caseBtn.setAttribute('aria-pressed', bool ? 'true' : 'false');
           self.caseBtn.classList.toggle('active', bool);
         }
-        if (self.caseInfo) {
-          self.caseInfo.innerHTML = bool ? "A &ne; a" : "A = a";
-        }
       }
     };
 
@@ -82,9 +79,6 @@ class FinderDialog extends HTMLElement {
     setIcon(this.closeBtn, 'off');
     setIcon(this.replaceBtn, 'find_replace');
 
-    this.caseInfo = document.createElement('span');
-    this.caseInfo.innerHTML = "A = a";
-
     this.appendChild(this.widget);
 
     // Event Bindings
@@ -118,19 +112,7 @@ class FinderDialog extends HTMLElement {
     // Tab navigation looping across all focusable pane controls based on replace visibility
     this.widget.addEventListener('keydown', (e) => {
       if (e.key === 'Tab') {
-        const focusable = this.getFocusableElements();
-        if (focusable.length === 0) return;
-
-        e.preventDefault();
-        const active = document.activeElement;
-        const currentIndex = focusable.indexOf(active);
-        let nextIndex;
-        if (e.shiftKey) {
-          nextIndex = (currentIndex <= 0) ? focusable.length - 1 : currentIndex - 1;
-        } else {
-          nextIndex = (currentIndex === -1 || currentIndex >= focusable.length - 1) ? 0 : currentIndex + 1;
-        }
-        focusable[nextIndex].focus();
+        DialogManager.cycleFocus(e, this.getFocusableElements());
       }
     });
 
@@ -205,8 +187,6 @@ class FinderDialog extends HTMLElement {
       this.lastSearch = this.search;
       this.idx = 0;
       this.found = [];
-      const safeSearch = (typeof this.search === 'string') ? this.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '';
-      this.exp = new RegExp(safeSearch, this.caseSensitive.value ? 'g' : 'gi');
 
       if (activeSheet && activeSheet.df) {
         const engine = new SearchEngine();
@@ -254,23 +234,6 @@ class FinderDialog extends HTMLElement {
       if (activeSheet) {
         activeSheet.focus_cell(this.found[this.idx].x, this.found[this.idx].y);
       }
-    }
-  }
-
-  replace() {
-    if (this.search.length < 1 || this.found.length === 0) return;
-    const activeSheet = this.activeSheet;
-    if (!activeSheet?.df) return;
-
-    if (this.idx >= 0 && this.idx < this.found.length) {
-      const e = this.found[this.idx];
-      const safeSearch = (typeof this.search === 'string') ? this.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '';
-      const regex = new RegExp(safeSearch, this.caseSensitive.value ? 'g' : 'gi');
-      const currentVal = activeSheet.df.get(e.x, e.y);
-      activeSheet.df.edit(e.x, e.y, currentVal.replace(regex, this.replaceIn.value));
-      activeSheet.refresh();
-      activeSheet.slctRefresh(true);
-      this.find(true);
     }
   }
 

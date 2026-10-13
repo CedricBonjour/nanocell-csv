@@ -1,4 +1,5 @@
 import { setIcon } from '../utils/icons.js';
+import { env, pwa } from '../utils/misc.js';
 
 /**
  * Weighted fuzzy scoring function for search matching.
@@ -139,13 +140,13 @@ class CommandPalette extends HTMLElement {
   }
 
   getCommands() {
-    const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform || navigator.userAgent || '');
-    const mod = isMac ? '⌘' : 'Ctrl+';
-    const shiftMod = isMac ? '⇧' : 'Shift+';
-    const altMod = isMac ? '⌥' : 'Alt+';
+    const mod = env.isMac ? '⌘' : 'Ctrl+';
+    const shiftMod = env.isMac ? '⇧' : 'Shift+';
+    const altMod = env.isMac ? '⌥' : 'Alt+';
+    const canInstall = pwa.getState().canInstall;
     const commandMap = this.commands || CommandPalette._defaultCommands || {};
     return Object.entries(commandMap)
-      .filter(([id, c]) => c && typeof c.run === 'function')
+      .filter(([id, c]) => c && typeof c.run === 'function' && (id !== 'installApp' || canInstall))
       .map(([id, c]) => ({
         id,
         label: c.label || id,

@@ -5,12 +5,11 @@
  */
 import { Dataframe } from '../../../core/model/Dataframe.js';
 import { getSheet } from '../appContext.js';
-import { Notification } from '../ui/Notification.js';
+import { Notification, showBrowserCompatibilityNotice } from '../ui/Notification.js';
 import { Sheet } from '../sheet/Sheet.js';
 import { stg } from '../ui/settings/Setting.js';
 import { CsvSerializer } from '../../../core/csv/CsvSerializer.js';
 import CsvWorker from './csv_worker.js?worker';
-import { showBrowserCompatibilityNotice } from '../utils/misc.js';
 
 /**
  * Handles CSV file lifecycle operations including opening, worker-based streaming, saving, and CSV serialization.
@@ -149,16 +148,12 @@ class CsvHandle {
         viewOnly: this.viewOnly
       });
     } else {
-      const commentChar = (stg.comment_char && stg.comment_char !== 'None') ? stg.comment_char : '';
-      const escapeChar = (stg.open_escape_char === '\\' || (stg.open_escape_char !== '""' && stg.escape_char === '\\')) ? '\\' : '"';
       this.pipe("read", {
         file: file,
         viewOnly: this.viewOnly,
         n_chunks: stg.vo_n_chunks,
         n_rows: stg.vo_n_rows,
-        trimUnquoted: Boolean(stg.trim_unquoted),
-        commentChar: commentChar,
-        escapeChar: escapeChar
+        trimUnquoted: Boolean(stg.trim_unquoted)
       });
     }
 
@@ -293,10 +288,7 @@ class CsvHandle {
       const writableStream = await this.handle.createWritable();
       const sheet = getSheet();
       if (!sheet) return;
-      let csvContent = CsvHandle.from2D(sheet.df.data);
-      if (stg.save_bom) {
-        csvContent = '\uFEFF' + csvContent;
-      }
+      const csvContent = CsvHandle.from2D(sheet.df.data);
       await writableStream.write(csvContent);
       await writableStream.close();
       sheet.df.isSaved = true;
@@ -319,10 +311,7 @@ class CsvHandle {
     if (!sheet) return;
     try {
       if (!blob) {
-        let csvContent = CsvHandle.from2D(sheet.df.data);
-        if (stg.save_bom) {
-          csvContent = '\uFEFF' + csvContent;
-        }
+        const csvContent = CsvHandle.from2D(sheet.df.data);
         blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       }
       if (!filename) {
@@ -440,20 +429,12 @@ class CsvHandle {
    * @throws {string} Error message if strict CSV requirements are violated.
    */
   static from2D(matrix) {
-    let isStrict = stg.save_strict;
-    let fw = stg.save_fixed_width_size;
     let sep = stg.delimiter;
     if (sep === "TAB") sep = '\t';
-    let lineTerminator = (stg.line_terminator === "LF" || stg.line_terminator === "\n") ? '\n' : '\r\n';
-    let quoteAlways = Boolean(stg.quote_always);
-    let escapeChar = (stg.escape_char === '\\') ? '\\' : '"';
     const serializer = new CsvSerializer({
       delimiter: sep,
-      isStrict: isStrict,
-      fixedWidth: fw,
-      lineTerminator: lineTerminator,
-      quoteAlways: quoteAlways,
-      escapeChar: escapeChar
+      isStrict: stg.save_strict,
+      fixedWidth: stg.save_fixed_width_size
     });
     return serializer.serialize(matrix);
   }

@@ -308,9 +308,45 @@ header {
   border-color: var(--green);
 }
 
-.btn-install:hover,
-#install .nav-button:hover {
+.btn-install:hover:not(:disabled),
+#install .nav-button:hover:not(:disabled) {
   box-shadow: var(--green) inset 0 0 2px;
+}
+
+.btn-install:disabled,
+#install .nav-button:disabled {
+  color: #64748b;
+  border-color: #cbd5e1;
+  background-color: #f8fafc;
+  cursor: default;
+  box-shadow: none;
+}
+
+.web-install-hint {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 260px;
+  padding: 0.75em 1em;
+  background: #1e293b;
+  color: #f8fafc;
+  font-size: 0.8em;
+  line-height: 1.4;
+  letter-spacing: 0.2px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 1000;
+  white-space: normal;
+  text-align: left;
+}
+
+.web-install-hint.visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .essential-card a {

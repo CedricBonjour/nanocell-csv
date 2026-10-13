@@ -1,4 +1,3 @@
-import { dom } from '../AppLayout.js';
 import { setIcon } from '../../utils/icons.js';
 import { BoolInput } from '../controls/BoolInput.js';
 import { ListInput } from '../controls/ListInput.js';

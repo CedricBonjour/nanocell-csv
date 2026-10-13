@@ -829,9 +829,50 @@ button.icon.expanded::before {
   transform: rotate(90deg);
 }
 
+/* Header Install App Button */
+.menu-install-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 10px;
+  margin-left: 4px;
+  background-color: #48a741;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  font-family: var(--font-family-ui);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  line-height: 1;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  transition: background-color 0.15s ease, transform 0.05s ease;
+}
+
+.menu-install-btn svg {
+  flex-shrink: 0;
+}
+
+.menu-install-btn:hover {
+  background-color: #3c8e36;
+}
+
+.menu-install-btn:active {
+  background-color: #32772d;
+  transform: translateY(1px);
+}
+
+.menu-install-btn:focus-visible {
+  outline: 2px solid #2e7d32;
+  outline-offset: 1px;
+}
+
 /* Static Footer Lock Icon */
-#footer #lock,
-footer img {
+#footer #lock {
   height: var(--icon-size, 24px);
   width: var(--icon-size, 24px);
   padding: 3px;
@@ -1532,18 +1573,6 @@ ui-filter[open] {
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
-}
-
-.finder-list-table {
-  max-height: 280px;
-  margin: 14px;
-  display: none;
-}
-
-.finder-list-table.visible,
-.finder-list-table.open,
-.finder-list-table[open] {
-  display: block;
 }
 
 /* --------------------------------------------------------------------------
@@ -2263,6 +2292,12 @@ ui-about .about-home-link {
   line-height: normal;
 }
 
+.about-mode-badge {
+  font-size: 0.85em;
+  opacity: 0.8;
+  margin-left: 8px;
+}
+
 .about-copy-btn {
   width: var(--icon-size, 20px);
   height: var(--icon-size, 20px);
@@ -2315,6 +2350,7 @@ ui-about .about-home-link {
   ui-cmenu,
   #dialog,
   ui-finder,
+  ui-filter,
   ui-command-palette,
   ui-validation-pane,
   .ui-validation-pane {

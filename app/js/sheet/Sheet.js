@@ -112,26 +112,17 @@ class Sheet extends HTMLElement {
 
   // Selection & Navigation Direct Facade
   focus_cell(x, y) { return this.selection.focus_cell(x, y); }
-  getSlctFirstValue() { return this.selection.getSlctFirstValue(); }
-  rangeOrdered() { return this.selection.rangeOrdered(); }
   slctAll() { return this.selection.slctAll(); }
   slctCol(n, m) { return this.selection.slctCol(n, m); }
   slctRow(n, m) { return this.selection.slctRow(n, m); }
   rangeArray() { return this.selection.rangeArray(); }
-  cellInView(x, y) { return this.selection.cellInView(x, y); }
-  isInViewRange(x, y) { return this.selection.isInViewRange(x, y); }
-  bestInputCell() { return this.selection.bestInputCell(); }
-  slctFocus() { return this.selection.slctFocus(); }
-  slctClear() { return this.selection.slctClear(); }
   slctRefresh(focus) { return this.selection.slctRefresh(focus); }
-  scroll(e) { return this.selection.scroll(e); }
 
   // Action & Mutation Facade
   deleteRows() { return this.controller.deleteRows(); }
   deleteCols() { return this.controller.deleteCols(); }
   deleteSelection() { return this.controller.deleteSelection(); }
   trim() { return this.controller.trim(); }
-  sort(n, ascending) { return this.controller.sort(n, ascending); }
   sortAscending() { return this.controller.sortAscending(); }
   sortDescending() { return this.controller.sortDescending(); }
   undo() { return this.controller.undo(); }
@@ -139,7 +130,7 @@ class Sheet extends HTMLElement {
   toggleFixTop() { return this.controller.toggleFixTop(); }
 
   find(advanced = false) {
-    this.finder.findMenu(this.getSlctFirstValue(), advanced);
+    this.finder.findMenu(this.selection.getSlctFirstValue(), advanced);
     if (!advanced) this.view.scrollbarRefresh();
   }
   go_to_next() { return this.controller.go_to_next(); }
@@ -148,19 +139,8 @@ class Sheet extends HTMLElement {
   shift(direction) { return this.controller.shift(direction); }
   insert(direction) { return this.controller.insert(direction); }
   input(txt) { return this.controller.input(txt); }
-  inputBlur() { return this.controller.inputBlur(); }
   insertDate() { return this.controller.insertDate(); }
   rangeEdit(value) { return this.controller.rangeEdit(value); }
-  allApply(cb) { return this.df.getAll((val, x, y) => cb(x, y)); }
-  rangeApply(cb) {
-    if (!this.rangeEnd) return cb(this.x, this.y);
-    const r = this.rangeOrdered();
-    for (let x = r.xmin; x <= r.xmax; x++) {
-      for (let y = r.ymin; y <= r.ymax; y++) {
-        cb(x, y);
-      }
-    }
-  }
   rangeTranspose() { return this.controller.rangeTranspose(); }
   round(integer) { return this.controller.round(integer); }
   paste(mat) { return this.controller.paste(mat); }
@@ -168,18 +148,9 @@ class Sheet extends HTMLElement {
   // Validation Workflows
   open_validation_pane() { return this.controller.open_validation_pane(); }
   validate_rule(ruleId) { return this.controller.validate_rule(ruleId); }
-  validate_headers() { return this.controller.validate_headers(); }
-  validate_data() { return this.controller.validate_data(); }
-  validate_date_format() { return this.controller.validate_date_format(); }
-  validate_dates() { return this.controller.validate_dates(); }
 
   // View & Render Delegations
-  footerUpdate() { return this.view.footerUpdate(); }
   scrollbarRefresh() { return this.view.scrollbarRefresh(); }
-  loadCell(c, x, y) { return this.view.loadCell(c, x, y); }
-  loadTopHeader(x) { return this.view.loadTopHeader(x); }
-  loadLeftHeader(y) { return this.view.loadLeftHeader(y); }
-  viewRangeRender() { return this.view.viewRangeRender(); }
   startCoordEdit() { return this.view.startCoordEdit(); }
   refresh() { return this.view.refresh(); }
   reload() { return this.view.reload(); }

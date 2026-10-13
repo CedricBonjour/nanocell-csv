@@ -1,4 +1,5 @@
 import { setIcon } from '../utils/icons.js';
+import { pwa } from '../utils/misc.js';
 
 function sanitizeHtml(html) {
   if (typeof html !== 'string') return '';
@@ -228,6 +229,58 @@ class Notification extends HTMLElement {
 
 if (!customElements.get('ui-msg')) {
   customElements.define('ui-msg', Notification);
+}
+
+let activeCompatToast = null;
+
+/**
+ * Displays a persistent notification explaining File System Access API compatibility mode.
+ */
+export function showBrowserCompatibilityNotice() {
+  if (typeof document === 'undefined') return;
+  if (activeCompatToast && activeCompatToast.parentNode) return;
+
+  const messageHtml = `
+    <div>
+      Direct in-place file saving requires the modern <strong>File System Access API</strong>, which is not supported in this browser.
+      <div style="margin-top: 6px;">NanoCell is running in <strong>compatibility mode</strong>:</div>
+      <ul style="margin: 4px 0 6px 18px; padding: 0; line-height: 1.4;">
+        <li><strong>Open:</strong> File picker upload and drag-and-drop are supported.</li>
+        <li><strong>Save:</strong> Files are saved by downloading them to your device.</li>
+      </ul>
+      <div style="font-size: 0.9em; opacity: 0.85; margin-top: 6px;">
+        Direct in-place file editing is supported in Chrome, Edge, Brave, and Opera.
+      </div>
+    </div>
+  `;
+
+  activeCompatToast = new Notification(messageHtml, {
+    id: 2,
+    type: 'info',
+    title: 'Browser Compatibility Notice'
+  });
+  activeCompatToast.show();
+}
+
+/**
+ * Triggers the PWA install flow from inside the app and displays contextual toast feedback.
+ */
+export async function triggerAppInstall() {
+  const outcome = await pwa.promptInstall();
+  if (outcome === 'already-installed') {
+    Notification.quick("NanoCell is already installed.");
+  } else if (outcome === 'manual') {
+    Notification.confirm("To install NanoCell, click the install icon in your browser address bar or browser menu.");
+  } else if (outcome === 'unsupported') {
+    Notification.confirm("Desktop installation is available on Chrome, Edge, Brave, and Chromium browsers.");
+  }
+  return outcome;
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('appinstalled', () => {
+    Notification.quick("NanoCell installed successfully!");
+  });
 }
 
 export { Notification };

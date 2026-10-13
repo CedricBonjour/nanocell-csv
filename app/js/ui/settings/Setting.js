@@ -84,8 +84,6 @@ class Setting {
       if (document.documentElement) document.documentElement.setAttribute('data-theme', activeTheme);
       if (document.body) document.body.setAttribute('data-theme', activeTheme);
     }
-    if (dom?.theme) dom.theme.href = "css/themes/" + activeTheme + ".css";
-    if (dom?.palette) dom.palette.href = "css/palettes/" + activeTheme + ".css";
   }
 
   static runAll() {

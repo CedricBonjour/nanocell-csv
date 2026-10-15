@@ -22,6 +22,8 @@ export class HeaderValidator {
       }
 
       sanitized = String(sanitized).toLowerCase().replace(/[^a-zA-Z0-9]/g, '_');
+      sanitized = sanitized.replace(/^_+|_+$/g, '');
+      if (!sanitized) sanitized = `col_${x + 1}`;
 
       let isDuplicate = false;
       let candidate = sanitized;

@@ -1,40 +1,14 @@
 .agents/
-app/test/
-test/csv_files/
-private/
-marketing/
-
-*TODO.md
-
-# Ignore all .csv files except demo.csv
-*.csv
-!demo*.csv
-
-node_modules/
-dist/
-
-# Playwright
-test-results/
-playwright-report/
-playwright/.cache/
-blob-report/
-
-# Vite & Testing
-.vite/
-coverage/
 test/files/
-
-# Environment
+private/
+*TODO.md
+.vite/
 .env
 .env.*
-
-# Misc
 .DS_Store
-dev-dist/
 
 # Build outputs
+dev-dist/
+node_modules/
 dist/
 out/
-tmp/
-
-ideas.md

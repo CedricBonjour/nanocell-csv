@@ -4,11 +4,11 @@ This document defines the foundational engineering principles and architectural 
 
 ---
 
-## The 3 Core Priorities
+## The 5 Core Priorities
 
-1. **Performance & Functionality Are Critical**: Never compromise data accuracy, frame-rate budget (<16ms 60fps), sub-millisecond cell edits, or sub-50ms bulk operations for cosmetic abstractions.
-2. **No Legacy Holdbacks**: Ruthlessly eliminate dead code, abandoned parallel subsystems, and obsolete browser shims. If a modern standard or cleaner method accomplishes the task, replace the legacy pattern directly.
-3. **Minimize Code Footprint**: Conciseness is a virtue. Fewer lines of code mean fewer bugs, smaller bundle size, faster cold boot, and easier maintenance.
-4. **No alias** Refactoring is always prefered. 
-5. **Minimize crossfile imports and exports** 
+1. **Performance & Functionality Are Critical** No compromise.
+2. **Minimize code complexity through outstanding architecture/design** Take every opportunity to do so.
+3. **No Legacy Code Holdbacks**
+4. **Minimize Code Footprint** (using good design and architecture, not formatting tricks)
+5. **No alias hoops and Loops** Refactor all as necessary.
 ---

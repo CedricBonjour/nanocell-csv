@@ -7,15 +7,10 @@ import { readFileSync, copyFileSync, existsSync } from 'fs';
 const pkg = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf-8'));
 
 let commitHash = '';
-let commitCount = '';
 try {
   const gitRes = spawnSync('git', ['rev-parse', '--short', 'HEAD'], { encoding: 'utf-8' });
   if (gitRes.status === 0 && gitRes.stdout) {
     commitHash = gitRes.stdout.trim();
-  }
-  const countRes = spawnSync('git', ['rev-list', '--count', 'HEAD'], { encoding: 'utf-8' });
-  if (countRes.status === 0 && countRes.stdout) {
-    commitCount = countRes.stdout.trim();
   }
 } catch {
   // fallback if git command fails
@@ -24,11 +19,10 @@ if (!commitHash) {
   commitHash = process.env.GIT_COMMIT || process.env.VITE_COMMIT || 'dev';
 }
 
-const parts = (pkg.version || '1.0.0').replace(/^v/, '').split('.');
-const major = parts[0] || '1';
-const minor = parts[1] || '0';
-const patch = commitCount || parts[2] || '0';
-const appVersion = `v${major}.${minor}.${patch}-${commitHash}`;
+const version = (pkg.version || '1.0.0').replace(/^v/, '');
+const appVersion = `v${version}-${commitHash}`;
+const appTitle = 'NanoCell — The CSV Editor That Never Corrupts Your Data.';
+const appDescription = 'The open source CSV editor designed for verbatim data accuracy. Standardize data in a single click for import/export workflows and preview multi-gigabyte files in milliseconds.';
 
 const devServerRoutingPlugin = () => ({
   name: 'dev-server-routing',
@@ -65,13 +59,18 @@ const generateHtmlPlugin = (command) => ({
 const htmlVersionPlugin = () => ({
   name: 'html-version-transform',
   transformIndexHtml(html) {
-    return html.replace(/__APP_VERSION__/g, appVersion);
+    return html
+      .replace(/__APP_VERSION__/g, appVersion)
+      .replace(/__APP_TITLE__/g, appTitle)
+      .replace(/__APP_DESCRIPTION__/g, appDescription);
   }
 });
 
 export default defineConfig(({ command }) => ({
   define: {
-    __APP_VERSION__: JSON.stringify(appVersion)
+    __APP_VERSION__: JSON.stringify(appVersion),
+    __APP_TITLE__: JSON.stringify(appTitle),
+    __APP_DESCRIPTION__: JSON.stringify(appDescription)
   },
   build: {
     target: 'chrome120',
@@ -92,24 +91,27 @@ export default defineConfig(({ command }) => ({
     generateHtmlPlugin(command),
     VitePWA({
       registerType: 'prompt',
+      injectRegister: false,
       includeAssets: ['**/*.{png,svg,webp,ico}'],
       workbox: {
         cacheId: appVersion,
         cleanupOutdatedCaches: true,
         navigateFallback: null,
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,ttf}']
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,ttf}'],
+        globIgnores: ['**/registerSW.js', '**/dev-dist/**']
       },
 
       // ENABLE PWA IN DEV MODE
       devOptions: {
         enabled: true,
-        type: 'module'
+        type: 'module',
+        suppressWarnings: true
       },
 
       manifest: {
-        name: 'Nanocell-csv',
-        short_name: 'Nanocell-csv',
-        description: 'Nanocell - CSV file viewer & editor : free, fast, simple, lightweight, offline, cross platform, data accurate, PWA',
+        name: 'NanoCell CSV',
+        short_name: 'NanoCell CSV',
+        description: appDescription,
         theme_color: { toJSON: () => undefined },
         background_color: undefined,
         display: 'standalone',

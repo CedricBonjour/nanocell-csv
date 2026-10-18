@@ -4,7 +4,7 @@ import {
   detectEnvironment,
   getNewIssueUrl,
   createPwaManager
-} from '../app/js/utils/misc.js';
+} from '../app/js/state.js';
 
 function createMockEnvContext(options: {
   standalone?: boolean;

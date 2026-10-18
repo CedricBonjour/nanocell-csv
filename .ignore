@@ -1,0 +1,14 @@
+.agents/
+test/csv_files/
+private/
+*TODO.md
+.vite/
+.env
+.env.*
+.DS_Store
+
+# Build outputs
+dev-dist/
+node_modules/
+dist/
+out/

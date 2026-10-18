@@ -1,5 +1,5 @@
 import assert from 'node:assert';
-import { CsvParser } from '../core/csv/CsvParser.js';
+import { CsvParser } from '../app/core/Csv.js';
 
 export function runCsvParserTests(): { passed: number; failed: number } {
   let passed = 0;
@@ -489,10 +489,73 @@ export function runCsvParserTests(): { passed: number; failed: number } {
     ]);
   });
 
+  test('Streaming Chunks: Binary Uint8Array split mid-codepoint across 2-byte, 3-byte, and 4-byte UTF-8 sequences', () => {
+    const parser = new CsvParser({ encoding: 'utf-8' });
+    const fullBytes = new TextEncoder().encode('id,label\n1,café_€_🚀_end\n2,ok\n');
+    // Find the byte index of 🚀 (F0 9F 9A 80) and split right in the middle of the 4-byte emoji
+    const emojiStart = fullBytes.indexOf(0xf0);
+    assert.ok(emojiStart > 0);
+    const c1 = fullBytes.subarray(0, emojiStart + 2); // F0 9F
+    const c2 = fullBytes.subarray(emojiStart + 2);    // 9A 80 ...
+    const res = [...parser.parseChunk(c1, false), ...parser.parseChunk(c2, true)];
+    assert.deepStrictEqual(res, [
+      ['id', 'label'],
+      ['1', 'café_€_🚀_end'],
+      ['2', 'ok']
+    ]);
+  });
+
+  test('Streaming Chunks: Binary UTF-16LE and UTF-16BE split on an odd byte boundary mid-character', () => {
+    const str = 'col1,col2\r\nZürich,Genève\r\n';
+    // UTF-16LE with BOM
+    const leBytes = new Uint8Array(str.length * 2 + 2);
+    leBytes[0] = 0xff;
+    leBytes[1] = 0xfe;
+    for (let i = 0; i < str.length; i++) {
+      const code = str.charCodeAt(i);
+      leBytes[2 + i * 2] = code & 0xff;
+      leBytes[2 + i * 2 + 1] = (code >> 8) & 0xff;
+    }
+
+    // Split on an odd byte offset (15) right in the middle of a 2-byte UTF-16 code unit
+    const parserLe = new CsvParser();
+    const resLe = [
+      ...parserLe.parseChunk(leBytes.subarray(0, 15), false),
+      ...parserLe.parseChunk(leBytes.subarray(15), true)
+    ];
+    assert.deepStrictEqual(resLe, [
+      ['col1', 'col2'],
+      ['Zürich', 'Genève']
+    ]);
+  });
+
+  test('Binary Parsing: Auto-detects Windows-1252, Windows-1251, Shift_JIS, and GB18030 Uint8Array inputs', () => {
+    // 1. Windows-1252
+    const win1252 = new Uint8Array([
+      0x4e, 0x6f, 0x6d, 0x3b, 0x56, 0x69, 0x6c, 0x6c, 0x65, 0x0a, // Nom;Ville\n
+      0x52, 0x65, 0x6e, 0xe9, 0x3b, 0x47, 0x65, 0x6e, 0xe8, 0x76, 0x65 // René;Genève
+    ]);
+    const parser = new CsvParser({ delimiter: ';' });
+    assert.deepStrictEqual(parser.parse(win1252), [
+      ['Nom', 'Ville'],
+      ['René', 'Genève']
+    ]);
+
+    // 2. Windows-1251 ("Имя;Город\nАнна;Москва") after reset via parse()
+    const win1251 = new Uint8Array([
+      0xc8, 0xec, 0xff, 0x3b, 0xc3, 0xee, 0xf0, 0xee, 0xe4, 0x0a,
+      0xc0, 0xed, 0xed, 0xe0, 0x3b, 0xcc, 0xee, 0xf1, 0xea, 0xe2, 0xe0
+    ]);
+    assert.deepStrictEqual(parser.parse(win1251), [
+      ['Имя', 'Город'],
+      ['Анна', 'Москва']
+    ]);
+  });
+
   return { passed, failed };
 }
 
-if (import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`) {
+if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/'))) {
   const result = runCsvParserTests();
   process.exit(result.failed > 0 ? 1 : 0);
 }

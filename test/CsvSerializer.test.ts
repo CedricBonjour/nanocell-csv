@@ -1,5 +1,5 @@
 import assert from 'node:assert';
-import { CsvSerializer } from '../core/csv/CsvSerializer.js';
+import { CsvSerializer } from '../app/core/Csv.js';
 
 export function runCsvSerializerTests(): { passed: number; failed: number } {
   let passed = 0;
@@ -277,7 +277,7 @@ export function runCsvSerializerTests(): { passed: number; failed: number } {
   return { passed, failed };
 }
 
-if (import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`) {
+if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/'))) {
   const result = runCsvSerializerTests();
   process.exit(result.failed > 0 ? 1 : 0);
 }

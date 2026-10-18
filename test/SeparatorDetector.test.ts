@@ -1,5 +1,5 @@
 import assert from 'node:assert';
-import { SeparatorDetector } from '../core/csv/SeparatorDetector.js';
+import { SeparatorDetector } from '../app/core/Csv.js';
 
 export function runSeparatorDetectorTests(): { passed: number; failed: number } {
   let passed = 0;
@@ -86,10 +86,38 @@ export function runSeparatorDetectorTests(): { passed: number; failed: number } 
     assert.strictEqual(SeparatorDetector.detect(longInput), ',');
   });
 
+  test('Tie-breaking priority: prefers comma > tab > semicolon > pipe when counts are equal', () => {
+    assert.strictEqual(SeparatorDetector.detect('a,b;c|d\t'), ',');
+    assert.strictEqual(SeparatorDetector.detect('a\tb;c|d'), '\t');
+    assert.strictEqual(SeparatorDetector.detect('a;b|c'), ';');
+  });
+
+  test('Multiline quoted field with embedded newlines and false delimiters does not mislead detection', () => {
+    const input = 'id|notes|status\n1|"Line 1, with, commas\nLine 2, more, commas\nLine 3; semicolons; too"|ok\n2|"Simple"|done';
+    assert.strictEqual(SeparatorDetector.detect(input), '|');
+  });
+
+  test('UTF-8 BOM prefix (\\uFEFF) and non-ASCII characters do not affect delimiter detection', () => {
+    const input = '\uFEFFИмя;Возраст;Город\r\nАлексей;30;Москва\r\n';
+    assert.strictEqual(SeparatorDetector.detect(input), ';');
+  });
+
+  test('Custom candidate delimiter list is respected', () => {
+    const input = 'a~b~c\n1~2~3';
+    assert.strictEqual(SeparatorDetector.detect(input, ['~', '^']), '~');
+    assert.strictEqual(SeparatorDetector.detect('no_match', ['~', '^']), ',');
+  });
+
+  test('Handles null, undefined, or non-string inputs safely by falling back to comma', () => {
+    assert.strictEqual(SeparatorDetector.detect(null as any), ',');
+    assert.strictEqual(SeparatorDetector.detect(undefined as any), ',');
+    assert.strictEqual(SeparatorDetector.detect(12345 as any), ',');
+  });
+
   return { passed, failed };
 }
 
-if (import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`) {
+if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/'))) {
   const result = runSeparatorDetectorTests();
   process.exit(result.failed > 0 ? 1 : 0);
 }

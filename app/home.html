@@ -1,42 +1,68 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="robots" content="noindex, nofollow, noarchive">
-  <title>csv</title>
+  <title>__APP_TITLE__</title>
+  <meta name="description" content="__APP_DESCRIPTION__">
+  <meta name="keywords" content="csv viewer, csv editor, rfc 4180 csv, view large csv, edit csv online, offline csv editor, fast csv viewer, csv validator, transpose csv, pwa csv, data accuracy">
+  <meta name="author" content="Cedric Bonjour">
+  <meta name="robots" content="noindex, follow, noarchive">
+  <link rel="canonical" href="https://nanocell-csv.com/">
+
+  <!-- Favicons & Mobile Web App -->
   <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" href="/favicon-192x192.png" />
+  <meta name="application-name" content="NanoCell CSV" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="NanoCell CSV" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+  <!-- Open Graph / Social Media -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="NanoCell CSV" />
+  <meta property="og:url" content="https://nanocell-csv.com/app/home.html" />
+  <meta property="og:title" content="__APP_TITLE__" />
+  <meta property="og:description" content="__APP_DESCRIPTION__" />
+  <meta property="og:image" content="https://nanocell-csv.com/img/screenshot/screenshot_light_logo.webp" />
+  <meta property="og:image:secure_url" content="https://nanocell-csv.com/img/screenshot/screenshot_light_logo.webp" />
+  <meta property="og:image:type" content="image/webp" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="NanoCell CSV Viewer and Editor interface preview" />
+  <meta property="og:locale" content="en_US" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="__APP_TITLE__" />
+  <meta name="twitter:description" content="__APP_DESCRIPTION__" />
+  <meta name="twitter:image" content="https://nanocell-csv.com/img/screenshot/screenshot_light_logo.webp" />
+  <meta name="twitter:image:alt" content="NanoCell CSV Viewer and Editor interface preview" />
+
+  <!-- Stylesheet -->
   <link rel="stylesheet" href="style.css">
-  <script>
-    (function() {
-      try {
-        const t = localStorage.getItem('theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'nord' : 'light');
-        document.documentElement.setAttribute('data-theme', t);
-      } catch(e) { console.warn('Theme preference init failed:', e); }
-    })();
-  </script>
 </head>
 
-<body id="body" class="flexCol">
+<body id="body">
   <header id="header"></header>
-  <div id="content" class="flexMain">
+  <div id="content">
     <div id="main-container">
-      <ui-sheet id="sheet"></ui-sheet>
+      <div id="popup-stack"></div>
     </div>
     <ui-validation-pane id="validation-pane"></ui-validation-pane>
+    <ui-macro-pane id="macro-pane"></ui-macro-pane>
   </div>
-  <footer>
-    <section id="footer">
-      <section id="footerLeft">Left</section>
-      <section id="footerCenter" class="flexMain">Center</section>
-      <section id="footerRight">Right</section>
-      <span id="lock" class="icon" role="img" aria-label="editing file" data-src="edit_square"></span>
-    </section>
+  <footer id="footer">
+    <div id="footer-left">Left</div>
+    <div id="footer-center" class="truncate">Center</div>
+    <div id="footer-right">Right</div>
+    <ui-glyph id="lock" icon="edit_square" variant="status" title="editing file"></ui-glyph>
   </footer>
-  <section id="dialog" class="scroll"></section>
+  <div id="dialog" class="scroll"></div>
   <ui-command-palette id="palette"></ui-command-palette>
   <script type="module" src="js/main.js"></script>
 </body>

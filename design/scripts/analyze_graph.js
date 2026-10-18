@@ -6,7 +6,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const ROOT = path.resolve(__dirname, '../..');
-const baseDir = path.resolve(ROOT, 'app/js');
+const baseDir = path.resolve(ROOT, 'app');
 
 function getAllJsFiles(dir) {
   let results = [];
@@ -16,7 +16,7 @@ function getAllJsFiles(dir) {
     const stat = fs.statSync(fullPath);
     if (stat && stat.isDirectory()) {
       results = results.concat(getAllJsFiles(fullPath));
-    } else if (file.endsWith('.js')) {
+    } else if (file.endsWith('.js') || file.endsWith('.ts')) {
       results.push(fullPath);
     }
   });
@@ -43,8 +43,13 @@ function resolveImport(sourceFile, importPath) {
   if (fs.existsSync(resolved) && fs.statSync(resolved).isDirectory()) {
     resolved = path.join(resolved, 'index.js');
   }
-  if (!resolved.endsWith('.js') && fs.existsSync(resolved + '.js')) {
-    resolved = resolved + '.js';
+  if (!fs.existsSync(resolved) && resolved.endsWith('.js')) {
+    const tsCandidate = resolved.slice(0, -3) + '.ts';
+    if (fs.existsSync(tsCandidate)) return tsCandidate;
+  }
+  if (!resolved.endsWith('.js') && !resolved.endsWith('.ts')) {
+    if (fs.existsSync(resolved + '.js')) resolved = resolved + '.js';
+    else if (fs.existsSync(resolved + '.ts')) resolved = resolved + '.ts';
   }
   return resolved;
 }
@@ -103,7 +108,7 @@ function findCycles() {
 const { graph, cycles } = findCycles();
 const rel = p => path.relative(baseDir, p).replace(/\\/g, '/');
 
-console.log(`Analyzing ${graph.size} JS files in app/js/...\n`);
+console.log(`Analyzing ${graph.size} JS/TS files in app/...\n`);
 
 if (cycles.length === 0) {
   console.log('✅ ZERO circular dependencies found! The import graph is a strict DAG.');

@@ -274,6 +274,54 @@ export function runCsvSerializerTests(): { passed: number; failed: number } {
     assert.strictEqual(tsv, 'a\tb\r\nc\td');
   });
 
+  // =========================================================================
+  // 11. Format Serialization: HTML Table Export (serializeHtml)
+  // =========================================================================
+  test('HTML Export: serializeHtml with hasHeader=true renders <thead><th> and <tbody><td> with Excel text format', () => {
+    const serializer = new CsvSerializer();
+    const data = [
+      ['name', 'zip_code', 'phone'],
+      ['Alice', '02138', '+41791234567']
+    ];
+    const html = serializer.serializeHtml(data, { hasHeader: true });
+    assert.ok(html.startsWith('<table '));
+    assert.ok(html.includes('<thead><tr><th '));
+    assert.ok(html.includes('>name</th><th '));
+    assert.ok(html.includes('<tbody><tr><td '));
+    assert.ok(html.includes('>02138</td>'));
+    assert.ok(html.includes('>+41791234567</td>'));
+    assert.ok(html.includes("mso-number-format:'\\@'"));
+  });
+
+  test('HTML Export: serializeHtml with hasHeader=false renders all rows in <tbody> without <thead>', () => {
+    const serializer = new CsvSerializer();
+    const data = [
+      ['row1_c1', 'row1_c2'],
+      ['row2_c1', 'row2_c2']
+    ];
+    const html = serializer.serializeHtml(data, { hasHeader: false });
+    assert.ok(!html.includes('<thead>'));
+    assert.ok(html.includes('<tbody><tr><td'));
+    assert.ok(html.includes('>row1_c1</td>'));
+    assert.ok(html.includes('>row2_c2</td>'));
+  });
+
+  test('HTML Export: escapes HTML entities and converts newlines to same-cell <br>', () => {
+    const serializer = new CsvSerializer();
+    const data = [
+      ['<script>&"test\'</script>', 'line 1\r\nline 2\nline 3']
+    ];
+    const html = serializer.serializeHtml(data);
+    assert.ok(html.includes('&lt;script&gt;&amp;&quot;test&#39;&lt;/script&gt;'));
+    assert.ok(html.includes('line 1<br style="mso-data-placement:same-cell;">line 2<br style="mso-data-placement:same-cell;">line 3'));
+  });
+
+  test('HTML Export: empty matrix returns empty string', () => {
+    const serializer = new CsvSerializer();
+    assert.strictEqual(serializer.serializeHtml([]), '');
+    assert.strictEqual(serializer.serializeHtml([[]]), '');
+  });
+
   return { passed, failed };
 }
 

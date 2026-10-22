@@ -25,7 +25,7 @@ export class DialogManager {
     });
   }
 
-  static open(element, { closeButton = true } = {}) {
+  static open(element, { closeButton = true, autoFocus = true } = {}) {
     if (!this.container) this.init();
     if (!this.container) return;
 
@@ -45,7 +45,7 @@ export class DialogManager {
       }));
     }
 
-    const firstFocusable = this.getFocusableElements()[0];
+    const firstFocusable = autoFocus ? this.getFocusableElements()[0] : null;
     if (firstFocusable?.focus) {
       this._lastFocused = firstFocusable;
       setTimeout(() => { try { firstFocusable.focus(); } catch {} }, 0);
@@ -167,11 +167,11 @@ export class AboutDialog extends BaseElement {
       <h1>Nanocell CSV Editor</h1>
       <div class="about-version-container">
         <h3>${this.version}</h3>
-        <ui-glyph icon="copy" size="sm" class="glyph-subtle about-copy-btn" title="Copy version"></ui-glyph>
         ${this.isStandalone ? '<span class="about-mode-badge">(Desktop App)</span>' : ''}
       </div>
       <div class="about-footer">
         <div class="about-footer-glyphs">
+          <ui-glyph icon="copy" class="about-copy-btn" title="Copy version"></ui-glyph>
           <a href="${getNewIssueUrl(this.version)}" target="_blank" title="Bug Report">
             <ui-glyph icon="bug" title="Bug Report" tabindex="-1"></ui-glyph>
           </a>
@@ -403,7 +403,7 @@ export class AboutDialog extends BaseElement {
 
   static show() {
     const element = new AboutDialog();
-    DialogManager.open(element);
+    DialogManager.open(element, { autoFocus: false });
     return element;
   }
 }

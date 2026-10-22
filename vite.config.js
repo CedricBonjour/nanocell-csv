@@ -2,9 +2,11 @@ import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import { resolve } from 'path';
 import { spawnSync } from 'child_process';
-import { readFileSync, copyFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, copyFileSync } from 'fs';
+import { marked } from 'marked';
 
-const pkg = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf-8'));
+const p = (f) => resolve(__dirname, f);
+const pkg = JSON.parse(readFileSync(p('package.json'), 'utf-8'));
 
 let commitHash = '';
 try {
@@ -20,9 +22,10 @@ if (!commitHash) {
 }
 
 const version = (pkg.version || '1.0.0').replace(/^v/, '');
-const appVersion = `v${version}-${commitHash}`;
+const appVersion = `${version}-${commitHash}`;
 const appTitle = 'NanoCell — The CSV Editor That Never Corrupts Your Data.';
 const appDescription = 'The open source CSV editor designed for verbatim data accuracy. Standardize data in a single click for import/export workflows and preview multi-gigabyte files in milliseconds.';
+const appMetaImage = 'https://nanocell-csv.com/nanocell_meta_image_banner.webp';
 
 const devServerRoutingPlugin = () => ({
   name: 'dev-server-routing',
@@ -32,8 +35,6 @@ const devServerRoutingPlugin = () => ({
       const query = req.url && req.url.includes('?') ? '?' + req.url.split('?')[1] : '';
       if (url === '/' || url === '/index.html') {
         req.url = '/web/index.html' + query;
-      } else if (url === '/theme.css') {
-        req.url = '/web/theme.css' + query;
       }
       next();
     });
@@ -43,16 +44,12 @@ const devServerRoutingPlugin = () => ({
 const generateHtmlPlugin = (command) => ({
   name: 'generate-html',
   closeBundle() {
-    if (command === 'build') {
-      const webDist = resolve(__dirname, 'dist/web/index.html');
-      const rootDist = resolve(__dirname, 'dist/index.html');
-      if (existsSync(webDist)) {
-        copyFileSync(webDist, rootDist);
-        console.log(`Copied ${webDist} to ${rootDist}`);
-      }
-      console.log('Running design/scripts/generate_html.js...');
-      spawnSync('node', ['design/scripts/generate_html.js'], { stdio: 'inherit' });
-    }
+    if (command !== 'build') return;
+    copyFileSync(p('dist/web/index.html'), p('dist/index.html'));
+    const md = (f) => marked.parse(readFileSync(p(f), 'utf-8'));
+    const style = '<style>body{max-width:800px;margin:2em auto;font:16px/1.6 sans-serif}</style>';
+    const body = `<a href="/">&larr; Home</a>${md('TERMS_OF_USE.md')}<hr>${md('LICENSE.md')}`;
+    writeFileSync(p('dist/terms_of_use_and_license.html'), `<!DOCTYPE html>${style}${body}`);
   }
 });
 
@@ -62,7 +59,8 @@ const htmlVersionPlugin = () => ({
     return html
       .replace(/__APP_VERSION__/g, appVersion)
       .replace(/__APP_TITLE__/g, appTitle)
-      .replace(/__APP_DESCRIPTION__/g, appDescription);
+      .replace(/__APP_DESCRIPTION__/g, appDescription)
+      .replace(/__APP_META_IMAGE__/g, appMetaImage);
   }
 });
 
@@ -70,18 +68,19 @@ export default defineConfig(({ command }) => ({
   define: {
     __APP_VERSION__: JSON.stringify(appVersion),
     __APP_TITLE__: JSON.stringify(appTitle),
-    __APP_DESCRIPTION__: JSON.stringify(appDescription)
+    __APP_DESCRIPTION__: JSON.stringify(appDescription),
+    __APP_META_IMAGE__: JSON.stringify(appMetaImage)
   },
   build: {
     target: 'chrome120',
-    outDir: resolve(__dirname, 'dist'),
+    outDir: p('dist'),
     emptyOutDir: true,
     rollupOptions: {
       input: {
         // Points to the landing page inside web folder
-        web: resolve(__dirname, 'web/index.html'),
+        web: p('web/index.html'),
         // Points to the home.html inside the app folder
-        app: resolve(__dirname, 'app/home.html')
+        app: p('app/home.html')
       }
     }
   },

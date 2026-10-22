@@ -28,11 +28,11 @@
   <meta property="og:url" content="https://nanocell-csv.com/" />
   <meta property="og:title" content="__APP_TITLE__" />
   <meta property="og:description" content="__APP_DESCRIPTION__" />
-  <meta property="og:image" content="https://nanocell-csv.com/img/screenshot/screenshot_light_logo.webp" />
-  <meta property="og:image:secure_url" content="https://nanocell-csv.com/img/screenshot/screenshot_light_logo.webp" />
+  <meta property="og:image" content="__APP_META_IMAGE__" />
+  <meta property="og:image:secure_url" content="__APP_META_IMAGE__" />
   <meta property="og:image:type" content="image/webp" />
   <meta property="og:image:width" content="1200" />
-  <meta property="og:image:height" content="630" />
+  <meta property="og:image:height" content="675" />
   <meta property="og:image:alt" content="NanoCell CSV Viewer and Editor interface preview" />
   <meta property="og:locale" content="en_US" />
 
@@ -40,11 +40,12 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="__APP_TITLE__" />
   <meta name="twitter:description" content="__APP_DESCRIPTION__" />
-  <meta name="twitter:image" content="https://nanocell-csv.com/img/screenshot/screenshot_light_logo.webp" />
+  <meta name="twitter:image" content="__APP_META_IMAGE__" />
   <meta name="twitter:image:alt" content="NanoCell CSV Viewer and Editor interface preview" />
 
-  <!-- Stylesheet -->
+  <!-- Stylesheet & LCP Hero Image Preload -->
   <link rel="stylesheet" type="text/css" href="/web/theme.css">
+  <link rel="preload" as="image" href="/nanocell-landingpage-screenshot.webp" type="image/webp" fetchpriority="high">
 
   <!-- Structured Data: JSON-LD Schema.org -->
   <script type="application/ld+json">
@@ -69,8 +70,8 @@
         "operatingSystem": "All (Web, Windows, macOS, Linux, ChromeOS)",
         "browserRequirements": "Requires Chromium, Firefox, WebKit, or modern browser with HTML5 and Web Worker support",
         "description": "__APP_DESCRIPTION__",
-        "image": "https://nanocell-csv.com/img/screenshot/screenshot_light_logo.webp",
-        "screenshot": "https://nanocell-csv.com/img/screenshot/screenshot_light.webp",
+        "image": "__APP_META_IMAGE__",
+        "screenshot": "https://nanocell-csv.com/nanocell-landingpage-screenshot.webp",
         "offers": {
           "@type": "Offer",
           "price": "0",
@@ -111,8 +112,8 @@
     <div class="nav_element" id="gh-star-nav">
       <a class="gh-star-badge" href="https://github.com/CedricBonjour/nanocell-csv" target="_blank" rel="noopener" aria-label="Star NanoCell CSV on GitHub">
         <span class="gh-star-btn">
-          <img src="/img/github.svg" alt="" width="14" height="14">
-          <img src="/img/star.svg" alt="" width="14" height="14">
+          <img src="/github-logo.svg" alt="" width="14" height="14">
+          <img src="/github-star.svg" alt="" width="14" height="14">
         </span>
         <span class="gh-star-count" hidden></span>
       </a>
@@ -139,7 +140,7 @@
         </h1>
 
         <p class="hero-sub">
-          Edit every cell with <strong>100% plain-text accuracy</strong>, keeping phone numbers, postal codes, dates, and IDs intact—no unwanted type conversions, no surprises. Preview multi-gigabyte files in milliseconds and standardize data in a single click for import/export workflows.
+          Edit cells with <strong>100% plain-text accuracy</strong>: phone numbers, postal codes, dates, and IDs stay intact—no unwanted type conversions, no surprises. Preview multi-gigabyte files in milliseconds and cleanup data in a single click for your workflow.
         </p>
 
         <div class="hero-cta-group">
@@ -155,9 +156,31 @@
           No sign-up &bull; No server uploads &bull; Installs as an offline Desktop App (PWA) with zero admin rights
         </div>
       </div>
-      <div id="screenshots" class="hide_phone">
-        <img id="lightShot" src="/img/screenshot/screenshot_light.webp" alt="NanoCell CSV Editor light theme interface preview" fetchpriority="high" decoding="async" />
-        <img id="darkShot" src="/img/screenshot/screenshot_dark.webp" alt="NanoCell CSV Editor dark theme interface preview" decoding="async" />
+
+      <div id="screenshots">
+        <a class="hero-window-frame" href="/app/home.html" target="_blank" rel="noopener" aria-label="Launch NanoCell CSV Editor in Browser">
+          <div class="hero-window-bar">
+            <div class="window-dots" aria-hidden="true">
+              <span></span><span></span><span></span>
+            </div>
+            <div class="window-title">sample.csv &mdash; NanoCell CSV</div>
+            <div class="window-meta">UTF-8 &bull; RFC 4180 &bull; 100% Local</div>
+          </div>
+          <div class="hero-shot-viewport">
+            <img
+              id="heroShot"
+              src="/nanocell-landingpage-screenshot.webp"
+              width="1200"
+              height="675"
+              alt="NanoCell CSV Editor showing verbatim leading-zero ZIP codes (02111), international phone numbers (+4413149601), alphanumeric codes (77E03), purple RFC 4180 quote and comma highlights, centered teal ISO dates, and clickable URLs"
+              fetchpriority="high"
+              decoding="async"
+            />
+            <span class="hero-shot-cta-pill">
+              Launch Live Editor in Browser &rarr;
+            </span>
+          </div>
+        </a>
       </div>
       <div class="metrics-strip">
         <div class="metric-card">
@@ -715,8 +738,8 @@
           <div class="section-header-actions">
             <a class="gh-star-badge" href="https://github.com/CedricBonjour/nanocell-csv" target="_blank" rel="noopener" aria-label="Star NanoCell CSV on GitHub">
               <span class="gh-star-btn">
-                <img src="/img/github.svg" alt="" width="14" height="14">
-                <img src="/img/star.svg" alt="" width="14" height="14">
+                <img src="/github-logo.svg" alt="" width="14" height="14">
+                <img src="/github-star.svg" alt="" width="14" height="14">
               </span>
               <span class="gh-star-count" hidden></span>
             </a>
@@ -797,7 +820,7 @@
             <div>
               <a id="email" title="Click to copy email">nanocell.csv@gmail.com</a>
               <div>
-                <code id="copy_toast"><img src="/img/cp.svg" alt="" width="14" height="14"> copied to clipboard</code>
+                <code id="copy_toast"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z"/></svg> copied to clipboard</code>
               </div>
             </div>
           </div>

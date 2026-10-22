@@ -1,5 +1,5 @@
 import assert from 'node:assert';
-import { CsvParser } from '../app/core/Csv.js';
+import { CsvParser, CsvSerializer } from '../app/core/Csv.js';
 
 export function runCsvParserTests(): { passed: number; failed: number } {
   let passed = 0;
@@ -549,6 +549,305 @@ export function runCsvParserTests(): { passed: number; failed: number } {
     assert.deepStrictEqual(parser.parse(win1251), [
       ['Имя', 'Город'],
       ['Анна', 'Москва']
+    ]);
+  });
+
+  // =========================================================================
+  // 12. Clipboard TSV Copy-Paste & Quoted Delimiter Regression Tests
+  // =========================================================================
+  test('Regression: TSV copy-paste with escaped quotes and trimUnquotedWhitespace=true preserves all columns', () => {
+    const pastedTsv = [
+      'Anna\t"Linear ""Pro"""\t086078291\t07030\t2026-04-02\thttps://linear.app\t-1787.09',
+      'Anthony\tSupabase\t+16175550143\t02115\t2026-04-10\thttps://supabase.io\t15945.67'
+    ].join('\r\n');
+
+    const parser = new CsvParser({ delimiter: '\t', trimUnquotedWhitespace: true });
+    const parsed = parser.parse(pastedTsv);
+
+    assert.deepStrictEqual(parsed, [
+      ['Anna', 'Linear "Pro"', '086078291', '07030', '2026-04-02', 'https://linear.app', '-1787.09'],
+      ['Anthony', 'Supabase', '+16175550143', '02115', '2026-04-10', 'https://supabase.io', '15945.67']
+    ]);
+
+    // Verify full round-trip back through CsvSerializer({ delimiter: '\t' })
+    const reserialized = new CsvSerializer({ delimiter: '\t' }).serialize(parsed);
+    assert.strictEqual(reserialized, pastedTsv);
+  });
+
+  test('Regression: Tab delimiter with trimUnquotedWhitespace=true handles quoted fields at start, middle, and end', () => {
+    const parser = new CsvParser({ delimiter: '\t', trimUnquotedWhitespace: true });
+    const input = '  "First ""Col"""  \t  middle  \t  "Smith, John"  \t  "Last ""Col"""  \r\n""\tval2\t""\tval4';
+    assert.deepStrictEqual(parser.parse(input), [
+      ['First "Col"', 'middle', 'Smith, John', 'Last "Col"'],
+      ['', 'val2', '', 'val4']
+    ]);
+  });
+
+  test('Regression: Unquoted text after closing quote is preserved and not swallowed on subsequent spaces/tabs', () => {
+    const csvParser = new CsvParser({ delimiter: ',', trimUnquotedWhitespace: true });
+    assert.deepStrictEqual(csvParser.parse('"Linear ""Pro""" - Edition  ,  next_col'), [
+      ['Linear "Pro" - Edition', 'next_col']
+    ]);
+
+    const tsvParser = new CsvParser({ delimiter: '\t', trimUnquotedWhitespace: true });
+    assert.deepStrictEqual(tsvParser.parse('"Linear ""Pro""" - Edition  \t  next_col'), [
+      ['Linear "Pro" - Edition', 'next_col']
+    ]);
+  });
+
+  test('Regression: commentChar only matches at start of line and never skips tab delimiter in TSV', () => {
+    const csvParser = new CsvParser({ delimiter: ',', commentChar: '#' });
+    assert.deepStrictEqual(csvParser.parse('item_1 # not a comment,100\n# real comment\nitem_2,200'), [
+      ['item_1 # not a comment', '100'],
+      ['item_2', '200']
+    ]);
+
+    const tsvParser = new CsvParser({ delimiter: '\t', commentChar: '#' });
+    assert.deepStrictEqual(tsvParser.parse('\t#not_a_comment\n1\t2'), [
+      ['', '#not_a_comment'],
+      ['1', '2']
+    ]);
+  });
+
+  // =========================================================================
+  // 13. Clipboard HTML Table Parsing (CsvParser.parseHtmlTable)
+  // =========================================================================
+  test('HTML Paste: Returns null for non-table inputs (empty, plain text, VS Code syntax divs, code blocks)', () => {
+    assert.strictEqual(CsvParser.parseHtmlTable(''), null);
+    assert.strictEqual(CsvParser.parseHtmlTable('a,b,c\n1,2,3'), null);
+    assert.strictEqual(CsvParser.parseHtmlTable('<div style="color:#d4d4d4"><span>Anna\tSupabase</span></div>'), null);
+    assert.strictEqual(CsvParser.parseHtmlTable('<pre><code>id,name\n1,Alice</code></pre>'), null);
+    assert.strictEqual(CsvParser.parseHtmlTable('<table></table>'), null);
+  });
+
+  test('HTML Paste: Parses standard table with <thead>, <tbody>, <tfoot>, <th>, and <td>', () => {
+    const html = `
+      <table>
+        <thead>
+          <tr><th>Name</th><th>Company</th><th>Balance</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Anna</td><td>Linear "Pro"</td><td>-1787.09</td></tr>
+          <tr><td>Anthony</td><td>Supabase, Inc.</td><td>15945.67</td></tr>
+        </tbody>
+        <tfoot>
+          <tr><td>Total</td><td>2 Companies</td><td>14158.58</td></tr>
+        </tfoot>
+      </table>
+    `;
+    assert.deepStrictEqual(CsvParser.parseHtmlTable(html), [
+      ['Name', 'Company', 'Balance'],
+      ['Anna', 'Linear "Pro"', '-1787.09'],
+      ['Anthony', 'Supabase, Inc.', '15945.67'],
+      ['Total', '2 Companies', '14158.58']
+    ]);
+  });
+
+  test('HTML Paste: Strips Excel/Windows clipboard wrappers (<head>, <style>, <script>, <colgroup>, <caption>, comments)', () => {
+    const excelHtml = `
+      <html>
+      <head>
+        <meta http-equiv=Content-Type content="text/html; charset=utf-8">
+        <style>
+          <!--table {mso-displayed-decimal-separator:"\\.";}
+          td {mso-number-format:"\\@";}-->
+        </style>
+        <script>console.log("ignore me");</script>
+      </head>
+      <body>
+        <!--StartFragment-->
+        <table border=0 cellpadding=0 cellspacing=0 width=256>
+          <caption>Customer Export</caption>
+          <colgroup><col width=128><col width=128></colgroup>
+          <tr height=20>
+            <td height=20 class=xl65>02138</td>
+            <td class=xl65>+41791234567</td>
+            <td class=xl65>84E02</td>
+          </tr>
+        </table>
+        <!--EndFragment-->
+      </body>
+      </html>
+    `;
+    assert.deepStrictEqual(CsvParser.parseHtmlTable(excelHtml), [
+      ['02138', '+41791234567', '84E02']
+    ]);
+  });
+
+  test('HTML Paste: Handles implicit HTML5 / Excel unclosed <tr>, <td>, and <th> tags', () => {
+    const unclosedHtml = '<table><tr><th>Col A<th>Col B<tr><td>Val 1<td>Val 2<tr><td>Val 3<td>Val 4</table>';
+    assert.deepStrictEqual(CsvParser.parseHtmlTable(unclosedHtml), [
+      ['Col A', 'Col B'],
+      ['Val 1', 'Val 2'],
+      ['Val 3', 'Val 4']
+    ]);
+  });
+
+  test('HTML Paste: Converts <br>, <br/>, <br style="...">, and block tags (<p>, <div>, <li>) inside cells to newlines', () => {
+    const html = `
+      <table>
+        <tr>
+          <td>Line 1<br>Line 2<br/>Line 3<br style="mso-data-placement:same-cell;">Line 4</td>
+          <td><p>Para A</p><p>Para B</p></td>
+          <td><div>Block 1</div><div>Block 2</div></td>
+          <td><ul><li>Item 1</li><li>Item 2</li></ul></td>
+        </tr>
+      </table>
+    `;
+    assert.deepStrictEqual(CsvParser.parseHtmlTable(html), [
+      [
+        'Line 1\nLine 2\nLine 3\nLine 4',
+        'Para A\nPara B',
+        'Block 1\nBlock 2',
+        'Item 1\nItem 2'
+      ]
+    ]);
+  });
+
+  test('HTML Paste: Decodes named, decimal, and hexadecimal HTML entities accurately', () => {
+    const html = `
+      <table>
+        <tr>
+          <td>&lt;tag&gt; &amp; &quot;quotes&quot; &apos;single&#39;</td>
+          <td>100&nbsp;&euro; &#8364; &mdash; &#x2014; &copy; &reg;</td>
+          <td>&#65;&#x42;&#67; &#x1F680;</td>
+        </tr>
+      </table>
+    `;
+    assert.deepStrictEqual(CsvParser.parseHtmlTable(html), [
+      [
+        '<tag> & "quotes" \'single\'',
+        '100 € € — — © ®',
+        'ABC 🚀'
+      ]
+    ]);
+  });
+
+  test('HTML Paste: Expands colspan attributes (double-quoted, single-quoted, and unquoted)', () => {
+    const html = `
+      <table>
+        <tr><th colspan="3">Full Banner</th></tr>
+        <tr><td colspan='2'>Left Two</td><td>Right One</td></tr>
+        <tr><td>A</td><td colspan=2>B &amp; C</td></tr>
+      </table>
+    `;
+    assert.deepStrictEqual(CsvParser.parseHtmlTable(html), [
+      ['Full Banner', '', ''],
+      ['Left Two', '', 'Right One'],
+      ['A', 'B & C', '']
+    ]);
+  });
+
+  test('HTML Paste: Expands rowspan and combined rowspan + colspan across multiple rows', () => {
+    const html = `
+      <table>
+        <tr>
+          <th rowspan="2">Region</th>
+          <th colspan="2">Revenue</th>
+          <th rowspan="3">Notes</th>
+        </tr>
+        <tr>
+          <th>Q1</th>
+          <th>Q2</th>
+        </tr>
+        <tr>
+          <td>EMEA</td>
+          <td>1200</td>
+          <td>1500</td>
+        </tr>
+      </table>
+    `;
+    assert.deepStrictEqual(CsvParser.parseHtmlTable(html), [
+      ['Region', 'Revenue', '', 'Notes'],
+      ['', 'Q1', 'Q2', ''],
+      ['EMEA', '1200', '1500', '']
+    ]);
+  });
+
+  test('HTML Paste: Strips nested inline formatting tags and keeps nested <table> inside its parent cell', () => {
+    const html = `
+      <table>
+        <tr>
+          <td><a href="https://linear.app"><strong>https://linear.app</strong></a></td>
+          <td>Outer <table><tr><td>Inner 1</td><td>Inner 2</td></tr></table> Cell</td>
+        </tr>
+      </table>
+    `;
+    assert.deepStrictEqual(CsvParser.parseHtmlTable(html), [
+      ['https://linear.app', 'Outer Inner 1Inner 2 Cell']
+    ]);
+  });
+
+  test('HTML Paste: Respects trimWhitespace option (true vs false)', () => {
+    const html = '<table><tr><td>   padded value   </td><td>normal</td></tr></table>';
+    assert.deepStrictEqual(CsvParser.parseHtmlTable(html, { trimWhitespace: true }), [
+      ['padded value', 'normal']
+    ]);
+    assert.deepStrictEqual(CsvParser.parseHtmlTable(html, { trimWhitespace: false }), [
+      ['   padded value   ', 'normal']
+    ]);
+  });
+
+  test('HTML Paste: Round-trip through CsvSerializer.serializeHtml -> CsvParser.parseHtmlTable is 100% lossless', () => {
+    const original = [
+      ['name', 'company', 'phone', 'zip_code', 'notes'],
+      ['Anna', 'Linear "Pro"', '086078291', '07030', 'Line 1\nLine 2 & <special>'],
+      ['Anthony', 'Supabase, Inc.', '+16175550143', '02115', '84E02']
+    ];
+    const serializer = new CsvSerializer();
+    const htmlWithHeader = serializer.serializeHtml(original, { hasHeader: true });
+    const htmlWithoutHeader = serializer.serializeHtml(original, { hasHeader: false });
+
+    assert.deepStrictEqual(CsvParser.parseHtmlTable(htmlWithHeader), original);
+    assert.deepStrictEqual(CsvParser.parseHtmlTable(htmlWithoutHeader), original);
+  });
+
+  test('HTML Paste: Preserves empty cells (<td></td>, whitespace, &nbsp;) at start, middle, and end of row', () => {
+    const html = `
+      <table>
+        <tr><td></td><td>middle</td><td>&nbsp;</td><td>   </td></tr>
+        <tr><td>1</td><td></td><td>3</td><td></td></tr>
+      </table>
+    `;
+    assert.deepStrictEqual(CsvParser.parseHtmlTable(html, { trimWhitespace: true }), [
+      ['', 'middle', '', ''],
+      ['1', '', '3', '']
+    ]);
+    assert.deepStrictEqual(CsvParser.parseHtmlTable('<table><tr><td>&nbsp;</td></tr></table>', { trimWhitespace: false }), [
+      [' ']
+    ]);
+  });
+
+  test('HTML Paste: Handles attributes containing ">" inside quotes (e.g. Google Sheets data-* or formula attributes)', () => {
+    const gsheetsHtml = `
+      <google-sheets-html-origin>
+      <table xmlns="http://www.w3.org/1999/xhtml">
+        <tbody>
+          <tr style="height: 21px;">
+            <td data-sheets-value="{&quot;1&quot;:2,&quot;2&quot;:&quot;a > b&quot;}" title="x > y">a &gt; b</td>
+            <td data-sheets-formula="=IF(A1>0, &quot;pos&quot;, &quot;neg&quot;)"><span data-hint="1 > 0">pos</span></td>
+          </tr>
+        </tbody>
+      </table>
+    `;
+    assert.deepStrictEqual(CsvParser.parseHtmlTable(gsheetsHtml), [
+      ['a > b', 'pos']
+    ]);
+  });
+
+  test('HTML Paste: Uppercase legacy HTML tags (<TABLE>, <TR>, <TH>, <TD>, <BR>) and multiple tables (stops after first table)', () => {
+    const legacyHtml = `
+      <TABLE BORDER=1>
+        <TR><TH>ID</TH><TH>LABEL</TH></TR>
+        <TR><TD>001</TD><TD>Line A<BR>Line B</TD></TR>
+      </TABLE>
+      <TABLE>
+        <TR><TD>Second Table Should Be Ignored</TD></TR>
+      </TABLE>
+    `;
+    assert.deepStrictEqual(CsvParser.parseHtmlTable(legacyHtml), [
+      ['ID', 'LABEL'],
+      ['001', 'Line A\nLine B']
     ]);
   });
 

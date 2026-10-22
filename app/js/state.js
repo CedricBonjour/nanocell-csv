@@ -142,6 +142,10 @@ Setting.list = [
   { key: 'sortIgnoreHeader', defaultValue: true, name: 'Ignore 1st row (header row)' },
   { key: 'sortNumbersFirst', defaultValue: false, name: 'Numbers are sorted before text' },
 
+  { title: 'Copy / Paste' },
+  { key: 'copyPasteHtml', defaultValue: true, name: 'Context-aware HTML copy & paste' },
+  { key: 'copyIncludeHeaders', defaultValue: false, name: 'Always include header/title row of selected cells' },
+
   { title: 'Data Validation' },
   { key: 'commaReplacement', defaultValue: '-', name: 'Text comma replacement character', list: [...COMMA_REPLACEMENTS], onChange: (val) => {
     setCommaReplacement(val);

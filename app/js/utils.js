@@ -164,14 +164,3 @@ export function downloadBlob(blob, filename, doc = globalThis.document) {
     anchor.remove();
   }, 100);
 }
-
-export function abortableSleep(ms, signal) {
-  return new Promise((resolve, reject) => {
-    if (signal?.aborted) return reject(new DOMException('Aborted', 'AbortError'));
-    const timer = setTimeout(resolve, Math.max(10, ms));
-    signal?.addEventListener('abort', () => {
-      clearTimeout(timer);
-      reject(new DOMException('Aborted', 'AbortError'));
-    }, { once: true });
-  });
-}

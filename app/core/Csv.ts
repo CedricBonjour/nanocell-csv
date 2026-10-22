@@ -43,6 +43,52 @@ function resolveDialect(base: CsvDialect, override?: Partial<CsvDialect>): CsvDi
 const unescapeChar = (ch: string) =>
   ch === 'n' ? '\n' : ch === 'r' ? '\r' : ch === 't' ? '\t' : ch;
 
+const NAMED_HTML_ENTITIES: Record<string, string> = {
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+  nbsp: ' ',
+  ndash: '\u2013',
+  mdash: '\u2014',
+  lsquo: '\u2018',
+  rsquo: '\u2019',
+  ldquo: '\u201C',
+  rdquo: '\u201D',
+  bull: '\u2022',
+  hellip: '\u2026',
+  euro: '\u20AC',
+  pound: '\u00A3',
+  yen: '\u00A5',
+  cent: '\u00A2',
+  copy: '\u00A9',
+  reg: '\u00AE',
+  trade: '\u2122',
+  times: '\u00D7',
+  divide: '\u00F7',
+  plusmn: '\u00B1',
+};
+
+function decodeHtmlEntities(str: string): string {
+  if (!str || !str.includes('&')) return str;
+  return str.replace(/&(?:#(\d+)|#x([0-9a-fA-F]+)|([a-zA-Z0-9]+));/g, (match, dec, hex, named) => {
+    if (dec !== undefined) {
+      const code = parseInt(dec, 10);
+      return code === 160 ? ' ' : (code > 0 && code <= 0x10FFFF ? String.fromCodePoint(code) : match);
+    }
+    if (hex !== undefined) {
+      const code = parseInt(hex, 16);
+      return code === 0xA0 ? ' ' : (code > 0 && code <= 0x10FFFF ? String.fromCodePoint(code) : match);
+    }
+    if (named !== undefined) {
+      const lower = named.toLowerCase();
+      if (lower in NAMED_HTML_ENTITIES) return NAMED_HTML_ENTITIES[lower];
+    }
+    return match;
+  });
+}
+
 export class EncodingDetector {
   private static readonly SAMPLE_BYTE_LIMIT = 8192;
 
@@ -362,8 +408,21 @@ export class CsvParser {
     let lastSafeIndex = 0, segmentStart = 0;
 
     const flushCell = (stripCr = false) => {
-      if (i > segmentStart) currentCell += text.slice(segmentStart, i);
-      if (stripCr && currentCell.endsWith('\r')) currentCell = currentCell.slice(0, -1);
+      if (i > segmentStart) {
+        const tail = text.slice(segmentStart, i);
+        if (stripCr && tail.endsWith('\r')) {
+          const cleanTail = tail.slice(0, -1);
+          if (!cellWasQuoted) currentCell += cleanTail;
+          else if (!quoteClosed) currentCell += trimUnquoted ? cleanTail.replace(/[ \t]+$/, '') : cleanTail;
+          else if (!trimUnquoted) currentCell += cleanTail;
+        } else {
+          if (!cellWasQuoted) currentCell += tail;
+          else if (!quoteClosed) currentCell += trimUnquoted ? tail.replace(/[ \t]+$/, '') : tail;
+          else if (!trimUnquoted) currentCell += tail;
+        }
+      } else if (stripCr && currentCell.endsWith('\r')) {
+        currentCell = currentCell.slice(0, -1);
+      }
       currentRow.push((!cellWasQuoted && trimUnquoted) ? currentCell.trim() : currentCell);
       currentCell = '';
       cellWasQuoted = quoteClosed = false;
@@ -372,9 +431,9 @@ export class CsvParser {
     while (i < len) {
       const c = text[i];
 
-      if (commentChar && !inQuotes && currentRow.length === 0 && currentCell === '') {
+      if (commentChar && !inQuotes && currentRow.length === 0 && currentCell === '' && i === segmentStart) {
         let checkIdx = i;
-        while (checkIdx < len && (text[checkIdx] === ' ' || text[checkIdx] === '\t')) checkIdx++;
+        while (checkIdx < len && text[checkIdx] !== sep && (text[checkIdx] === ' ' || text[checkIdx] === '\t')) checkIdx++;
         if (checkIdx < len && text.startsWith(commentChar, checkIdx)) {
           i = checkIdx;
           while (i < len && text[i] !== '\n' && text[i] !== '\r') i++;
@@ -428,8 +487,6 @@ export class CsvParser {
         inQuotes = cellWasQuoted = true;
         quoteClosed = false;
         segmentStart = ++i;
-      } else if (quoteClosed && trimUnquoted && (c === ' ' || c === '\t')) {
-        segmentStart = ++i;
       } else if (c === sep) {
         flushCell(false);
         segmentStart = ++i;
@@ -441,11 +498,10 @@ export class CsvParser {
         i += (c === '\r' && i + 1 < len && text[i + 1] === '\n') ? 2 : 1;
         lastSafeIndex = segmentStart = i;
       } else {
+        if (quoteClosed && c !== ' ' && c !== '\t') quoteClosed = false;
         i++;
       }
     }
-
-    if (i > segmentStart) currentCell += text.slice(segmentStart, i);
 
     if (!isLastChunk) {
       if (lastSafeIndex > 0) this.buffer = text.slice(lastSafeIndex);
@@ -454,8 +510,7 @@ export class CsvParser {
         parsedRows = [];
       }
     } else {
-      if (cellWasQuoted || currentCell.length > 0 || currentRow.length > 0) {
-        segmentStart = i;
+      if (cellWasQuoted || i > segmentStart || currentCell.length > 0 || currentRow.length > 0) {
         flushCell(true);
         parsedRows.push(currentRow);
       }
@@ -469,6 +524,165 @@ export class CsvParser {
     this.dialect = resolveDialect(this.dialect, dialect);
     this.reset();
     return this.parseChunk(input, true);
+  }
+
+  static parseHtmlTable(html: string, options?: { trimWhitespace?: boolean }): string[][] | null {
+    if (!html || typeof html !== 'string' || !/<table[\s>]/i.test(html)) return null;
+    const trimWhitespace = options?.trimWhitespace ?? true;
+
+    const cleaned = html
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/<(script|style|head|colgroup|caption)\b[^>]*>[\s\S]*?<\/\1>/gi, '');
+
+    const tableMatch = /<table\b[^>]*>([\s\S]*)/i.exec(cleaned);
+    if (!tableMatch) return null;
+
+    const content = tableMatch[1];
+    const tagRegex = /<\/?(table|tr|td|th|thead|tbody|tfoot)\b((?:"[^"]*"|'[^']*'|[^'">])*)>/gi;
+
+    let tableDepth = 1;
+    let inRow = false;
+    let inCell = false;
+    let cellStartIdx = 0;
+    let cellColspan = 1;
+    let cellRowspan = 1;
+
+    const rawRows: { text: string; colspan: number; rowspan: number }[][] = [];
+    let currentRow: { text: string; colspan: number; rowspan: number }[] = [];
+
+    const parseSpanAttr = (attrs: string, name: string): number => {
+      const m = new RegExp(`\\b${name}\\s*=\\s*(?:"(\\d+)"|'(\\d+)'|(\\d+))`, 'i').exec(attrs);
+      const val = m ? parseInt(m[1] || m[2] || m[3], 10) : 1;
+      return Number.isFinite(val) && val > 1 ? Math.min(val, 1000) : 1;
+    };
+
+    const extractCellText = (rawInner: string): string => {
+      let s = rawInner
+        .replace(/<br\b[^>]*\/?>/gi, '\0BR\0')
+        .replace(/(?:<\/(p|div|li|blockquote|pre|h[1-6])\s*>\s*)+/gi, '\0BR\0')
+        .replace(/<(?:(?:"[^"]*"|'[^']*'|[^'">])*)>/g, '')
+        .replace(/^(?:[ \t\r\n]*\0BR\0)+|(?:\0BR\0[ \t\r\n]*)+$/g, '');
+
+      s = s.replace(/\r\n?/g, '\n');
+      if (trimWhitespace) {
+        s = s.replace(/^[ \t\n]+|[ \t\n]+$/g, '');
+      }
+      s = decodeHtmlEntities(s);
+      s = s.replace(/\0BR\0/g, '\n');
+      return trimWhitespace ? s.replace(/^[ \t]+|[ \t]+$/g, '') : s;
+    };
+
+    const closeCell = (endIdx: number) => {
+      if (!inCell) return;
+      const rawInner = content.slice(cellStartIdx, endIdx);
+      currentRow.push({
+        text: extractCellText(rawInner),
+        colspan: cellColspan,
+        rowspan: cellRowspan,
+      });
+      inCell = false;
+    };
+
+    const closeRow = (endIdx: number) => {
+      if (inCell) closeCell(endIdx);
+      if (inRow && currentRow.length > 0) {
+        rawRows.push(currentRow);
+      }
+      currentRow = [];
+      inRow = false;
+    };
+
+    let match: RegExpExecArray | null;
+    while ((match = tagRegex.exec(content)) !== null) {
+      const fullTag = match[0];
+      const isClosing = fullTag.charCodeAt(1) === 47;
+      const tagName = match[1].toLowerCase();
+      const attrs = match[2] || '';
+      const tagStart = match.index;
+      const tagEnd = tagStart + fullTag.length;
+
+      if (tagName === 'table') {
+        if (isClosing) {
+          tableDepth--;
+          if (tableDepth <= 0) {
+            closeRow(tagStart);
+            break;
+          }
+        } else {
+          tableDepth++;
+        }
+        continue;
+      }
+
+      if (tableDepth !== 1) continue;
+
+      if (tagName === 'tr') {
+        if (isClosing) {
+          closeRow(tagStart);
+        } else {
+          if (inRow) closeRow(tagStart);
+          inRow = true;
+        }
+      } else if (tagName === 'td' || tagName === 'th') {
+        if (isClosing) {
+          closeCell(tagStart);
+        } else {
+          if (!inRow) inRow = true;
+          if (inCell) closeCell(tagStart);
+          inCell = true;
+          cellStartIdx = tagEnd;
+          cellColspan = parseSpanAttr(attrs, 'colspan');
+          cellRowspan = parseSpanAttr(attrs, 'rowspan');
+        }
+      } else if (isClosing && (tagName === 'thead' || tagName === 'tbody' || tagName === 'tfoot')) {
+        if (inRow) closeRow(tagStart);
+      }
+    }
+
+    if (inRow) closeRow(content.length);
+    if (rawRows.length === 0) return null;
+
+    const matrix: string[][] = [];
+    const pendingRowspans: number[] = [];
+
+    for (const rawRow of rawRows) {
+      const rowOut: string[] = [];
+      let colIdx = 0;
+
+      for (const cell of rawRow) {
+        while ((pendingRowspans[colIdx] ?? 0) > 0) {
+          pendingRowspans[colIdx]--;
+          rowOut.push('');
+          colIdx++;
+        }
+
+        rowOut.push(cell.text);
+        if (cell.rowspan > 1) {
+          pendingRowspans[colIdx] = (pendingRowspans[colIdx] ?? 0) + (cell.rowspan - 1);
+        }
+        colIdx++;
+
+        for (let c = 1; c < cell.colspan; c++) {
+          rowOut.push('');
+          if (cell.rowspan > 1) {
+            pendingRowspans[colIdx] = (pendingRowspans[colIdx] ?? 0) + (cell.rowspan - 1);
+          }
+          colIdx++;
+        }
+      }
+
+      while (colIdx < pendingRowspans.length) {
+        if ((pendingRowspans[colIdx] ?? 0) > 0) {
+          pendingRowspans[colIdx]--;
+          rowOut.push('');
+        }
+        colIdx++;
+      }
+
+      matrix.push(rowOut);
+    }
+
+    return matrix;
   }
 }
 
@@ -564,5 +778,39 @@ export class CsvSerializer {
 
   serializeTsv(matrix: readonly (readonly CellValue[])[], dialect?: Partial<CsvDialect>): string {
     return this.serialize(matrix, { ...dialect, delimiter: '\t' });
+  }
+
+  serializeHtml(matrix: readonly (readonly CellValue[])[], options?: { hasHeader?: boolean }): string {
+    if (!matrix || matrix.length === 0 || matrix[0].length === 0) return '';
+    const hasHeader = Boolean(options?.hasHeader && matrix.length > 1);
+
+    const escapeHtml = (val: CellValue): string =>
+      normalizeCellValue(val)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/\r?\n/g, '<br style="mso-data-placement:same-cell;">');
+
+    const cellStyle = 'mso-number-format:\'\\@\';padding:4px 8px;border:1px solid #d0d7de;';
+    const headStyle = `${cellStyle}font-weight:600;background:#f6f8fa;`;
+
+    const sections: string[] = [];
+    const startRow = hasHeader ? 1 : 0;
+
+    if (hasHeader) {
+      const ths = matrix[0].map(c => `<th style="${headStyle}">${escapeHtml(c)}</th>`).join('');
+      sections.push(`<thead><tr>${ths}</tr></thead>`);
+    }
+
+    const bodyRows: string[] = [];
+    for (let r = startRow; r < matrix.length; r++) {
+      const tds = matrix[r].map(c => `<td style="${cellStyle}">${escapeHtml(c)}</td>`).join('');
+      bodyRows.push(`<tr>${tds}</tr>`);
+    }
+    sections.push(`<tbody>${bodyRows.join('')}</tbody>`);
+
+    return `<table style="border-collapse:collapse;font-family:monospace;font-size:13px;">${sections.join('')}</table>`;
   }
 }

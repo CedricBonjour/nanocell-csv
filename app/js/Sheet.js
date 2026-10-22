@@ -566,12 +566,24 @@ export class Sheet extends BaseElement {
       const yEnd = Math.min(this.height - 1, range.ymax - this.baseY);
 
       for (let x = xStart; x <= xEnd; x++) {
+        const colHeader = this.rows[0]?.cells[x + 1];
+        if (colHeader) {
+          colHeader.classList.add('selected');
+          this._selectedCells.push(colHeader);
+        }
         for (let y = yStart; y <= yEnd; y++) {
           const cell = this.rows[y + 1]?.cells[x + 1];
           if (cell) {
             cell.classList.add('selected');
             this._selectedCells.push(cell);
           }
+        }
+      }
+      for (let y = yStart; y <= yEnd; y++) {
+        const rowHeader = this.rows[y + 1]?.cells[0];
+        if (rowHeader) {
+          rowHeader.classList.add('selected');
+          this._selectedCells.push(rowHeader);
         }
       }
       updateFooter(this);
@@ -630,8 +642,50 @@ export class Sheet extends BaseElement {
     this.inputField.remove();
   }
 
+  getCopyMatrix() {
+    const range = this.getOrderedRange();
+    let matrix = this.getSelectedMatrix();
+    const includeHeaders = Boolean(settings?.copyIncludeHeaders);
+    if (includeHeaders && range.ymin > 0 && this.df?.height > 0) {
+      const headerRow = this.df.slice({ xmin: range.xmin, xmax: range.xmax, ymin: 0, ymax: 0 })[0];
+      if (headerRow) matrix = [headerRow, ...matrix];
+    }
+    const hasHeader = includeHeaders || (range.ymin === 0 && Boolean(this.fixTop || settings?.freezeHeaderOnOpen));
+    return { matrix, hasHeader };
+  }
+
+  copySelectionData() {
+    const { matrix, hasHeader } = this.getCopyMatrix();
+    const serializer = new CsvSerializer({ delimiter: '\t' });
+    const text = serializer.serialize(matrix);
+    const cellCount = matrix.length * (matrix[0]?.length || 0);
+    const html = (settings?.copyPasteHtml !== false && cellCount > 1)
+      ? serializer.serializeHtml(matrix, { hasHeader })
+      : '';
+    return { text, html };
+  }
+
+  cutSelectionData() {
+    if (this.df?.lock) return { text: '', html: '' };
+    const data = this.copySelectionData();
+    this.deleteSelection();
+    return data;
+  }
+
+  pasteClipboard(rawText, rawHtml) {
+    if (this.df?.lock) return;
+    if (settings?.copyPasteHtml !== false && rawHtml) {
+      const htmlMatrix = CsvParser.parseHtmlTable(rawHtml, { trimWhitespace: Boolean(settings?.trimUnquoted) });
+      if (htmlMatrix?.length > 0) {
+        this.paste(htmlMatrix);
+        return;
+      }
+    }
+    if (rawText) this.pasteText(rawText);
+  }
+
   copySelection() {
-    return new CsvSerializer({ delimiter: '\t' }).serialize(this.getSelectedMatrix());
+    return this.copySelectionData().text;
   }
 
   cutSelection() {

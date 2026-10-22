@@ -499,20 +499,33 @@ export function buildKeys() {
 
     copy: (event) => {
       const sheet = getClipboardSheet(false);
-      if (sheet) { event.preventDefault(); event.clipboardData?.setData('text/plain', sheet.copySelection()); }
+      if (sheet) {
+        event.preventDefault();
+        const { text, html } = sheet.copySelectionData ? sheet.copySelectionData() : { text: sheet.copySelection(), html: '' };
+        event.clipboardData?.setData('text/plain', text);
+        if (html) event.clipboardData?.setData('text/html', html);
+      }
     },
 
     cut: (event) => {
       const sheet = getClipboardSheet(true);
-      if (sheet) { event.preventDefault(); event.clipboardData?.setData('text/plain', sheet.cutSelection()); }
+      if (sheet) {
+        event.preventDefault();
+        const { text, html } = sheet.cutSelectionData ? sheet.cutSelectionData() : { text: sheet.cutSelection(), html: '' };
+        event.clipboardData?.setData('text/plain', text);
+        if (html) event.clipboardData?.setData('text/html', html);
+      }
     },
 
     paste: (event) => {
       const sheet = getClipboardSheet(true);
       if (sheet) {
         event.preventDefault();
-        const rawText = event.clipboardData?.getData('text');
-        if (rawText) sheet.pasteText(rawText);
+        const rawText = event.clipboardData?.getData('text/plain') || event.clipboardData?.getData('text') || '';
+        const rawHtml = event.clipboardData?.getData('text/html') || '';
+        if (sheet.pasteClipboard) sheet.pasteClipboard(rawText, rawHtml);
+        else if (rawText) sheet.pasteText(rawText);
+
       }
     }
   };

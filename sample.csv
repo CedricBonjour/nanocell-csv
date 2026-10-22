@@ -1,0 +1,101 @@
+name,company,phone,zip_code,renewal_date,website,balance
+Amy,ASML Holding,024580073,02138,2026-03-04,https://asml.com,1792.37
+Andrew,"Stripe, Inc.",+41791234567,00501,2026-03-12,https://stripe.com,6573.71
+Angela,Cloudflare,013912881,84E02,2026-03-19,https://one.one.one,7524.86
+Anna,"Linear ""Pro""",086078291,07030,2026-04-02,https://linear.app,-1787.09
+Anthony,Supabase,+16175550143,02115,2026-04-10,https://supabase.io,15945.67
+Ashley,"Roche, AG",038934774,01010,2026-04-18,https://roche.com,-1370.95
+Barbara,DuckDB Labs,044406764,06901,2026-05-01,https://duckdb.org,12687.12
+Benjamin,"Vercel ""Edge""",+4930901820,08001,2026-05-09,https://vercel.com,-4863.50
+Betty,ClickHouse,+33142685500,02139,2026-05-17,https://clickhouse.io,16008.46
+Brandon,Figma,012611801,12E04,2026-05-24,https://figma.com,-4179.61
+Brenda,"Tailscale, Inc.",099170974,03101,2026-06-03,https://tailscale.io,19997.16
+Brian,Datadog,+4420794601,04101,2026-06-11,https://datadog.com,11453.29
+Carol,"PostHog ""Cloud""",074058749,00184,2026-06-19,https://posthog.com,14707.84
+Carolyn,Raycast,+8135550192,02142,2026-06-28,https://raycast.com,-5894.95
+Catherine,"Retool, Inc.",080722348,07302,2026-07-04,https://retool.com,15634.61
+Charles,Bun,027019217,90E01,2026-07-14,https://bun.sh,-687.50
+Christine,Deno Land,+41446681800,01801,2026-07-22,https://deno.com,3587.48
+Christopher,"Fly.io ""Global""",051258271,02110,2026-08-01,https://fly.io,17728.44
+Cynthia,Turso DB,031125044,06510,2026-08-09,https://turso.tech,-8093.78
+Daniel,"Neon, Inc.",+3120794012,02903,2026-08-18,https://neon.tech,16760.53
+David,PlanetScale,092193294,05401,2026-08-27,https://pscale.dev,-8959.67
+Deborah,"Grafana ""Core""",015681667,02116,2026-09-05,https://grafana.com,13443.22
+Debra,Sentry,+4685016400,08540,2026-09-14,https://sentry.io,16118.26
+Dennis,"HashiCorp, Inc.",021274760,45E08,2026-09-23,https://vault.io,8135.46
+Donald,Wise,090425065,02199,2026-10-02,https://wise.com,-2530.50
+Dorothy,"CERN ""Atlas""",+41227678484,01211,2026-10-11,https://cern.ch,9472.73
+Douglas,GitLab,064198230,03801,2026-10-19,https://gitlab.com,11485.57
+Edward,"Algolia, Inc.",+3317654001,07960,2026-10-28,https://algolia.com,15398.37
+Elizabeth,Meilisearch,031849201,02134,2026-11-06,https://meili.dev,10670.29
+Emily,"Upstash ""Edge""",078234190,04005,2026-11-15,https://upstash.com,-1420.00
+Eric,Valkey Labs,+14155550199,01915,2026-11-24,https://valkey.io,8940.15
+Evelyn,"Temporal, Inc.",054918273,06830,2026-12-03,https://temporal.io,14210.80
+Frank,Inngest,089123456,02108,2026-12-12,https://inngest.com,-3190.45
+Gabriel,"Resend ""Mail""",+4420812345,07090,2026-12-21,https://resend.com,6420.00
+Grace,WorkOS,019283746,08817,2027-01-04,https://workos.com,18300.50
+Gregory,"Clerk, Inc.",045678912,18E09,2027-01-13,https://clerk.com,9210.33
+Hannah,Auth0,+12065550182,02451,2027-01-22,https://auth0.com,-745.20
+Harold,"Doppler ""Sec""",071829304,03060,2027-02-01,https://doppler.com,11890.00
+Heather,1Password,062738491,05602,2027-02-10,https://1pass.com,16450.75
+Henry,"Bitwarden, Inc.",+4989123456,01701,2027-02-19,https://bitward.en,5340.60
+Isha,Tailscale,039485761,02129,2027-02-28,https://tailscale.io,-2105.90
+Jack,"Pulumi ""Cloud""",084756192,07450,2027-03-08,https://pulumi.com,13780.40
+Jacob,Trigger.dev,+3120890123,06002,2027-03-17,https://trigger.dev,7650.25
+Janet,"Convex, Inc.",029384756,02140,2027-03-26,https://convex.dev,19420.10
+Jason,Tinybird,091827364,33E05,2027-04-04,https://tinybird.co,-4320.80
+Jean,"MotherDuck, Co.",+1650555014,08901,2027-04-13,https://md.com,12890.55
+Jeffrey,Cube Dev,048576912,01085,2027-04-22,https://cube.dev,8410.00
+Jennifer,"Metabase ""BI""",073645182,02111,2027-05-01,https://metabase.io,15120.90
+Jeremy,Hex Tech,+4413149601,07601,2027-05-10,https://hex.tech,-1890.30
+Jessica,"Observable, HQ",056473829,03301,2027-05-19,https://ojs.org,10340.70
+Joan,Evidence BI,018273645,04401,2027-05-28,https://evidence.dev,6780.45
+Joe,"Dagster ""Labs""",+4144500123,06103,2027-06-06,https://dagster.io,17650.00
+John,Prefect,092837465,02135,2027-06-15,https://prefect.io,-3410.20
+Jonathan,"Airbyte, Inc.",037465829,77E03,2027-06-24,https://airbyte.com,14920.85
+Jordan,Fivetran,+1415890123,08608,2027-07-03,https://fivetran.com,21340.00
+Joseph,"dbt Labs ""Core""",064738291,01970,2027-07-12,https://getdbt.com,9870.60
+Judith,Snowflake,081920374,02210,2027-07-21,https://snow.com,-5120.40
+Julia,"Databricks, Inc.",+4930456789,07002,2027-07-30,https://dbricks.com,18760.30
+Julie,Confluent,028374651,03901,2027-08-08,https://kafka.org,11230.50
+Justin,"Redpanda ""Data""",074658293,05446,2027-08-17,https://redpanda.io,13450.75
+Karen,WarpStream,+3318901234,06604,2027-08-26,https://warp.dev,-2760.15
+Katherine,"Buf, Inc.",051928374,02114,2027-09-04,https://buf.build,8910.40
+Kathleen,ConnectRPC,093847561,56E07,2027-09-13,https://connect.io,14320.00
+Keith,"Speakeasy ""API""",+4420345678,07901,2027-09-22,https://speakeasy.co,6540.80
+Kelly,Stainless,017283946,01420,2027-10-01,https://stain.dev,-1190.25
+Kenneth,"Fern, Inc.",063847591,02472,2027-10-10,https://buildwith.io,16890.55
+Kevin,Scalar API,+1617890234,08201,2027-10-19,https://scalar.com,10450.00
+Kimberly,"Mintlify ""Docs""",049182736,03201,2027-10-28,https://mintlify.com,7820.90
+Kyle,ReadMe,082736451,06457,2027-11-06,https://readme.com,-3890.60
+Laura,"GitBook, SAS",+3347210987,02148,2027-11-15,https://gitbook.com,12340.20
+Lauren,Zed Industries,036475829,05001,2027-11-24,https://zed.dev,19870.45
+Lawrence,"Cursor ""Anysph""",075849302,64E02,2027-12-03,https://cursor.com,22150.00
+Megan,Sourcegraph,+1415234567,01103,2027-12-12,https://srcgraph.com,-4560.30
+Melissa,"Codeium, Inc.",029485716,07701,2027-12-21,https://codeium.com,11670.80
+Michael,Continue Dev,094857162,02130,2027-12-30,https://continue.dev,8340.15
+Michelle,"Ollama ""Local""",+4144987654,08401,2028-01-08,https://ollama.com,15490.00
+Abraham,Hugging Face,058392017,03755,2028-01-17,https://hf.co,-1920.75
+Nathan,"Replicate, Inc.",014928375,06320,2028-01-26,https://replicate.co,13980.60
+Nicholas,Modal Labs,+4420711122,02127,2028-02-04,https://modal.com,17210.40
+Nicole,"Baseten ""Infra""",067483920,07102,2028-02-13,https://baseten.co,9450.25
+Noah,Together AI,083920174,29E06,2028-02-22,https://together.ai,-6120.90
+Olivia,"Fireworks, AI",+1650890123,01545,2028-03-02,https://fw.ai,14780.00
+Pamela,Groq Cloud,031928475,02118,2028-03-11,https://groq.com,20450.35
+Patricia,"Mistral ""Paris""",+3314050607,04240,2028-03-20,https://mistral.ai,18120.70
+Patrick,Cohere,079182346,08701,2028-03-29,https://cohere.com,-2840.50
+Paul,"Anthropic, PBC",024857619,06880,2028-04-07,https://claude.ai,24900.00
+Peter,Perplexity,+1415901234,02109,2028-04-16,https://pplx.ai,11340.85
+Philip,"Weights & Biases",091827345,07501,2028-04-25,https://wandb.ai,8760.40
+Rachel,LangChain,047586912,01608,2028-05-04,https://langchain.io,-1540.20
+Raymond,"LlamaIndex, Inc.",+4930876543,03431,2028-05-13,https://llamaindx.ai,13290.65
+Rebecca,Qdrant,062938475,05201,2028-05-22,https://qdrant.tech,9640.00
+Richard,"Weaviate ""Vec""",085746391,02136,2028-05-31,https://weaviate.io,15870.30
+Robert,Pinecone,+1206890123,08102,2028-06-09,https://pinecone.io,-4210.80
+Roger,"Chroma, Inc.",019384752,06702,2028-06-18,https://trychroma.io,7430.50
+Ronald,Milvus Zilliz,053847291,02141,2028-06-27,https://milvus.io,12980.15
+Rose,"LanceDB ""Core""",+4122890123,07201,2028-07-06,https://lancedb.com,16540.90
+Roy,Vespa AI,078493021,01301,2028-07-15,https://vespa.ai,-980.45
+Russell,"Turbopuffer, Inc",034857691,04841,2028-07-24,https://tpuf.io,10890.00
+Ruth,Meilisearch Cloud,+3315544332,02138,2028-08-02,https://meili.dev,14230.75
+Samuel,"Typesense ""Fast""",096748392,06226,2028-08-11,https://typesense.io,8650.20

@@ -288,12 +288,12 @@ export class CsvHandle {
     }
   }
 
-  static formatData(format, rows, pretty = true) {
+  static formatData(format, rows, pretty = true, hasHeader = Boolean(settings.freezeHeaderOnOpen)) {
     if (format === 'csv') return CsvHandle.serializeMatrix(rows);
-    const hasHeader = Boolean(settings.freezeHeaderOnOpen);
     const s = new CsvSerializer(format === 'tsv' ? { delimiter: '\t' } : undefined);
     if (format === 'json') return s.serializeJson(rows, { pretty, hasHeader });
     if (format === 'md') return s.serializeMarkdown(rows, { hasHeader });
+    if (format === 'html') return s.serializeHtml(rows, { hasHeader });
     return s.serialize(rows);
   }
 
@@ -313,7 +313,8 @@ export class CsvHandle {
   async _copyFormatted(message, format) {
     const sheet = getSheet();
     if (!sheet) return;
-    const text = CsvHandle.formatData(format, sheet.getSelectedMatrix());
+    const { matrix, hasHeader } = sheet.getCopyMatrix ? sheet.getCopyMatrix() : { matrix: sheet.getSelectedMatrix(), hasHeader: Boolean(settings.freezeHeaderOnOpen) };
+    const text = CsvHandle.formatData(format, matrix, true, hasHeader);
     if (await copyToClipboard(text)) {
       Notification.quick(message);
     } else if (globalThis.navigator?.clipboard?.writeText) {

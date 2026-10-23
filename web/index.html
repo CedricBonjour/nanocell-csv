@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>__APP_TITLE__</title>
   <meta name="description" content="__APP_DESCRIPTION__">
-  <meta name="keywords" content="csv viewer, csv editor, rfc 4180 csv, view large csv, edit csv online, offline csv editor, fast csv viewer, csv validator, transpose csv, pwa csv, data accuracy">
+  <meta name="keywords" content="csv editor, csv viewer, tsv viewer, open large csv file, edit csv without losing leading zeros, excel csv alternative, rfc 4180 csv validator, clean csv data, offline csv editor, local csv viewer, transpose csv">
   <meta name="author" content="Cedric Bonjour">
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
   <link rel="canonical" href="https://nanocell-csv.com/">
@@ -33,7 +33,7 @@
   <meta property="og:image:type" content="image/webp" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="675" />
-  <meta property="og:image:alt" content="NanoCell CSV Viewer and Editor interface preview" />
+  <meta property="og:image:alt" content="NanoCell CSV Editor &amp; Viewer — 100% verbatim CSV editing without corrupting leading zeros, dates, or phone numbers" />
   <meta property="og:locale" content="en_US" />
 
   <!-- Twitter Card -->
@@ -41,7 +41,7 @@
   <meta name="twitter:title" content="__APP_TITLE__" />
   <meta name="twitter:description" content="__APP_DESCRIPTION__" />
   <meta name="twitter:image" content="__APP_META_IMAGE__" />
-  <meta name="twitter:image:alt" content="NanoCell CSV Viewer and Editor interface preview" />
+  <meta name="twitter:image:alt" content="NanoCell CSV Editor &amp; Viewer — 100% verbatim CSV editing without corrupting leading zeros, dates, or phone numbers" />
 
   <!-- Stylesheet & LCP Hero Image Preload -->
   <link rel="stylesheet" type="text/css" href="/web/theme.css">
@@ -91,6 +91,36 @@
           "name": "Cedric Bonjour",
           "url": "https://CedricBonjour.github.io/"
         }
+      },
+      {
+        "@type": "FAQPage",
+        "@id": "https://nanocell-csv.com/#faq",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "How do I open and edit a CSV file without losing leading zeros, + signs, or date formats?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "NanoCell CSV treats every cell as 100% verbatim text by default. Postal codes like 02138, international phone numbers like +41791234567, ISO dates like 2026-03-04, and 64-bit IDs are never auto-converted or truncated on open or save."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How can I preview a multi-gigabyte CSV file without freezing my computer?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "NanoCell uses O(1) interval sampling in a background Web Worker to preview 5 GB+ CSV and TSV files in milliseconds, displaying the header, evenly spaced sample chunks, and the footer without loading the entire file into RAM."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Is NanoCell CSV private and does it work offline?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. NanoCell runs 100% locally in your browser or as an installable offline Desktop PWA with zero server uploads, zero telemetry, and no admin rights required."
+            }
+          }
+        ]
       }
     ]
   }

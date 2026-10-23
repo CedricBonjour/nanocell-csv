@@ -23,8 +23,8 @@ if (!commitHash) {
 
 const version = (pkg.version || '1.0.0').replace(/^v/, '');
 const appVersion = `${version}-${commitHash}`;
-const appTitle = 'NanoCell — The CSV Editor That Never Corrupts Your Data.';
-const appDescription = 'The open source CSV editor designed for verbatim data accuracy. Standardize data in a single click for import/export workflows and preview multi-gigabyte files in milliseconds.';
+const appTitle = 'NanoCell — Free CSV Editor & Viewer That Never Corrupts Data';
+const appDescription = 'Open, edit, and clean CSV/TSV files keeping leading zeros, + signs, and dates intact. Preview multi-GB files instantly—100% offline, free, and open source.';
 const appMetaImage = 'https://nanocell-csv.com/nanocell_meta_image_banner.webp';
 
 const devServerRoutingPlugin = () => ({

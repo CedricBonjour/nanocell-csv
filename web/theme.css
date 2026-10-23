@@ -1132,6 +1132,32 @@ section:nth-of-type(odd) {
   .footer-grid {
     grid-template-columns: 1fr;
   }
+
+  .corruption-table th:nth-child(1),
+  .corruption-table td:nth-child(1),
+  .corruption-table th:nth-child(2),
+  .corruption-table td:nth-child(2),
+  .matrix-table th:nth-child(1),
+  .matrix-table td:nth-child(1),
+  .matrix-table th:nth-child(4),
+  .matrix-table td:nth-child(4),
+  .matrix-table th:nth-child(5),
+  .matrix-table td:nth-child(5) {
+    display: none;
+  }
+
+  .corruption-table th,
+  .corruption-table td,
+  .matrix-table th,
+  .matrix-table td {
+    padding: 0.75rem 0.85rem;
+    font-size: 0.85rem;
+  }
+
+  .matrix-table th.nanocell-col,
+  .matrix-table td.nanocell-col {
+    border-left: none;
+  }
 }
 
 @media (max-width: 480px) {

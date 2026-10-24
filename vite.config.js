@@ -124,6 +124,36 @@ export default defineConfig(({ command }) => ({
           { src: '/favicon-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
           { src: '/favicon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any' }
         ],
+        screenshots: [
+          {
+            src: '/nanocell-landingpage-screenshot.webp',
+            sizes: '2400x1350',
+            type: 'image/webp',
+            form_factor: 'wide',
+            label: 'NanoCell CSV Editor'
+          },
+          {
+            src: '/nanocell-filter-validation-screenshot.webp',
+            sizes: '2400x1350',
+            type: 'image/webp',
+            form_factor: 'wide',
+            label: 'Column Filtering and Data Validation'
+          },
+          {
+            src: '/nanocell-fuzzy-command-screenshot.webp',
+            sizes: '2400x1350',
+            type: 'image/webp',
+            form_factor: 'wide',
+            label: 'Fuzzy Command Palette'
+          },
+          {
+            src: '/nanocell-macro-finder-screenshot.webp',
+            sizes: '2400x1350',
+            type: 'image/webp',
+            form_factor: 'wide',
+            label: 'Find & Replace and Cleanup Macros'
+          }
+        ],
         lang: "en",
         dir: "ltr",
         categories: [

@@ -152,6 +152,13 @@ export default defineConfig(({ command }) => ({
             type: 'image/webp',
             form_factor: 'wide',
             label: 'Find & Replace and Cleanup Macros'
+          },
+          {
+            src: '/mobile-slash-screenshot.webp',
+            sizes: '1080x1920',
+            type: 'image/webp',
+            form_factor: 'narrow',
+            label: 'NanoCell CSV (Mobile)'
           }
         ],
         lang: "en",

@@ -4,9 +4,11 @@ import { resolve } from 'path';
 import { spawnSync } from 'child_process';
 import { readFileSync, writeFileSync, copyFileSync } from 'fs';
 import { marked } from 'marked';
+import { buildArticles, serveArticleDev, renderAllArticlesGrid } from './article-factory.js';
 
 const p = (f) => resolve(__dirname, f);
 const pkg = JSON.parse(readFileSync(p('package.json'), 'utf-8'));
+const manifestData = JSON.parse(readFileSync(p('manifest.json'), 'utf-8'));
 
 let commitHash = '';
 try {
@@ -26,6 +28,7 @@ const appVersion = `${version}-${commitHash}`;
 const appTitle = 'NanoCell — Free CSV Editor & Viewer That Never Corrupts Data';
 const appDescription = 'Open, edit, and clean CSV/TSV files keeping leading zeros, + signs, and dates intact. Preview multi-GB files instantly—100% offline, free, and open source.';
 const appMetaImage = 'https://nanocell-csv.com/nanocell_meta_image_banner.webp';
+const articleDefaults = { appDescription, appMetaImage };
 
 const devServerRoutingPlugin = () => ({
   name: 'dev-server-routing',
@@ -35,7 +38,10 @@ const devServerRoutingPlugin = () => ({
       const query = req.url && req.url.includes('?') ? '?' + req.url.split('?')[1] : '';
       if (url === '/' || url === '/index.html') {
         req.url = '/web/index.html' + query;
+        next();
+        return;
       }
+      if (serveArticleDev(url, res, articleDefaults)) return;
       next();
     });
   }
@@ -50,6 +56,8 @@ const generateHtmlPlugin = (command) => ({
     const style = '<style>body{max-width:800px;margin:2em auto;font:16px/1.6 sans-serif}</style>';
     const body = `<a href="/">&larr; Home</a>${md('TERMS_OF_USE.md')}<hr>${md('LICENSE.md')}`;
     writeFileSync(p('dist/terms_of_use_and_license.html'), `<!DOCTYPE html>${style}${body}`);
+
+    buildArticles(articleDefaults);
   }
 });
 
@@ -60,7 +68,8 @@ const htmlVersionPlugin = () => ({
       .replace(/__APP_VERSION__/g, appVersion)
       .replace(/__APP_TITLE__/g, appTitle)
       .replace(/__APP_DESCRIPTION__/g, appDescription)
-      .replace(/__APP_META_IMAGE__/g, appMetaImage);
+      .replace(/__APP_META_IMAGE__/g, appMetaImage)
+      .replace(/__ARTICLE_GRID__/g, () => renderAllArticlesGrid(articleDefaults));
   }
 });
 
@@ -97,7 +106,7 @@ export default defineConfig(({ command }) => ({
         cleanupOutdatedCaches: true,
         navigateFallback: null,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,ttf}'],
-        globIgnores: ['**/registerSW.js', '**/dev-dist/**']
+        globIgnores: ['**/registerSW.js', '**/dev-dist/**', '**/article/**', '**/article-assets/**']
       },
 
       // ENABLE PWA IN DEV MODE
@@ -108,87 +117,10 @@ export default defineConfig(({ command }) => ({
       },
 
       manifest: {
-        name: 'NanoCell CSV',
-        short_name: 'NanoCell CSV',
+        ...manifestData,
         description: appDescription,
         theme_color: { toJSON: () => undefined },
-        background_color: undefined,
-        display: 'standalone',
-        orientation: 'portrait',
-        start_url: '/app/home.html',
-        scope: '/',
-        id: '/app/',
-        icons: [
-          { src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
-          { src: '/favicon-96x96.png', sizes: '96x96', type: 'image/png', purpose: 'any' },
-          { src: '/favicon-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-          { src: '/favicon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any' }
-        ],
-        screenshots: [
-          {
-            src: '/nanocell-landingpage-screenshot.webp',
-            sizes: '2400x1350',
-            type: 'image/webp',
-            form_factor: 'wide',
-            label: 'NanoCell CSV Editor'
-          },
-          {
-            src: '/nanocell-filter-validation-screenshot.webp',
-            sizes: '2400x1350',
-            type: 'image/webp',
-            form_factor: 'wide',
-            label: 'Column Filtering and Data Validation'
-          },
-          {
-            src: '/nanocell-fuzzy-command-screenshot.webp',
-            sizes: '2400x1350',
-            type: 'image/webp',
-            form_factor: 'wide',
-            label: 'Fuzzy Command Palette'
-          },
-          {
-            src: '/nanocell-macro-finder-screenshot.webp',
-            sizes: '2400x1350',
-            type: 'image/webp',
-            form_factor: 'wide',
-            label: 'Find & Replace and Cleanup Macros'
-          },
-          {
-            src: '/mobile-slash-screenshot.webp',
-            sizes: '1080x1920',
-            type: 'image/webp',
-            form_factor: 'narrow',
-            label: 'NanoCell CSV (Mobile)'
-          }
-        ],
-        lang: "en",
-        dir: "ltr",
-        categories: [
-          "productivity",
-          "utilities",
-          "business"
-        ],
-        prefer_related_applications: false,
-        related_applications: [
-          {
-            platform: "webapp",
-            url: "/manifest.webmanifest"
-          }
-        ],
-        launch_handler: {
-          client_mode: "auto"
-        },
-        file_handlers: [
-          {
-            action: "/app/home.html",
-            accept: {
-              "text/csv": [
-                ".csv",
-                ".tsv"
-              ]
-            }
-          }
-        ]
+        background_color: undefined
       }
     })
   ]

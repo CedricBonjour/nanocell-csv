@@ -988,6 +988,19 @@ ui-filter {
   padding: 0 4px;
 }
 
+.col-toggle-btn.checked::before {
+  background-color: var(--active);
+}
+
+.col-row .filter-col-title {
+  cursor: pointer;
+}
+
+.col-row.col-disabled ui-num,
+.col-row.col-disabled .filter-col-title {
+  opacity: 0.5;
+}
+
 /* 10. Notification Toasts (<ui-msg>) */
 .ui-toast-card {
   position: relative;

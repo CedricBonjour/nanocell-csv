@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{TITLE}} — NanoCell CSV</title>
+  <meta name="description" content="{{DESCRIPTION}}">
+  <meta name="author" content="Cedric Bonjour">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="canonical" href="{{CANONICAL_URL}}">
+
+  <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" href="/favicon-192x192.png" />
+
+  <meta property="og:title" content="{{TITLE}}" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="NanoCell CSV" />
+  <meta property="og:url" content="{{CANONICAL_URL}}" />
+  <meta property="og:description" content="{{DESCRIPTION}}">
+  <meta property="og:image" content="{{OG_IMAGE}}" />
+  <meta property="og:locale" content="en_US" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="{{TITLE}}" />
+  <meta name="twitter:description" content="{{DESCRIPTION}}" />
+  <meta name="twitter:image" content="{{OG_IMAGE}}" />
+
+  <link rel="stylesheet" type="text/css" href="/web/article-theme.css">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "{{TITLE}}",
+    "description": "{{DESCRIPTION}}",
+    "image": "{{OG_IMAGE}}",
+    "url": "{{CANONICAL_URL}}",
+    "inLanguage": "en-US",
+    "author": {
+      "@type": "Person",
+      "name": "Cedric Bonjour",
+      "url": "https://CedricBonjour.github.io/"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "NanoCell CSV",
+      "url": "https://nanocell-csv.com/"
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "{{CANONICAL_URL}}"
+    }
+  }
+  </script>
+</head>
+<body>
+  <nav class="site-nav" aria-label="Article Navigation">
+    <a class="nav-brand" href="/">
+      <img src="/logo.svg" alt="NanoCell CSV Editor Logo" width="32" height="32" />
+      <span>NanoCell</span>
+      <span class="brand-tag">CSV Editor</span>
+    </a>
+    <div class="nav-actions">
+      <a class="nav-link" href="/">&larr; Home</a>
+      <a class="nav-link hide-mobile" href="#more-articles">Articles</a>
+      <a class="btn" href="/app/home.html" target="_blank" rel="noopener">Launch Editor &rarr;</a>
+    </div>
+  </nav>
+
+  <main class="page-wrap">
+    <article class="article-card">
+      <h1>{{TITLE}}</h1>
+      {{BANNER}}
+      <section class="article-prose">
+        {{BODY}}
+      </section>
+    </article>
+
+    <div class="cta-banner">
+      <h2>Ready to Edit CSVs Without Fear?</h2>
+      <p>Open, validate, and clean CSV files right in your browser—100% offline, zero telemetry, and zero data corruption.</p>
+      <a class="btn btn-lg" href="/app/home.html" target="_blank" rel="noopener">
+        Launch NanoCell CSV Editor &rarr;
+      </a>
+    </div>
+
+    <section class="more-articles" id="more-articles" aria-label="More Articles">
+      <div class="more-articles-header">
+        <span class="section-kicker">Continue Reading</span>
+        <h2>More Articles on CSV Workflows</h2>
+      </div>
+      <div class="more-articles-grid">
+        {{MORE_ARTICLES}}
+      </div>
+    </section>
+  </main>
+
+  <footer class="article-footer">
+    <div class="article-footer-inner">
+      <div>&copy; NanoCell CSV &bull; Free &amp; Open Source CSV Editor</div>
+      <div class="article-footer-links">
+        <a href="/">Home</a>
+        <a href="/app/home.html" target="_blank" rel="noopener">Launch Web App</a>
+        <a href="/terms_of_use_and_license.html">Terms &amp; License</a>
+        <a href="https://github.com/CedricBonjour/nanocell-csv" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

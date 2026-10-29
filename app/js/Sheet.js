@@ -279,6 +279,8 @@ export class Sheet extends BaseElement {
       if (this.isEditing && activeCell && this.inputField.parentNode !== activeCell) {
         activeCell.appendChild(this.inputField);
       }
+      if (this.finder?.isOpen) this.finder.syncColBounds?.(false);
+      if (this.filter?.isOpen) this.filter.syncColBounds?.(false);
       updateFooter(this);
     });
   }
@@ -637,6 +639,8 @@ export class Sheet extends BaseElement {
       this.editSelection(value);
       if (!this.rangeEnd) this.renderCell(this.inputField.parentNode, this.x, this.getRowIndex(this.y));
       else this.refresh();
+      if (this.finder?.isOpen) this.finder.syncColBounds?.(false);
+      if (this.filter?.isOpen) this.filter.syncColBounds?.(false);
     }
     this.cancelEditOnBlur = false;
     this.inputField.remove();

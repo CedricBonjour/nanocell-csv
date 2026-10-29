@@ -6,9 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>__APP_TITLE__</title>
   <meta name="description" content="__APP_DESCRIPTION__">
-  <meta name="keywords" content="csv editor, csv viewer, tsv viewer, open large csv file, edit csv without losing leading zeros, excel csv alternative, rfc 4180 csv validator, clean csv data, offline csv editor, local csv viewer, transpose csv">
+  <meta name="keywords" content="csv editor, csv viewer, tsv viewer, open large csv file, edit csv without losing leading zeros, excel csv alternative, rfc 4180 csv validator, clean csv data, offline csv editor, local csv viewer, transpose csv, sql header sanitizer, csv encoding utf-8 shift-jis">
   <meta name="author" content="Cedric Bonjour">
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <meta name="theme-color" content="#ffffff">
   <link rel="canonical" href="https://nanocell-csv.com/">
 
   <!-- Favicons & Mobile Web App -->
@@ -66,9 +67,14 @@
         "name": "__APP_TITLE__",
         "alternateName": ["NanoCell", "NanoCell CSV", "nanocell-csv"],
         "url": "https://nanocell-csv.com/",
+        "installUrl": "https://nanocell-csv.com/app/home.html",
         "applicationCategory": "DeveloperApplication",
+        "applicationSubCategory": "CSV & Delimited Text Editor",
         "operatingSystem": "All (Web, Windows, macOS, Linux, ChromeOS)",
         "browserRequirements": "Requires Chromium, Firefox, WebKit, or modern browser with HTML5 and Web Worker support",
+        "softwareVersion": "__APP_VERSION__",
+        "isAccessibleForFree": true,
+        "license": "https://nanocell-csv.com/terms_of_use_and_license.html",
         "description": "__APP_DESCRIPTION__",
         "image": "__APP_META_IMAGE__",
         "screenshot": "https://nanocell-csv.com/nanocell-landingpage-screenshot.webp",
@@ -78,13 +84,14 @@
           "priceCurrency": "USD"
         },
         "featureList": [
-          "Instant O(1) preview of multi-gigabyte CSV files",
-          "100% client-side privacy with zero telemetry",
-          "Verbatim text accuracy preserving leading zeros and phone number signs",
-          "RFC 4180 compliant parsing with visual delimiter and quote warnings",
-          "Interactive validation pane and reusable cleanup macros for SQL and data formats",
+          "Instant O(1) preview of multi-gigabyte CSV and TSV files",
+          "100% client-side privacy with zero server uploads and zero telemetry",
+          "Verbatim text accuracy preserving leading zeros, + signs, ISO dates, and 64-bit IDs",
+          "RFC 4180 compliant parsing with auto-detected delimiters and character encodings",
+          "One-click SQL header sanitizer, currency splitter, locale number normalizer, and duplicate row detector",
+          "JSON, GitHub Markdown, and TSV export",
           "Matrix transposition and dynamic row/column shifting",
-          "PWA installable for offline desktop productivity"
+          "Offline-ready Desktop PWA installable without administrator rights"
         ],
         "author": {
           "@type": "Person",
@@ -101,7 +108,7 @@
             "name": "How do I open and edit a CSV file without losing leading zeros, + signs, or date formats?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "NanoCell CSV treats every cell as 100% verbatim text by default. Postal codes like 02138, international phone numbers like +41791234567, ISO dates like 2026-03-04, and 64-bit IDs are never auto-converted or truncated on open or save."
+              "text": "NanoCell CSV treats every cell as 100% verbatim text by default. Postal codes like 02138, international phone numbers like +41 79 123 45 67, ISO dates like 2026-03-04, and 64-bit IDs are never auto-converted or truncated on open or save."
             }
           },
           {
@@ -117,7 +124,23 @@
             "name": "Is NanoCell CSV private and does it work offline?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Yes. NanoCell runs 100% locally in your browser or as an installable offline Desktop PWA with zero server uploads, zero telemetry, and no admin rights required."
+              "text": "Yes. NanoCell runs 100% locally in your browser or as an installable offline Desktop PWA with zero server uploads, zero telemetry, and no network connection required after loading."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How do I install NanoCell on a corporate laptop without admin rights?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Open NanoCell in Chrome, Edge, or Brave and click Install in the top navigation bar. It installs as a standalone desktop application with native OS file associations for .csv and .tsv files—no .exe or .dmg administrator permissions needed."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What delimiters and character encodings are supported?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "NanoCell automatically detects comma (,), semicolon (;), TAB, and pipe (|) delimiters alongside UTF-8, UTF-16LE/BE, Shift-JIS, GB18030, and Windows-1251/1252 encodings when opening a file."
             }
           }
         ]
@@ -138,6 +161,7 @@
     <a class="nav_element hide_tablet" href="#why-nanocell">Why NanoCell</a>
     <a class="nav_element hide_tablet" href="#features">Features</a>
     <a class="nav_element hide_tablet" href="#about">About</a>
+    <a class="nav_element hide_tablet" href="#faq">FAQ</a>
     <a class="nav_element hide_tablet" href="#compare">Compare</a>
     <div class="nav_element" id="gh-star-nav">
       <a class="gh-star-badge" href="https://github.com/CedricBonjour/nanocell-csv" target="_blank" rel="noopener" aria-label="Star NanoCell CSV on GitHub">
@@ -320,48 +344,36 @@
       </div>
     </section>
 
-    <section class="doc-section" id="features">
-      <div class="doc-section-content">
+    <section class="section" id="features">
+      <div class="container">
         <div class="section-header">
           <span class="section-kicker">Core Architecture</span>
           <h2>What NanoCell Does Best</h2>
         </div>
         <div class="essentials-grid">
           <div class="essential-card">
-            <div>
-              <strong>Instant O(1) Large File View</strong>
-              <p>Inspect multi-gigabyte CSV dumps in milliseconds before spinning up Pandas, PySpark, or DuckDB. Samples header, intervals, and footer in a background Web Worker with safe View-Only lock.</p>
-            </div>
+            <strong>Instant O(1) Large File View</strong>
+            <p>Inspect multi-gigabyte CSV dumps in milliseconds before spinning up Pandas, PySpark, or DuckDB. Samples header, intervals, and footer in a background Web Worker with safe View-Only lock.</p>
           </div>
           <div class="essential-card">
-            <div>
-              <strong>100% Client-Side Privacy</strong>
-              <p>Sensitive financial records, healthcare exports, and customer PII never leave your machine. Zero backend servers, zero telemetry, verifiable open-source code, and 100% offline capable.</p>
-            </div>
+            <strong>100% Client-Side Privacy</strong>
+            <p>Sensitive financial records, healthcare exports, and customer PII never leave your machine. Zero backend servers, zero telemetry, verifiable open-source code, and 100% offline capable.</p>
           </div>
           <div class="essential-card">
-            <div>
-              <strong>Verbatim Text Accuracy</strong>
-              <p>Every cell is handled as pure text. Leading zeros, <code>+</code> signs, and exact string literals stay intact. Multi-line clipboard paste maps cleanly without broken wizard dialogs.</p>
-            </div>
+            <strong>Verbatim Text Accuracy</strong>
+            <p>Every cell is handled as pure text. Leading zeros, <code>+</code> signs, and exact string literals stay intact. Multi-line clipboard paste maps cleanly without broken wizard dialogs.</p>
           </div>
           <div class="essential-card">
-            <div>
-              <strong>RFC 4180 Compliance</strong>
-              <p>Built on a strict RFC 4180 state-machine parser with auto-detected encodings (<code>UTF-8</code>, <code>UTF-16</code>, <code>Latin-1</code>) and delimiters (<code>,</code>, <code>;</code>, <code>TAB</code>, <code>|</code>). Optionally enforces strict delimiter-safe saves.</p>
-            </div>
+            <strong>RFC 4180 Compliance</strong>
+            <p>Built on a strict RFC 4180 state-machine parser with auto-detected encodings (<code>UTF-8</code>, <code>UTF-16</code>, <code>Latin-1</code>) and delimiters (<code>,</code>, <code>;</code>, <code>TAB</code>, <code>|</code>). Optionally enforces strict delimiter-safe saves.</p>
           </div>
           <div class="essential-card">
-            <div>
-              <strong>Import-Ready in One Click</strong>
-              <p>Turn messy vendor exports into clean database tables instantly. Fix dirty headers, locale numbers, and dates individually—or run your own multi-step cleanup macro in a single keystroke.</p>
-            </div>
+            <strong>Import-Ready in One Click</strong>
+            <p>Turn messy vendor exports into clean database tables instantly. Fix dirty headers, locale numbers, and dates individually—or run your own multi-step cleanup macro in a single keystroke.</p>
           </div>
           <div class="essential-card">
-            <div>
-              <strong>Install Anywhere</strong>
-              <p>Locked corporate laptop where <code>.exe</code> and <code>.dmg</code> installers are blocked by IT? Install NanoCell as a standalone desktop PWA in one click with native OS file associations.</p>
-            </div>
+            <strong>Install Anywhere</strong>
+            <p>Locked corporate laptop where <code>.exe</code> and <code>.dmg</code> installers are blocked by IT? Install NanoCell as a standalone desktop PWA in one click with native OS file associations.</p>
           </div>
         </div>
       </div>
@@ -382,303 +394,120 @@
       </div>
     </section>
 
+    <!-- ================= FAQ & ARTICLES ================= -->
+    <section class="section" id="faq">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-kicker">FAQ &amp; Guides</span>
+          <h2>Frequently Asked Questions</h2>
+          <p>
+            Common questions about verbatim CSV editing, large-file previews, and data cleanup workflows.
+          </p>
+        </div>
+
+        <div class="faq-list">
+          <div class="faq-item">
+            <div class="faq-question">How do I open and edit a CSV file without losing leading zeros, <code>+</code> signs, or date formats?</div>
+            <div class="faq-body">
+              <div class="faq-body-inner">
+                <p>NanoCell CSV treats every cell as 100% verbatim text by default. Postal codes like <code>02138</code>, international phone numbers like <code>+41 79 123 45 67</code>, ISO dates like <code>2026-03-04</code>, and 64-bit IDs are never auto-converted or truncated on open or save.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-question">How can I preview a multi-gigabyte CSV file without freezing my computer?</div>
+            <div class="faq-body">
+              <div class="faq-body-inner">
+                <p>NanoCell uses <code>O(1)</code> interval sampling in a background Web Worker to preview 5 GB+ CSV and TSV files in milliseconds, displaying the header, evenly spaced sample chunks, and the footer without loading the entire file into RAM.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-question">Is NanoCell CSV private and does it work offline?</div>
+            <div class="faq-body">
+              <div class="faq-body-inner">
+                <p>Yes. NanoCell runs 100% locally in your browser or as an installable offline Desktop PWA with zero server uploads, zero telemetry, and no network connection required after loading.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-question">How do I install NanoCell on a corporate laptop without admin rights?</div>
+            <div class="faq-body">
+              <div class="faq-body-inner">
+                <p>Open NanoCell in Chrome, Edge, or Brave and click <strong>Install</strong> in the top navigation bar. It installs as a standalone desktop application with native OS file associations for <code>.csv</code> and <code>.tsv</code> files—no <code>.exe</code> or <code>.dmg</code> administrator permissions needed.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-question">What delimiters and character encodings are supported?</div>
+            <div class="faq-body">
+              <div class="faq-body-inner">
+                <p>NanoCell automatically detects comma (<code>,</code>), semicolon (<code>;</code>), <code>TAB</code>, and pipe (<code>|</code>) delimiters alongside <code>UTF-8</code>, <code>UTF-16LE/BE</code>, <code>Shift-JIS</code>, <code>GB18030</code>, and <code>Windows-1251/1252</code> encodings when opening a file.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-articles">
+          <div class="articles-carousel-viewport">
+            <div class="more-articles-grid" id="articles-track">
+              __ARTICLE_GRID__
+            </div>
+          </div>
+          <div class="articles-carousel-nav" id="articles-nav" aria-label="Article slides">
+            <button type="button" class="carousel-btn" id="articles-prev" aria-label="Previous articles">&lsaquo;</button>
+            <div class="carousel-dots" id="articles-dots"></div>
+            <button type="button" class="carousel-btn" id="articles-next" aria-label="Next articles">&rsaquo;</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- THE STANDARD ESSENTIALS & POWER TOOLS -->
-    <section class="doc-section" id="essentials">
-      <div class="doc-section-content">
+    <section class="section" id="essentials">
+      <div class="container">
         <div class="section-header">
           <span class="section-kicker">Complete Feature Arsenal</span>
           <h2>The Standard Essentials &amp; Power Tools</h2>
         </div>
 
         <div class="essentials-grid">
-          <!-- 1. SQL Header Sanitizer -->
-          <div class="essential-card">
-            <div>
-              <strong>SQL Header Sanitizer</strong>
-              <p>Converts column headers to lowercase <code>snake_case</code>, strips accents, prefixes leading digits, and disambiguates duplicate names.</p>
-            </div>
-            <div class="card-keys">
-              <span>Shortcut:</span> <kbd class="key">Ctrl</kbd>+<kbd class="key">Shift</kbd>+<kbd class="key">H</kbd>
-            </div>
-          </div>
+          <!-- TIER 1: Top Selling Points (Desktop, Tablet & Phone) -->
+          <div class="essential-item tier-1">SQL Header Sanitizer</div>
+          <div class="essential-item tier-1">Currency &amp; ISO-4217 Splitter</div>
+          <div class="essential-item tier-1">Locale &amp; Accounting Numbers</div>
+          <div class="essential-item tier-1">RFC 4180 Field Sanitizers</div>
+          <div class="essential-item tier-1">Duplicate Row Detector</div>
+          <div class="essential-item tier-1">Null &amp; Error Cleaner</div>
+          <div class="essential-item tier-1">Smart Cell Highlighting</div>
+          <div class="essential-item tier-1">Auto Encoding Detection</div>
+          <div class="essential-item tier-1">JSON, Markdown &amp; TSV Export</div>
 
-          <!-- 2. Command Palette -->
-          <div class="essential-card">
-            <div>
-              <strong>Fuzzy Command Palette</strong>
-              <p>Developer-style quick launcher. Access every setting, formatter, and transformation via instant keyboard fuzzy search.</p>
-            </div>
-            <div class="card-keys">
-              <span>Shortcuts:</span> <kbd class="key">Ctrl</kbd>+<kbd class="key">K</kbd> or <kbd class="key">Ctrl</kbd>+<kbd class="key">P</kbd>
-            </div>
-          </div>
+          <!-- TIER 2: Strong Power Tools (Desktop & Tablet) -->
+          <div class="essential-item tier-2">Strict RFC 4180 Save Guard</div>
+          <div class="essential-item tier-2">Matrix Transposition</div>
+          <div class="essential-item tier-2">Fuzzy Command Palette</div>
+          <div class="essential-item tier-2">Auto Delimiter Detection</div>
+          <div class="essential-item tier-2">Series Auto-Expansion</div>
+          <div class="essential-item tier-2">Column Filter</div>
+          <div class="essential-item tier-2">In-Place Number Rounding</div>
+          <div class="essential-item tier-2">Row/Col Shift &amp; 4-Way Insert</div>
+          <div class="essential-item tier-2">Empty Row &amp; Col Trimmer</div>
 
-          <!-- 3. Auto Encoding & Delimiter Detection -->
-          <div class="essential-card">
-            <div>
-              <strong>Auto Encoding &amp; Delimiter Detection</strong>
-              <p>Automatically detects <code>,</code>, <code>;</code>, <code>TAB</code>, and <code>|</code> delimiters alongside <code>UTF-8</code>, <code>UTF-16LE/BE</code>, <code>Shift-JIS</code>, <code>GB18030</code>, and <code>Windows-1251/1252</code> encodings.</p>
-            </div>
-            <div class="card-keys">
-              <span>Mode:</span> Automatic on file open
-            </div>
-          </div>
-
-          <!-- 4. Find & Bulk Replace -->
-          <div class="essential-card">
-            <div>
-              <strong>Find &amp; Bulk Replace</strong>
-              <p>Search cells with live match counters and case sensitivity, or bulk-replace all occurrences across the sheet in one undoable step.</p>
-            </div>
-            <div class="card-keys">
-              <span>Shortcuts:</span> <kbd class="key">Ctrl</kbd>+<kbd class="key">F</kbd> / <kbd class="key">Ctrl</kbd>+<kbd class="key">Shift</kbd>+<kbd class="key">F</kbd>
-            </div>
-          </div>
-
-          <!-- 5. JSON, Markdown & TSV Export -->
-          <div class="essential-card">
-            <div>
-              <strong>JSON, Markdown &amp; TSV Export</strong>
-              <p>Export the full sheet or copy your active selection to the clipboard as pretty-printed JSON objects, GitHub Markdown tables, or TSV.</p>
-            </div>
-            <div class="card-keys">
-              <span>Command Palette:</span> <kbd class="key">Ctrl</kbd>+<kbd class="key">K</kbd> or <kbd class="key">Ctrl</kbd>+<kbd class="key">P</kbd>
-            </div>
-          </div>
-
-          <!-- 6. Shift & 4-Way Insert -->
-          <div class="essential-card">
-            <div>
-              <strong>Row/Col Shift &amp; 4-Way Insert</strong>
-              <p>Move rows and columns dynamically, or insert new rows and columns in any direction without cutting or shifting cells manually.</p>
-            </div>
-            <div class="card-keys">
-              <span>Shortcuts:</span> <kbd class="key">Alt</kbd>+<kbd class="key">↑↓←→</kbd> &bull; <kbd class="key">Alt</kbd>+<kbd class="key">Shift</kbd>+<kbd class="key">↑↓←→</kbd>
-            </div>
-          </div>
+          <!-- TIER 3: Standard Essentials (Desktop Only) -->
+          <div class="essential-item tier-3">Find &amp; Bulk Replace</div>
+          <div class="essential-item tier-3">Occurrence Jump</div>
+          <div class="essential-item tier-3">Fast Column Sorting</div>
+          <div class="essential-item tier-3">Freeze Header Row</div>
+          <div class="essential-item tier-3">Coordinate Jumper</div>
+          <div class="essential-item tier-3">Instant Date Stamp</div>
+          <div class="essential-item tier-3">Multi-Step Undo &amp; Redo</div>
+          <div class="essential-item tier-3">7 Built-In Themes</div>
         </div>
-
-        <div class="more-tips-container">
-          <button class="more-tips-toggle" type="button" aria-expanded="false">
-            <span>More</span>
-            <span class="chevron">▾</span>
-          </button>
-          <div class="more-tips-content">
-            <div class="more-tips-inner">
-              <div class="essentials-grid">
-                <!-- 7. Currency & ISO-4217 Splitter -->
-                <div class="essential-card">
-                  <div>
-                    <strong>Currency &amp; ISO-4217 Splitter</strong>
-                    <p>Extracts 40+ currency symbols and codes, formats numbers to 2 decimals, and splits ISO-4217 codes (<code>USD</code>, <code>EUR</code>, <code>CHF</code>) into a new column.</p>
-                  </div>
-                  <div class="card-keys">
-                    <span>Validation Pane:</span> <kbd class="key">Ctrl</kbd>+<kbd class="key">Shift</kbd>+<kbd class="key">P</kbd>
-                  </div>
-                </div>
-
-                <!-- 8. Transpose -->
-                <div class="essential-card">
-                  <div>
-                    <strong>Matrix Transposition</strong>
-                    <p>Pivots selected rows into columns and columns into rows. Ideal for re-orienting horizontal metric summaries for SQL ingestion.</p>
-                  </div>
-                  <div class="card-keys">
-                    <span>Shortcut:</span> <kbd class="key">Ctrl</kbd>+<kbd class="key">Shift</kbd>+<kbd class="key">T</kbd>
-                  </div>
-                </div>
-
-                <!-- 9. Locale & Accounting Numbers -->
-                <div class="essential-card">
-                  <div>
-                    <strong>Locale &amp; Accounting Numbers</strong>
-                    <p>Normalizes US/EU thousand separators, decimal commas (<code>1.234,56</code>), Swiss dash cents (<code>1'234.–</code>), and accounting negatives <code>(45.00)</code>.</p>
-                  </div>
-                  <div class="card-keys">
-                    <span>Validation Pane:</span> <kbd class="key">Ctrl</kbd>+<kbd class="key">Shift</kbd>+<kbd class="key">P</kbd>
-                  </div>
-                </div>
-
-                <!-- 10. Duplicate Row Detector -->
-                <div class="essential-card">
-                  <div>
-                    <strong>Duplicate Row Detector</strong>
-                    <p>Scans the sheet for exact duplicate records, links each duplicate to its original row for comparison, and removes them in one undoable step.</p>
-                  </div>
-                  <div class="card-keys">
-                    <span>Validation Pane:</span> <kbd class="key">Ctrl</kbd>+<kbd class="key">Shift</kbd>+<kbd class="key">P</kbd>
-                  </div>
-                </div>
-
-                <!-- 11. Null & Error Cleaner -->
-                <div class="essential-card">
-                  <div>
-                    <strong>Null &amp; Error Cleaner</strong>
-                    <p>Clears placeholder tokens and broken spreadsheet formula errors (<code>NULL</code>, <code>N/A</code>, <code>#N/A</code>, <code>NaN</code>, <code>None</code>, <code>#REF!</code>, <code>#VALUE!</code>) to empty cells.</p>
-                  </div>
-                  <div class="card-keys">
-                    <span>Validation Pane:</span> <kbd class="key">Ctrl</kbd>+<kbd class="key">Shift</kbd>+<kbd class="key">P</kbd>
-                  </div>
-                </div>
-
-                <!-- 12. Smart Cell Highlighting -->
-                <div class="essential-card">
-                  <div>
-                    <strong>Smart Cell Highlighting</strong>
-                    <p>Color-codes numbers, ISO dates, and clickable URLs (<kbd class="key">Ctrl</kbd>+Click), while warning on cells with hidden quotes, commas, or line breaks.</p>
-                  </div>
-                  <div class="card-keys">
-                    <span>Configure:</span> Settings (<kbd class="key">Ctrl</kbd>+<kbd class="key">,</kbd>)
-                  </div>
-                </div>
-
-                <!-- 13. Series Auto-Expansion -->
-                <div class="essential-card">
-                  <div>
-                    <strong>Series Auto-Expansion</strong>
-                    <p>Select your starting seed row and highlight rows below. Press <kbd class="key">Ctrl</kbd>+<kbd class="key">E</kbd> to project numeric or <code>YYYY-MM-DD</code> date progressions across the range.</p>
-                  </div>
-                  <div class="card-keys">
-                    <span>Shortcut:</span> <kbd class="key">Ctrl</kbd>+<kbd class="key">E</kbd>
-                  </div>
-                </div>
-
-                <!-- 14. RFC 4180 Field Sanitizers -->
-                <div class="essential-card">
-                  <div>
-                    <strong>RFC 4180 Field Sanitizers</strong>
-                    <p>Purges zero-width characters, trims whitespace, and replaces embedded line returns (<code>|</code>), double quotes (<code>'</code>), or text commas.</p>
-                  </div>
-                  <div class="card-keys">
-                    <span>Validation Pane:</span> <kbd class="key">Ctrl</kbd>+<kbd class="key">Shift</kbd>+<kbd class="key">P</kbd>
-                  </div>
-                </div>
-
-                <!-- 15. Strict RFC 4180 Save Guard -->
-                <div class="essential-card">
-                  <div>
-                    <strong>Strict RFC 4180 Save Guard</strong>
-                    <p>Enforce strict delimiter compliance on save by blocking unescaped commas, double quotes, or line breaks, with optional fixed-width padding.</p>
-                  </div>
-                  <div class="card-keys">
-                    <span>Configure:</span> Settings (<kbd class="key">Ctrl</kbd>+<kbd class="key">,</kbd>)
-                  </div>
-                </div>
-
-                <!-- 16. Column Filter -->
-                <div class="essential-card">
-                  <div>
-                    <strong>Column Filter</strong>
-                    <p>Filter rows by substring or case-sensitive match on any column with a live match-count badge and automatic edit lock for safety.</p>
-                  </div>
-                  <div class="card-keys">
-                    <span>Shortcut:</span> <kbd class="key">Ctrl</kbd>+<kbd class="key">Q</kbd>
-                  </div>
-                </div>
-
-                <!-- 17. Occurrence Jump -->
-                <div class="essential-card">
-                  <div>
-                    <strong>Occurrence Jump</strong>
-                    <p>Jump straight to the next or previous cell matching the active cell's exact value without typing into a search box.</p>
-                  </div>
-                  <div class="card-keys">
-                    <span>Shortcuts:</span> <kbd class="key">Ctrl</kbd>+<kbd class="key">D</kbd> / <kbd class="key">Ctrl</kbd>+<kbd class="key">Shift</kbd>+<kbd class="key">D</kbd>
-                  </div>
-                </div>
-
-                <!-- 18. Number Rounding -->
-                <div class="essential-card">
-                  <div>
-                    <strong>In-Place Number Rounding</strong>
-                    <p>Round noisy floating-point calculations directly in the cells. No formula column writing or copy-paste-values needed.</p>
-                  </div>
-                  <div class="card-keys">
-                    <span>Shortcuts:</span> <kbd class="key">Ctrl</kbd>+<kbd class="key">I</kbd> <em>(Int)</em> &bull; <kbd class="key">Ctrl</kbd>+<kbd class="key">$</kbd> <em>(2 Dec)</em>
-                  </div>
-                </div>
-
-                <!-- 19. Coordinate Jumper -->
-                <div class="essential-card">
-                  <div>
-                    <strong>Coordinate Jumper</strong>
-                    <p>Jump directly to any <code>Col:Row</code> coordinate via keyboard or by clicking the footer position indicator, with live selection size (<code>W&times;H</code>).</p>
-                  </div>
-                  <div class="card-keys">
-                    <span>Shortcut:</span> <kbd class="key">Ctrl</kbd>+<kbd class="key">G</kbd>
-                  </div>
-                </div>
-
-                <!-- 20. Empty Row/Col Trimmer -->
-                <div class="essential-card">
-                  <div>
-                    <strong>Empty Row &amp; Col Trimmer</strong>
-                    <p>Clean up bloated export files by automatically removing all trailing blank rows and columns.</p>
-                  </div>
-                  <div class="card-keys">
-                    <span>Shortcut:</span> <kbd class="key">Ctrl</kbd>+<kbd class="key">Alt</kbd>+<kbd class="key">T</kbd>
-                  </div>
-                </div>
-
-                <!-- 21. Instant Date Stamp -->
-                <div class="essential-card">
-                  <div>
-                    <strong>Instant Date Stamp</strong>
-                    <p>Stamps today's date formatted as universal ISO <code>YYYY-MM-DD</code> directly into the active cell or selection.</p>
-                  </div>
-                  <div class="card-keys">
-                    <span>Shortcut:</span> <kbd class="key">Ctrl</kbd>+<kbd class="key">;</kbd>
-                  </div>
-                </div>
-
-                <!-- 22. Column Sorting -->
-                <div class="essential-card">
-                  <div>
-                    <strong>Fast Column Sorting</strong>
-                    <p>Sort rows ascending or descending based on the active column while safely preserving the pinned header row.</p>
-                  </div>
-                  <div class="card-keys">
-                    <span>Shortcuts:</span> <kbd class="key">Ctrl</kbd>+<kbd class="key">L</kbd> / <kbd class="key">Ctrl</kbd>+<kbd class="key">Shift</kbd>+<kbd class="key">L</kbd>
-                  </div>
-                </div>
-
-                <!-- 23. Freeze Header -->
-                <div class="essential-card">
-                  <div>
-                    <strong>Freeze Header Row</strong>
-                    <p>Lock your column titles at the top with a single keystroke. Scroll through thousands of records without losing column context.</p>
-                  </div>
-                  <div class="card-keys">
-                    <span>Shortcut:</span> <kbd class="key">Ctrl</kbd>+<kbd class="key">B</kbd>
-                  </div>
-                </div>
-
-                <!-- 24. Undo & Redo -->
-                <div class="essential-card">
-                  <div>
-                    <strong>Multi-Step Undo &amp; Redo</strong>
-                    <p>Full transaction history with single-step rollback for batch validations and matrix transformations.</p>
-                  </div>
-                  <div class="card-keys">
-                    <span>Shortcuts:</span> <kbd class="key">Ctrl</kbd>+<kbd class="key">Z</kbd> / <kbd class="key">Ctrl</kbd>+<kbd class="key">Y</kbd>
-                  </div>
-                </div>
-
-                <!-- 25. 7 Built-in Themes -->
-                <div class="essential-card">
-                  <div>
-                    <strong>7 Built-In Themes</strong>
-                    <p>Nord, Light, Slate, Dark, Solarized, Night, and Dracula available in the settings dialog.</p>
-                  </div>
-                  <div class="card-keys">
-                    <span>Shortcut:</span> Settings (<kbd class="key">Ctrl</kbd>+<kbd class="key">,</kbd>)
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
       </div>
     </section>
 
@@ -778,22 +607,16 @@
 
         <div class="essentials-grid">
           <div class="essential-card">
-            <div>
-              <strong>Star &amp; Share with Your Team</strong>
-              <p>Star the repository on <a href="https://github.com/CedricBonjour/nanocell-csv" target="_blank" rel="noopener">GitHub</a> and share NanoCell with teammates tired of Excel corrupting their CSV exports.</p>
-            </div>
+            <strong>Star &amp; Share with Your Team</strong>
+            <p>Star the repository on <a href="https://github.com/CedricBonjour/nanocell-csv" target="_blank" rel="noopener">GitHub</a> and share NanoCell with teammates tired of Excel corrupting their CSV exports.</p>
           </div>
           <div class="essential-card">
-            <div>
-              <strong>Submit Tricky CSV Edge Cases</strong>
-              <p>Have a malformed CSV with wild escaping, odd encodings, or unusual delimiters? Open an issue on the <a href="https://github.com/CedricBonjour/nanocell-csv/issues/new" target="_blank" rel="noopener">GitHub issue tracker</a>.</p>
-            </div>
+            <strong>Submit Tricky CSV Edge Cases</strong>
+            <p>Have a malformed CSV with wild escaping, odd encodings, or unusual delimiters? Open an issue on the <a href="https://github.com/CedricBonjour/nanocell-csv/issues/new" target="_blank" rel="noopener">GitHub issue tracker</a>.</p>
           </div>
           <div class="essential-card">
-            <div>
-              <strong>Request Validation Rules &amp; Macros</strong>
-              <p>Need a new domain-specific sanitizer or export target? Suggest new transforms on <a href="https://github.com/CedricBonjour/nanocell-csv/issues" target="_blank" rel="noopener">GitHub Discussions &amp; Issues</a>.</p>
-            </div>
+            <strong>Request Validation Rules &amp; Macros</strong>
+            <p>Need a new domain-specific sanitizer or export target? Suggest new transforms on <a href="https://github.com/CedricBonjour/nanocell-csv/issues" target="_blank" rel="noopener">GitHub Discussions &amp; Issues</a>.</p>
           </div>
         </div>
 
@@ -839,6 +662,7 @@
 
           <div class="footer-col">
             <strong>Resources</strong>
+            <a href="#faq">FAQ &amp; Articles</a>
             <a href="/terms_of_use_and_license.html">Terms of Use &amp; License</a>
             <a href="https://github.com/CedricBonjour/nanocell-csv/issues/new" target="_blank" rel="noopener">Report a Bug</a>
             <a href="https://github.com/CedricBonjour/nanocell-csv" target="_blank" rel="noopener">GitHub Repository</a>
@@ -866,7 +690,7 @@
     registerSW({ immediate: true });
 
     const installContainer = document.getElementById('install');
-    const installButton = document.getElementById('install-btn') || installContainer?.querySelector('a, button');
+    const installButton = document.getElementById('install-btn');
     const testBrowserNav = document.getElementById('test-browser-nav');
 
     let hintTimer = null;
@@ -882,10 +706,8 @@
         installContainer.appendChild(hint);
       }
       hint.classList.add('visible');
-      if (hintTimer) clearTimeout(hintTimer);
-      hintTimer = setTimeout(() => {
-        hint.classList.remove('visible');
-      }, 5000);
+      clearTimeout(hintTimer);
+      hintTimer = setTimeout(() => hint.classList.remove('visible'), 5000);
     }
 
     pwa.subscribe((state) => {
@@ -893,7 +715,6 @@
         window.location.replace('/app/home.html');
         return;
       }
-
       if (!installButton) return;
 
       if (state.status === 'installed') {
@@ -926,7 +747,6 @@
         return;
       }
 
-      // 'installable-prompt' or 'installable-manual'
       if (testBrowserNav) testBrowserNav.style.display = '';
       installButton.removeAttribute('aria-disabled');
       installButton.removeAttribute('href');
@@ -934,39 +754,31 @@
       installButton.textContent = 'Install';
     });
 
-    if (installButton) {
-      installButton.addEventListener('click', async (e) => {
-        const state = pwa.getState();
-        if (state.isInstalled) {
-          // Allow native <a href="/app/home.html" target="_blank" rel="noopener"> navigation
-          // so the browser's PWA link handler launches the standalone app window.
-          return;
-        }
-        e.preventDefault();
-        if (!state.canInstall) return;
+    installButton?.addEventListener('click', async (e) => {
+      const state = pwa.getState();
+      if (state.isInstalled) return;
+      e.preventDefault();
+      if (!state.canInstall) return;
 
-        const outcome = await pwa.promptInstall();
-        if (outcome === 'accepted') {
-          window.location.replace('/app/home.html');
-        } else if (outcome === 'manual') {
-          showWebInstallHint();
-        }
-      });
-    }
+      const outcome = await pwa.promptInstall();
+      if (outcome === 'accepted') {
+        window.location.replace('/app/home.html');
+      } else if (outcome === 'manual') {
+        showWebInstallHint();
+      }
+    });
 
     if (env.isMac) {
       document.querySelectorAll('kbd.key').forEach(k => {
-        if (k.textContent.trim() === 'Ctrl') {
-          k.textContent = '⌘';
-        }
+        if (k.textContent.trim() === 'Ctrl') k.textContent = '⌘';
       });
     }
 
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-      anchor.addEventListener('click', function (e) {
-        const href = this.getAttribute('href');
+      anchor.addEventListener('click', (e) => {
+        const href = anchor.getAttribute('href');
         if (!href || href.length < 2) return;
-        const targetElement = document.getElementById(href.substring(1));
+        const targetElement = document.getElementById(href.slice(1));
         if (targetElement) {
           e.preventDefault();
           targetElement.scrollIntoView({ behavior: 'smooth' });
@@ -974,11 +786,12 @@
       });
     });
 
-    document.getElementById('email')?.addEventListener('click', async () => {
+    const emailEl = document.getElementById('email');
+    emailEl?.addEventListener('click', async () => {
       const toast = document.getElementById('copy_toast');
       try {
         if (navigator.clipboard?.writeText) {
-          await navigator.clipboard.writeText(document.getElementById('email').innerText.trim());
+          await navigator.clipboard.writeText(emailEl.innerText.trim());
           toast.style.transition = 'none';
           toast.style.opacity = '1';
           void toast.offsetWidth;
@@ -992,14 +805,70 @@
       }
     });
 
-    document.querySelectorAll('.more-tips-toggle').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const content = btn.nextElementSibling;
-        const isExpanded = btn.classList.toggle('active');
-        btn.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
-        content?.classList.toggle('open', isExpanded);
+    const faqItems = Array.from(document.querySelectorAll('#faq .faq-item'));
+    faqItems.forEach(item => {
+      item.addEventListener('click', () => {
+        const willOpen = !item.classList.contains('open');
+        faqItems.forEach(other => {
+          if (other !== item) other.classList.remove('open');
+        });
+        item.classList.toggle('open', willOpen);
       });
     });
+
+    const articlesTrack = document.getElementById('articles-track');
+    const articlesDots = document.getElementById('articles-dots');
+    const prevBtn = document.getElementById('articles-prev');
+    const nextBtn = document.getElementById('articles-next');
+    if (articlesTrack && articlesDots) {
+      const cards = Array.from(articlesTrack.querySelectorAll('.article-link-card'));
+      let currentPage = 0;
+      let pageCount = 1;
+
+      const getPerView = () => {
+        const raw = getComputedStyle(articlesTrack).getPropertyValue('--cards-per-view');
+        return Math.max(1, parseInt(raw, 10) || 3);
+      };
+
+      const renderCarousel = () => {
+        const perView = getPerView();
+        pageCount = Math.max(1, Math.ceil(cards.length / perView));
+        if (currentPage >= pageCount) currentPage = pageCount - 1;
+        articlesTrack.style.setProperty('--carousel-page', String(currentPage));
+
+        if (articlesDots.childElementCount !== pageCount) {
+          articlesDots.textContent = '';
+          for (let i = 0; i < pageCount; i++) {
+            const dot = document.createElement('button');
+            dot.type = 'button';
+            dot.className = 'carousel-dot';
+            dot.setAttribute('aria-label', `Page ${i + 1}`);
+            dot.addEventListener('click', () => {
+              currentPage = i;
+              renderCarousel();
+            });
+            articlesDots.appendChild(dot);
+          }
+        }
+
+        Array.from(articlesDots.children).forEach((dot, idx) => {
+          dot.classList.toggle('active', idx === currentPage);
+        });
+      };
+
+      prevBtn?.addEventListener('click', () => {
+        currentPage = (currentPage - 1 + pageCount) % pageCount;
+        renderCarousel();
+      });
+
+      nextBtn?.addEventListener('click', () => {
+        currentPage = (currentPage + 1) % pageCount;
+        renderCarousel();
+      });
+
+      renderCarousel();
+      window.addEventListener('resize', renderCarousel);
+    }
 
     const versionEl = document.getElementById('footer-version');
     const version = (versionEl && versionEl.textContent.trim()) || '__APP_VERSION__';

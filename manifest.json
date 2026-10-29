@@ -1,0 +1,81 @@
+{
+  "name": "NanoCell CSV",
+  "short_name": "NanoCell CSV",
+  "description": "Open, edit, and clean CSV/TSV files keeping leading zeros, + signs, and dates intact. Preview multi-GB files instantly—100% offline, free, and open source.",
+  "display": "standalone",
+  "orientation": "portrait",
+  "start_url": "/app/home.html",
+  "scope": "/",
+  "id": "/app/",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/favicon-96x96.png", "sizes": "96x96", "type": "image/png", "purpose": "any" },
+    { "src": "/favicon-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/favicon-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ],
+  "screenshots": [
+    {
+      "src": "/nanocell-landingpage-screenshot.webp",
+      "sizes": "2400x1350",
+      "type": "image/webp",
+      "form_factor": "wide",
+      "label": "NanoCell CSV Editor"
+    },
+    {
+      "src": "/nanocell-filter-validation-screenshot.webp",
+      "sizes": "2400x1350",
+      "type": "image/webp",
+      "form_factor": "wide",
+      "label": "Column Filtering and Data Validation"
+    },
+    {
+      "src": "/nanocell-fuzzy-command-screenshot.webp",
+      "sizes": "2400x1350",
+      "type": "image/webp",
+      "form_factor": "wide",
+      "label": "Fuzzy Command Palette"
+    },
+    {
+      "src": "/nanocell-macro-finder-screenshot.webp",
+      "sizes": "2400x1350",
+      "type": "image/webp",
+      "form_factor": "wide",
+      "label": "Find & Replace and Cleanup Macros"
+    },
+    {
+      "src": "/mobile-slash-screenshot.webp",
+      "sizes": "1080x1920",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "NanoCell CSV (Mobile)"
+    }
+  ],
+  "lang": "en",
+  "dir": "ltr",
+  "categories": [
+    "productivity",
+    "utilities",
+    "business"
+  ],
+  "prefer_related_applications": false,
+  "related_applications": [
+    {
+      "platform": "webapp",
+      "url": "/manifest.webmanifest"
+    }
+  ],
+  "launch_handler": {
+    "client_mode": "auto"
+  },
+  "file_handlers": [
+    {
+      "action": "/app/home.html",
+      "accept": {
+        "text/csv": [
+          ".csv",
+          ".tsv"
+        ]
+      }
+    }
+  ]
+}

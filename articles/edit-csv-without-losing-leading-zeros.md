@@ -1,6 +1,6 @@
-<!-- https://nanocell-csv.com/nanocell-landingpage-screenshot.webp -->
+# Edit CSV Files Without Losing Leading Zeros or Dates
 
-# How to Edit a CSV File Without Losing Leading Zeros, Dates, or Phone Numbers
+![csv file in nanocell screenshot](/nanocell-landingpage-screenshot.webp)
 
 > Traditional spreadsheets silently strip leading zeros from ZIP codes, convert long IDs into scientific notation, and rewrite ISO dates the moment you open a CSV. Here is why it happens—and how to edit CSV files with 100% verbatim text accuracy in NanoCell CSV.
 

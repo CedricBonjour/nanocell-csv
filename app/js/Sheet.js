@@ -6,17 +6,83 @@
 
 import { Dataframe, orderRange, isUrl, isIsoDate } from '../core/Dataframe.js';
 import { CsvParser, CsvSerializer, SeparatorDetector } from '../core/Csv.js';
-import { getSheet, setSheet, Setting, settings } from './state.js';
-import { BaseElement, defineEl, formatCellHtml, getTodayIsoDate } from './utils.js';
-import { dom, updateFooter } from './AppLayout.js';
-import { Scroller, refreshScrollbars } from './Scroller.js';
+import { dom, getSheet, setSheet, Setting, settings } from './state.js';
+import { defineEl, formatCellHtml, getTodayIsoDate, clamp } from './utils.js';
+import { updateFooter } from './AppLayout.js';
 import { FinderDialog, FilterDialog } from './SheetOverlays.js';
 import { Notification } from './Notification.js';
 
+class Scroller extends HTMLElement {
+  constructor(vertical = true) {
+    super();
+    this.vertical = Boolean(vertical);
+    this._cachedBounds = null;
+    this.classList.add(this.vertical ? 'vertical' : 'horizontal');
+  }
+
+  getBounds(sheet) {
+    const rect = sheet.getBoundingClientRect();
+    if (this.vertical) {
+      if (!sheet.rows[1]) return null;
+      const offset = sheet.rows[1].getBoundingClientRect().top;
+      return { offset, start: offset - rect.top, dragSpan: Math.max(1, rect.bottom - offset), barSpan: rect.bottom - offset };
+    }
+    if (!sheet.rows[0]?.cells[0]) return null;
+    const offset = sheet.rows[0].cells[0].getBoundingClientRect().left;
+    const start = (sheet.rows[0].cells[1] || sheet.rows[0].cells[0]).getBoundingClientRect().left;
+    return { offset, start, dragSpan: Math.max(1, rect.right - offset), barSpan: rect.right - start };
+  }
+
+  startDrag(sheet) { this._cachedBounds = this.getBounds(sheet); }
+  endDrag() { this._cachedBounds = null; }
+
+  dragTo(event, sheet) {
+    if (!sheet) return;
+    const bounds = (this._cachedBounds ||= this.getBounds(sheet));
+    if (!bounds) return;
+    const pos = this.vertical ? event.clientY : event.clientX;
+    const ratio = clamp((pos - bounds.offset) / bounds.dragSpan, 0, 1);
+    if (this.vertical) sheet.baseY = Math.floor(sheet.rowCount * ratio);
+    else sheet.baseX = Math.floor(sheet.df.width * ratio);
+    sheet.refreshSelection(false);
+  }
+
+  refresh(sheet) {
+    if (!sheet) return;
+    const isY = this.vertical;
+    const count = isY ? sheet.rowCount : sheet.df.width;
+    const visible = isY ? count >= sheet.viewRows / 2 : count >= sheet.viewCols - 2;
+    this.classList.toggle('hidden', !visible);
+    if (!visible) return;
+
+    const base = isY ? sheet.baseY : sheet.baseX;
+    const total = Math.max(count - 1, base, 1);
+    const [lg, md] = isY ? [100, 1000] : [30, 100];
+    this.setAttribute('data-size', total < lg ? 'lg' : (total < md ? 'md' : 'sm'));
+
+    const bounds = this.getBounds(sheet);
+    const start = bounds ? bounds.start : 0;
+    const thumbSize = (isY ? this.offsetHeight : this.offsetWidth) || 0;
+    const track = (bounds ? bounds.barSpan : 0) - thumbSize;
+    this.style[isY ? 'top' : 'left'] = `${start + Math.round((track * base) / total)}px`;
+  }
+}
+
+defineEl('ui-scroller', Scroller);
+
 let dragTarget = null;
+let isCtrlDrag = false;
+let didDrag = false;
+let mousedownCell = null;
+let dragBaseRange = null;
 let mouseX = 0, mouseY = 0;
 let scrollIntervalId = null;
 let globalMouseBound = false;
+
+const LOCK_MESSAGES = {
+  'view-only': 'File is in View-Only mode. Edits are disabled.',
+  filter: 'File is locked while a filter is active.',
+};
 
 function startOutOfBoundsScroll() {
   if (scrollIntervalId !== null) clearInterval(scrollIntervalId);
@@ -49,16 +115,19 @@ function startOutOfBoundsScroll() {
       sheet.baseX--;
       changed = true;
     }
-    if (changed) sheet.refreshSelection(false);
+    if (changed) {
+      didDrag = true;
+      sheet.refreshSelection(false);
+    }
   }, 100);
 }
 
 function bindGlobalMouse() {
-  if (globalMouseBound || typeof document === 'undefined') return;
+  if (globalMouseBound) return;
   globalMouseBound = true;
 
   document.addEventListener('contextmenu', (event) => {
-    if (!event.ctrlKey && dom?.contextMenu) {
+    if (!event.ctrlKey) {
       event.preventDefault();
       dom.contextMenu.openAt(event);
     }
@@ -66,8 +135,27 @@ function bindGlobalMouse() {
 
   document.addEventListener('mouseup', (event) => {
     if (event.buttons < 1) {
+      const sheet = getSheet();
       if (dragTarget instanceof Scroller) dragTarget.endDrag();
+      else if (dragTarget && sheet) {
+        const ctrlHeld = isCtrlDrag || event.ctrlKey || event.metaKey;
+        if (didDrag && ctrlHeld && sheet.rangeEnd) {
+          sheet.expand();
+        } else if (!didDrag && ctrlHeld && mousedownCell) {
+          sheet.selectRange(
+            mousedownCell.colOffset + sheet.baseX,
+            mousedownCell.rowOffset + sheet.baseY
+          );
+          if (mousedownCell.firstElementChild?.classList.contains('url')) {
+            window.open(mousedownCell.innerText, '_blank');
+          }
+        }
+      }
       dragTarget = null;
+      isCtrlDrag = false;
+      didDrag = false;
+      mousedownCell = null;
+      dragBaseRange = null;
       if (scrollIntervalId !== null) {
         clearInterval(scrollIntervalId);
         scrollIntervalId = null;
@@ -76,19 +164,19 @@ function bindGlobalMouse() {
   });
 
   document.addEventListener('mousedown', (event) => {
-    const tag = event.target?.tagName;
+    const tag = event.target.tagName;
     const sheet = getSheet();
-    const isSheetInteraction = Boolean(sheet?.contains?.(event.target) || event.target instanceof Scroller);
+    const isSheetInteraction = sheet.contains(event.target) || event.target instanceof Scroller;
     if (
       tag !== 'INPUT' && tag !== 'BUTTON' && tag !== 'SELECT' && tag !== 'UI-GLYPH' &&
       isSheetInteraction
     ) {
       event.preventDefault();
       if (document.activeElement && document.activeElement !== document.body) {
-        document.activeElement.blur?.();
+        document.activeElement.blur();
       }
     }
-    if (event.button !== 0 || !sheet) return;
+    if (event.button !== 0) return;
 
     if (event.target instanceof Scroller) {
       dragTarget = event.target;
@@ -96,11 +184,16 @@ function bindGlobalMouse() {
       return;
     }
 
-    const cell = event.target.closest?.('td, th');
+    const cell = event.target.closest('td, th');
     if (!cell || !sheet.contains(cell)) {
       dragTarget = null;
       return;
     }
+
+    isCtrlDrag = Boolean(event.ctrlKey || event.metaKey);
+    didDrag = false;
+    mousedownCell = null;
+    dragBaseRange = null;
 
     if (cell.colOffset < 0 && cell.rowOffset < 0) {
       dragTarget = 'cornerHeader';
@@ -117,12 +210,20 @@ function bindGlobalMouse() {
       startOutOfBoundsScroll();
     } else {
       dragTarget = 'cell';
-      sheet.isSelectingRange = Boolean(event.shiftKey);
-      if (!event.shiftKey) sheet.rangeEnd = undefined;
-      sheet.x = cell.colOffset + sheet.baseX;
-      sheet.y = cell.rowOffset + sheet.baseY;
-      if (event.ctrlKey && cell.firstElementChild?.classList.contains('url')) {
-        window.open(cell.innerText, '_blank');
+      mousedownCell = cell;
+      const col = cell.colOffset + sheet.baseX;
+      const row = cell.rowOffset + sheet.baseY;
+      const existing = (isCtrlDrag && sheet.rangeEnd) ? sheet.getOrderedRange() : null;
+      if (existing && col >= existing.xmin && col <= existing.xmax && row >= existing.ymin && row <= existing.ymax) {
+        dragBaseRange = existing;
+        sheet._x = existing.xmin;
+        sheet._y = existing.ymin;
+        sheet.rangeEnd = { x: existing.xmax, y: existing.ymax };
+      } else {
+        sheet.isSelectingRange = Boolean(event.shiftKey);
+        if (!event.shiftKey) sheet.rangeEnd = undefined;
+        sheet.x = col;
+        sheet.y = row;
       }
       sheet.refreshSelection();
       startOutOfBoundsScroll();
@@ -143,27 +244,32 @@ function bindGlobalMouse() {
   });
 }
 
-export class Sheet extends BaseElement {
+export class Sheet extends HTMLElement {
   static _finder = null;
   static _filter = null;
+  static _scrollerY = null;
+  static _scrollerX = null;
 
   constructor(df = new Dataframe()) {
     super();
     bindGlobalMouse();
+    // The filter dialog is shared across sheets: close it on the outgoing sheet before taking over.
+    if (Sheet._filter?.isOpen) Sheet._filter.close();
     this.df = df;
+    // A dataframe handed over locked (large-file preview) stays read-only for the sheet's lifetime.
+    this.viewOnly = df.lock;
     setSheet(this);
 
-    this.table = typeof document !== 'undefined' ? document.createElement?.('table') : null;
-    const hasDom = Boolean(this.table?.rows);
-
-    this.finder = hasDom ? (Sheet._finder ||= new FinderDialog(this)) : null;
-    if (this.finder) this.finder.sheet = this;
-    this.filter = hasDom ? (Sheet._filter ||= new FilterDialog(this)) : null;
-    if (this.filter) this.filter.sheet = this;
+    this.table = document.createElement('table');
+    this.finder = (Sheet._finder ||= new FinderDialog(this));
+    this.finder.sheet = this;
+    this.filter = (Sheet._filter ||= new FilterDialog(this));
+    this.filter.sheet = this;
+    this.scrollerY = (Sheet._scrollerY ||= new Scroller(true));
+    this.scrollerX = (Sheet._scrollerX ||= new Scroller(false));
 
     this.filterRows = null;
-    this._preFilterLock = undefined;
-    this.inputField = hasDom ? document.createElement('input') : null;
+    this.inputField = document.createElement('input');
     this.isEditing = false;
     this.viewCols = settings.cols;
     this.viewRows = settings.rows;
@@ -178,36 +284,27 @@ export class Sheet extends BaseElement {
     this._baseY = 0;
     this._selectedCells = [];
 
-    if (!hasDom) return;
-
     this.id = 'sheet';
     this.classList.add('sheet');
     this.appendChild(this.table);
 
     this.bindEvents();
 
-    const container = dom?.mainContainer || globalThis.document?.getElementById?.('main-container');
-    if (container) {
-      container.querySelectorAll('ui-sheet, #sheet').forEach(el => {
-        if (el !== this) { el.disconnectedCallback?.(); el.remove(); }
-      });
-      if (this.parentNode !== container) container.appendChild(this);
-      if (dom?.content?.scrollerY) container.appendChild(dom.content.scrollerY);
-      if (dom?.content?.scrollerX) container.appendChild(dom.content.scrollerX);
-    } else if (dom?.content) {
-      dom.content.innerHTML = '';
-      dom.content.appendChild(this);
-      if (dom.content.scrollerY) dom.content.appendChild(dom.content.scrollerY);
-      if (dom.content.scrollerX) dom.content.appendChild(dom.content.scrollerX);
+    const container = dom.mainContainer;
+    container.querySelectorAll('ui-sheet').forEach(el => el.remove());
+    container.append(this, this.scrollerY, this.scrollerX);
+    if (typeof ResizeObserver !== 'undefined') {
+      this._resizeObserver = new ResizeObserver(() => this.refreshScrollbars());
+      this._resizeObserver.observe(this);
     }
 
-    dom?.validationPane?.reset?.();
+    dom.validationPane.reset();
     this.reload();
   }
 
-  get rows() { return this.table?.rows; }
-  get width() { return this.rows?.[0] ? this.rows[0].cells.length - 1 : this.viewCols; }
-  get height() { return this.rows ? this.rows.length - 1 : this.viewRows; }
+  get rows() { return this.table.rows; }
+  get width() { return this.rows[0] ? this.rows[0].cells.length - 1 : this.viewCols; }
+  get height() { return this.rows.length - 1; }
   get rowCount() { return this.filterRows ? this.filterRows.length : this.df.height; }
 
   get x() { return this._x; }
@@ -241,7 +338,6 @@ export class Sheet extends BaseElement {
   // --- Virtualized Table Rendering ---
 
   reload() {
-    if (!this.rows) return;
     while (this.table.rows[0]) this.table.rows[0].remove();
     for (let y = 0; y < this.viewRows + 1; y++) {
       const tr = document.createElement('tr');
@@ -263,8 +359,7 @@ export class Sheet extends BaseElement {
   }
 
   refresh() {
-    if (!this.rows || typeof requestAnimationFrame !== 'function') return;
-    if (this._refreshRafId) cancelAnimationFrame(this._refreshRafId);
+    cancelAnimationFrame(this._refreshRafId);
     this._refreshRafId = requestAnimationFrame(() => {
       this._refreshRafId = null;
       for (let x = 0; x < this.width; x++) this.renderColHeader(x);
@@ -279,13 +374,22 @@ export class Sheet extends BaseElement {
       if (this.isEditing && activeCell && this.inputField.parentNode !== activeCell) {
         activeCell.appendChild(this.inputField);
       }
-      if (this.finder?.isOpen) this.finder.syncColBounds?.(false);
-      if (this.filter?.isOpen) this.filter.syncColBounds?.(false);
+      this.syncToolbarColumns();
+      this.refreshScrollbars();
       updateFooter(this);
     });
   }
 
-  refreshScrollbars() { refreshScrollbars(this); }
+  /** Keep the open find/filter toolbars' column pickers within the current sheet width. */
+  syncToolbarColumns() {
+    if (this.finder.isOpen) this.finder.syncColBounds(false);
+    if (this.filter.isOpen) this.filter.syncColBounds(false);
+  }
+
+  refreshScrollbars() {
+    this.scrollerY.refresh(this);
+    this.scrollerX.refresh(this);
+  }
   updateFooter() { updateFooter(this); }
 
   renderCell(cellEl, x, y) {
@@ -352,6 +456,7 @@ export class Sheet extends BaseElement {
         return;
       }
       if (key === 'ESCAPE') {
+        event.stopPropagation();
         this.cancelEditOnBlur = true;
         this.inputField.blur();
         return;
@@ -374,11 +479,23 @@ export class Sheet extends BaseElement {
       if (!td || td.colOffset === undefined || td.rowOffset === undefined) return;
 
       if (dragTarget === 'cell') {
-        this.rangeEnd = { x: td.colOffset + this.baseX, y: td.rowOffset + this.baseY };
+        const endX = td.colOffset + this.baseX;
+        const endY = td.rowOffset + this.baseY;
+        if (td !== mousedownCell) didDrag = true;
+        if (dragBaseRange) {
+          this.rangeEnd = {
+            x: endX < dragBaseRange.xmin ? endX : Math.max(endX, dragBaseRange.xmax),
+            y: endY < dragBaseRange.ymin ? endY : Math.max(endY, dragBaseRange.ymax),
+          };
+        } else {
+          this.rangeEnd = { x: endX, y: endY };
+        }
         this.refreshSelection(false);
       } else if (dragTarget === 'colHeader' && td.colOffset >= 0) {
+        didDrag = true;
         this.selectCol(this.x, td.colOffset + this.baseX);
       } else if (dragTarget === 'rowHeader' && td.rowOffset >= 0) {
+        didDrag = true;
         this.selectRow(this.y, td.rowOffset + this.baseY);
       }
     });
@@ -387,7 +504,7 @@ export class Sheet extends BaseElement {
       const td = event.target.closest('td');
       if (!td || td.colOffset === undefined || td.rowOffset === undefined) return;
       if (td.colOffset >= 0 && td.rowOffset >= 0) {
-        if (!this.df?.lock) this.startEdit();
+        if (!this.df.lock) this.startEdit();
       } else if (td.rowOffset < 0 && td.colOffset >= 0) {
         const colIdx = this.baseX + td.colOffset;
         this.expandedCol = this.expandedCol === colIdx ? null : colIdx;
@@ -397,7 +514,7 @@ export class Sheet extends BaseElement {
   }
 
   handleKeyDown(event, key, ctrlDown, shift, alt) {
-    const pageSize = settings?.rows || 10;
+    const pageSize = settings.rows;
     const maxX = Math.max(0, this.df.width - 1);
     const maxY = Math.max(0, this.rowCount - 1);
 
@@ -423,7 +540,7 @@ export class Sheet extends BaseElement {
     }
     if (key === 'F2' || key === 'ENTER') {
       event.preventDefault();
-      if (!this.df?.lock) this.startEdit();
+      if (!this.df.lock) this.startEdit();
       return true;
     }
     if (key === 'TAB') {
@@ -451,7 +568,7 @@ export class Sheet extends BaseElement {
       return true;
     }
     if (event.key.length === 1 && !ctrlDown && !event.metaKey && !alt) {
-      if (!this.df?.lock) {
+      if (!this.df.lock) {
         event.preventDefault();
         this.startEdit(event.key);
       }
@@ -465,11 +582,26 @@ export class Sheet extends BaseElement {
     return (viewY >= 0 && viewY < this.filterRows.length) ? this.filterRows[viewY] : -1;
   }
 
+  // --- Read-only state: single owner of df.lock ---
+
+  get lockReason() {
+    if (this.viewOnly) return 'view-only';
+    if (this.filterRows !== null || this.filter.isOpen) return 'filter';
+    return null;
+  }
+
+  syncLock() { this.df.lock = this.lockReason !== null; }
+
+  warnIfLocked(title) {
+    const reason = this.lockReason;
+    if (reason) Notification.warning(LOCK_MESSAGES[reason], title);
+    return reason !== null;
+  }
+
   setFilter(colIndex, text, matchCase = false) {
     if (!text) return this.clearFilter();
-    if (this.filterRows === null) this._preFilterLock = Boolean(this.df.lock);
-    this.df.lock = true;
     this.filterRows = this.df.filterColumn(colIndex, text, matchCase, Boolean(this.fixTop));
+    this.syncLock();
     this.baseY = 0;
     this.y = 0;
     this.refresh();
@@ -479,16 +611,13 @@ export class Sheet extends BaseElement {
   clearFilter() {
     if (this.filterRows !== null) {
       this.filterRows = null;
-      if (this.df && this._preFilterLock !== undefined) {
-        this.df.lock = this._preFilterLock;
-        this._preFilterLock = undefined;
-      }
+      this.syncLock();
       this.refresh();
       this.refreshSelection(false);
     }
   }
 
-  openFilter(colIndex) { this.filter?.open(colIndex); }
+  openFilter(colIndex) { this.filter.open(colIndex); }
 
   // --- Selection & Viewport ---
 
@@ -553,13 +682,12 @@ export class Sheet extends BaseElement {
 
   refreshSelection(scrollIntoView = true) {
     if (scrollIntoView) this.scrollToSelection();
-    if (!this.rows || typeof requestAnimationFrame !== 'function') return;
-    if (this._selectionRafId) cancelAnimationFrame(this._selectionRafId);
+    cancelAnimationFrame(this._selectionRafId);
     this._selectionRafId = requestAnimationFrame(() => {
       this._selectionRafId = null;
       this.clearSelectionHighlight();
       if (scrollIntoView) this.scrollToSelection();
-      refreshScrollbars(this);
+      this.refreshScrollbars();
 
       const range = this.getOrderedRange();
       const xStart = Math.max(0, range.xmin - this.baseX);
@@ -595,8 +723,8 @@ export class Sheet extends BaseElement {
   scroll(event) {
     if (event.ctrlKey) {
       event.preventDefault();
-      const minRows = Setting.getDef?.('rows')?.min ?? 10;
-      const minCols = Setting.getDef?.('cols')?.min ?? 3;
+      const minRows = Setting.getDef('rows').min;
+      const minCols = Setting.getDef('cols').min;
       if (event.shiftKey) {
         if (event.deltaY > 0) this.viewRows++;
         else if (event.deltaY < 0 && this.viewRows > minRows) this.viewRows--;
@@ -621,7 +749,7 @@ export class Sheet extends BaseElement {
   // --- Inline Cell Editing, Clipboard & Mutations ---
 
   startEdit(initialText) {
-    if (this.df?.lock) return;
+    if (this.df.lock) return;
     const cell = this.getActiveCellElement();
     if (!cell) return;
     const actualY = this.getRowIndex(this.y);
@@ -639,8 +767,7 @@ export class Sheet extends BaseElement {
       this.editSelection(value);
       if (!this.rangeEnd) this.renderCell(this.inputField.parentNode, this.x, this.getRowIndex(this.y));
       else this.refresh();
-      if (this.finder?.isOpen) this.finder.syncColBounds?.(false);
-      if (this.filter?.isOpen) this.filter.syncColBounds?.(false);
+      this.syncToolbarColumns();
     }
     this.cancelEditOnBlur = false;
     this.inputField.remove();
@@ -649,12 +776,12 @@ export class Sheet extends BaseElement {
   getCopyMatrix() {
     const range = this.getOrderedRange();
     let matrix = this.getSelectedMatrix();
-    const includeHeaders = Boolean(settings?.copyIncludeHeaders);
-    if (includeHeaders && range.ymin > 0 && this.df?.height > 0) {
+    const includeHeaders = Boolean(settings.copyIncludeHeaders);
+    if (includeHeaders && range.ymin > 0 && this.df.height > 0) {
       const headerRow = this.df.slice({ xmin: range.xmin, xmax: range.xmax, ymin: 0, ymax: 0 })[0];
       if (headerRow) matrix = [headerRow, ...matrix];
     }
-    const hasHeader = includeHeaders || (range.ymin === 0 && Boolean(this.fixTop || settings?.freezeHeaderOnOpen));
+    const hasHeader = includeHeaders || (range.ymin === 0 && Boolean(this.fixTop || settings.freezeHeaderOnOpen));
     return { matrix, hasHeader };
   }
 
@@ -663,23 +790,23 @@ export class Sheet extends BaseElement {
     const serializer = new CsvSerializer({ delimiter: '\t' });
     const text = serializer.serialize(matrix);
     const cellCount = matrix.length * (matrix[0]?.length || 0);
-    const html = (settings?.copyPasteHtml !== false && cellCount > 1)
+    const html = (settings.copyPasteHtml !== false && cellCount > 1)
       ? serializer.serializeHtml(matrix, { hasHeader })
       : '';
     return { text, html };
   }
 
   cutSelectionData() {
-    if (this.df?.lock) return { text: '', html: '' };
+    if (this.df.lock) return { text: '', html: '' };
     const data = this.copySelectionData();
     this.deleteSelection();
     return data;
   }
 
   pasteClipboard(rawText, rawHtml) {
-    if (this.df?.lock) return;
-    if (settings?.copyPasteHtml !== false && rawHtml) {
-      const htmlMatrix = CsvParser.parseHtmlTable(rawHtml, { trimWhitespace: Boolean(settings?.trimUnquoted) });
+    if (this.df.lock) return;
+    if (settings.copyPasteHtml !== false && rawHtml) {
+      const htmlMatrix = CsvParser.parseHtmlTable(rawHtml, { trimWhitespace: Boolean(settings.trimUnquoted) });
       if (htmlMatrix?.length > 0) {
         this.paste(htmlMatrix);
         return;
@@ -688,27 +815,16 @@ export class Sheet extends BaseElement {
     if (rawText) this.pasteText(rawText);
   }
 
-  copySelection() {
-    return this.copySelectionData().text;
-  }
-
-  cutSelection() {
-    if (this.df?.lock) return '';
-    const text = this.copySelection();
-    this.deleteSelection();
-    return text;
-  }
-
   pasteText(rawText) {
-    if (!rawText || this.df?.lock) return;
+    if (!rawText || this.df.lock) return;
     const delimiter = rawText.includes('\t') ? '\t' : SeparatorDetector.detect(rawText);
-    const matrix = new CsvParser({ delimiter, trimUnquotedWhitespace: Boolean(settings?.trimUnquoted) }).parse(rawText);
-    if (matrix?.length > 0) this.paste(matrix);
+    const matrix = new CsvParser({ delimiter, trimUnquotedWhitespace: Boolean(settings.trimUnquoted) }).parse(rawText);
+    if (matrix.length > 0) this.paste(matrix);
   }
 
   insertDate() {
     const todayStr = getTodayIsoDate();
-    if (this.isEditing && this.inputField) {
+    if (this.isEditing) {
       const start = this.inputField.selectionStart || 0;
       const end = this.inputField.selectionEnd || 0;
       this.inputField.value = this.inputField.value.slice(0, start) + todayStr + this.inputField.value.slice(end);
@@ -740,8 +856,8 @@ export class Sheet extends BaseElement {
   deleteRows() { this._deleteAxis(true); }
   deleteCols() { this._deleteAxis(false); }
 
-  undo() { this.df.undo(); this.refresh(); dom?.validationPane?.syncWithSheet?.(); }
-  redo() { this.df.redo(); this.refresh(); dom?.validationPane?.syncWithSheet?.(); }
+  undo() { this.df.undo(); this.refresh(); dom.validationPane.syncWithSheet(); }
+  redo() { this.df.redo(); this.refresh(); dom.validationPane.syncWithSheet(); }
   toggleFixTop() { this.fixTop = !this.fixTop; this.refresh(); }
   trim() { this.df.trimAll(); this.refresh(); }
 
@@ -789,7 +905,6 @@ export class Sheet extends BaseElement {
         Math.min(this.y, Math.max(0, this.df.width - 1)),
         Math.min(this.x, Math.max(0, this.df.height - 1))
       );
-      refreshScrollbars(this);
       this.refresh();
       return;
     }
@@ -820,8 +935,20 @@ export class Sheet extends BaseElement {
   }
 
   find(isAdvanced = false) {
-    this.finder?.open(this.df.get(this.x, this.getRowIndex(this.y)), isAdvanced);
-    if (!isAdvanced) refreshScrollbars(this);
+    this.finder.open(this.df.get(this.x, this.getRowIndex(this.y)), isAdvanced);
+  }
+
+  clampSelection() {
+    const maxCol = Math.max(0, this.df.width - 1);
+    const maxRow = Math.max(0, this.rowCount - 1);
+    this.x = clamp(this.x, 0, maxCol);
+    this.y = clamp(this.y, 0, maxRow);
+    if (this.rangeEnd) {
+      this.rangeEnd.x = clamp(this.rangeEnd.x, 0, maxCol);
+      this.rangeEnd.y = clamp(this.rangeEnd.y, 0, maxRow);
+    }
+    this.refresh();
+    this.refreshSelection(true);
   }
 
   goToOccurrence(forward = true) {
@@ -832,14 +959,10 @@ export class Sheet extends BaseElement {
   }
 
   disconnectedCallback() {
-    if (this._refreshRafId && typeof cancelAnimationFrame === 'function') {
-      cancelAnimationFrame(this._refreshRafId);
-      this._refreshRafId = null;
-    }
-    if (this._selectionRafId && typeof cancelAnimationFrame === 'function') {
-      cancelAnimationFrame(this._selectionRafId);
-      this._selectionRafId = null;
-    }
+    this._resizeObserver?.disconnect();
+    cancelAnimationFrame(this._refreshRafId);
+    cancelAnimationFrame(this._selectionRafId);
+    this._refreshRafId = this._selectionRafId = null;
   }
 }
 

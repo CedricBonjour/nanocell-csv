@@ -33,7 +33,6 @@ export interface ValidationRule {
   readonly id: string;
   readonly cmdId: string;
   readonly label: string;
-  readonly cmdLabel: string;
   readonly description: string;
   readonly icon: string;
   readonly skipColumns?: boolean;
@@ -56,17 +55,13 @@ const COMMA_REPLACEMENT_META: Record<string, { name: string; desc: string }> = {
 
 let commaReplacement = '-';
 
-export function getCommaReplacement(): string {
-  return commaReplacement;
-}
-
 export function setCommaReplacement(char: string): void {
   commaReplacement = char || '-';
 }
 
 const TEXT_COMMA_RE = /([^\S\r\n]*),([^\S\r\n]*)/g;
 
-export function replaceTextCommas(val: string, rep: string = commaReplacement): string {
+function replaceTextCommas(val: string, rep: string = commaReplacement): string {
   if (!val || isNumeric(val) || !val.includes(',')) return val;
   return val.replace(TEXT_COMMA_RE, (match, before: string, after: string, offset: number, str: string) => {
     if (before.length > 0 || after.length > 0) {
@@ -80,27 +75,24 @@ export function replaceTextCommas(val: string, rep: string = commaReplacement): 
 }
 
 export const VALIDATION_RULES: readonly ValidationRule[] = [
-  { id: 'headers', cmdId: 'validateHeaders', label: 'Headers & SQL Compliance', cmdLabel: 'Validate: Headers & SQL Compliance', description: 'Sanitize column headers for SQL identifier standards and duplicates', icon: 'validate_headers', skipColumns: true, key: 'H', ctrl: true, shift: true },
-  { id: 'dates', cmdId: 'validateDates', label: 'Format Dates', cmdLabel: 'Validate: Format Dates', description: 'Standardize date formats across columns to YYYY-mm-dd', icon: 'date_checker' },
-  { id: 'currency', cmdId: 'validateCurrency', label: 'Format Currency Values', cmdLabel: 'Validate: Format Currency Values', description: 'Extract currency symbols/ISO codes to a new column and format numbers', icon: 'decimal' },
-  { id: 'comma_decimals', cmdId: 'validateCommaDecimals', label: 'Format Numbers', cmdLabel: 'Validate: Format Numbers', description: 'Normalize locale thousand separators, decimal commas, and accounting negatives', icon: '123', transform: val => formatNumberCell(val) },
-  { id: 'booleans', cmdId: 'validateBooleans', label: 'Format Booleans', cmdLabel: 'Validate: Format Booleans', description: 'Standardize boolean values (Yes/No, Y/N, True/False, 1/0, On/Off) to true/false', icon: 'true' },
-  { id: 'null_literals', cmdId: 'validateNulls', label: 'Standardize Null Values', cmdLabel: 'Validate: Standardize Null Values', description: 'Clear placeholder tokens (NULL, N/A, #N/A, NaN, None, undefined) to empty cells', icon: 'remove', transform: val => normalizeNullLiteral(val) },
-  { id: 'clean_empty', cmdId: 'validateCleanEmpty', label: 'Clean Empty Cells', cmdLabel: 'Validate: Clean Empty Cells', description: 'Clear cells containing only non-visual characters (spaces, line returns, tabs, zero-width spaces) to empty', icon: 'remove', transform: val => cleanEmptyCell(val) },
-  { id: 'duplicate_rows', cmdId: 'validateDuplicates', label: 'Remove Duplicate Rows', cmdLabel: 'Validate: Remove Duplicate Rows', description: 'Detect and remove exact duplicate rows across the sheet', icon: 'dup_rows', skipColumns: true },
-  { id: 'trim_whitespace', cmdId: 'validateWhitespace', label: 'Trim Whitespace', cmdLabel: 'Validate: Trim Whitespace', description: 'Remove edge whitespace, non-breaking spaces, and multiple internal spaces', icon: 'trim', transform: val => cleanWhitespace(val) },
-  { id: 'strip_accents', cmdId: 'validateAccents', label: 'Strip Accents / Diacritics', cmdLabel: 'Validate: Strip Accents / Diacritics', description: 'Replace accented and diacritic characters with ASCII equivalents', icon: 'replace', transform: val => stripAccents(val) },
-  { id: 'line_returns', cmdId: 'validateLineReturns', label: 'Replace Line Returns by Pipe', cmdLabel: 'Validate: Replace Line Returns by Pipe', description: 'Replace embedded newline line breaks with pipe character (|)', icon: 'replace', transform: val => (!isNumeric(val) && val.includes('\n')) ? val.replaceAll('\n', '|') : val },
-  { id: 'double_quotes', cmdId: 'validateQuotes', label: 'Replace Double Quotes by Single', cmdLabel: 'Validate: Replace Double Quotes by Single', description: 'Replace double quotation marks (") with single quotes (\')', icon: 'replace', transform: val => (!isNumeric(val) && val.includes('"')) ? val.replaceAll('"', "'") : val },
+  { id: 'headers', cmdId: 'validateHeaders', label: 'Headers & SQL Compliance', description: 'Sanitize column headers for SQL identifier standards and duplicates', icon: 'validate_headers', skipColumns: true, key: 'H', ctrl: true, shift: true },
+  { id: 'dates', cmdId: 'validateDates', label: 'Format Dates', description: 'Standardize date formats across columns to YYYY-mm-dd', icon: 'date_checker' },
+  { id: 'currency', cmdId: 'validateCurrency', label: 'Format Currency Values', description: 'Extract currency symbols/ISO codes to a new column and format numbers', icon: 'decimal' },
+  { id: 'comma_decimals', cmdId: 'validateCommaDecimals', label: 'Format Numbers', description: 'Normalize locale thousand separators, decimal commas, and accounting negatives', icon: '123', transform: val => formatNumberCell(val) },
+  { id: 'booleans', cmdId: 'validateBooleans', label: 'Format Booleans', description: 'Standardize boolean values (Yes/No, Y/N, True/False, 1/0, On/Off) to true/false', icon: 'true' },
+  { id: 'null_literals', cmdId: 'validateNulls', label: 'Standardize Null Values', description: 'Clear placeholder tokens (NULL, N/A, #N/A, NaN, None, undefined) to empty cells', icon: 'remove', transform: val => normalizeNullLiteral(val) },
+  { id: 'clean_empty', cmdId: 'validateCleanEmpty', label: 'Clean Empty Cells', description: 'Clear cells containing only non-visual characters (spaces, line returns, tabs, zero-width spaces) to empty', icon: 'remove', transform: val => cleanEmptyCell(val) },
+  { id: 'duplicate_rows', cmdId: 'validateDuplicates', label: 'Remove Duplicate Rows', description: 'Detect and remove exact duplicate rows across the sheet', icon: 'dup_rows', skipColumns: true },
+  { id: 'trim_whitespace', cmdId: 'validateWhitespace', label: 'Trim Whitespace', description: 'Remove edge whitespace, non-breaking spaces, and multiple internal spaces', icon: 'trim', transform: val => cleanWhitespace(val) },
+  { id: 'strip_accents', cmdId: 'validateAccents', label: 'Strip Accents / Diacritics', description: 'Replace accented and diacritic characters with ASCII equivalents', icon: 'replace', transform: val => stripAccents(val) },
+  { id: 'line_returns', cmdId: 'validateLineReturns', label: 'Replace Line Returns by Pipe', description: 'Replace embedded newline line breaks with pipe character (|)', icon: 'replace', transform: val => (!isNumeric(val) && val.includes('\n')) ? val.replaceAll('\n', '|') : val },
+  { id: 'double_quotes', cmdId: 'validateQuotes', label: 'Replace Double Quotes by Single', description: 'Replace double quotation marks (") with single quotes (\')', icon: 'replace', transform: val => (!isNumeric(val) && val.includes('"')) ? val.replaceAll('"', "'") : val },
   {
     id: 'text_commas',
     cmdId: 'validateTextCommas',
     get label() {
       const meta = COMMA_REPLACEMENT_META[commaReplacement];
       return `Replace Text Commas by ${meta ? meta.name : `'${commaReplacement}'`}`;
-    },
-    get cmdLabel() {
-      return `Validate: ${this.label}`;
     },
     get description() {
       const meta = COMMA_REPLACEMENT_META[commaReplacement];
@@ -109,9 +101,9 @@ export const VALIDATION_RULES: readonly ValidationRule[] = [
     icon: 'replace',
     transform: val => replaceTextCommas(val),
   },
-  { id: 'lowercase', cmdId: 'validateLowercase', label: 'Force Lowercase', cmdLabel: 'Validate: Force Lowercase', description: 'Convert all text cells to lowercase', icon: 'match_case', transform: val => (!isNumeric(val) && !isIsoDate(val) && !isUrl(val)) ? val.toLowerCase() : val },
-  { id: 'uppercase', cmdId: 'validateUppercase', label: 'Force Uppercase', cmdLabel: 'Validate: Force Uppercase', description: 'Convert all text cells to UPPERCASE', icon: 'match_case', transform: val => (!isNumeric(val) && !isIsoDate(val) && !isUrl(val)) ? val.toUpperCase() : val },
-  { id: 'titlecase', cmdId: 'validateTitleCase', label: 'Format Title Case', cmdLabel: 'Validate: Format Title Case', description: 'Capitalize the first letter of each word in text cells', icon: 'match_case', transform: val => toTitleCase(val) },
+  { id: 'lowercase', cmdId: 'validateLowercase', label: 'Force Lowercase', description: 'Convert all text cells to lowercase', icon: 'match_case', transform: val => (!isNumeric(val) && !isIsoDate(val) && !isUrl(val)) ? val.toLowerCase() : val },
+  { id: 'uppercase', cmdId: 'validateUppercase', label: 'Force Uppercase', description: 'Convert all text cells to UPPERCASE', icon: 'match_case', transform: val => (!isNumeric(val) && !isIsoDate(val) && !isUrl(val)) ? val.toUpperCase() : val },
+  { id: 'titlecase', cmdId: 'validateTitleCase', label: 'Format Title Case', description: 'Capitalize the first letter of each word in text cells', icon: 'match_case', transform: val => toTitleCase(val) },
 ];
 
 export const VALIDATION_RULE_MAP: ReadonlyMap<string, ValidationRule> = new Map(
@@ -190,10 +182,8 @@ const SYMBOL_ALT = SYMBOL_ENTRIES.map(([k]) => escapeRe(k)).join('|');
 const ALPHA_ALT = ALPHA_ENTRIES.map(([k]) => escapeRe(k)).join('|');
 
 // Lookbehind-free anchored prefix/suffix regexes for V8 fast-path execution
-const PREFIX_SYMBOL_RE = new RegExp(`^([+-]?\\s*)(${SYMBOL_ALT})\\s*`, 'i');
-const PREFIX_ALPHA_RE = new RegExp(`^([+-]?\\s*)(${ALPHA_ALT})(?![a-zA-Z])\\s*`, 'i');
-const SUFFIX_SYMBOL_RE = new RegExp(`\\s*(${SYMBOL_ALT})(\\s*[+-]?)$`, 'i');
-const SUFFIX_ALPHA_RE = new RegExp(`(^|[^a-zA-Z])(${ALPHA_ALT})(\\s*[+-]?)$`, 'i');
+const PREFIX_RE = new RegExp(`^([+-]?\\s*)(?:(${SYMBOL_ALT})|(${ALPHA_ALT})(?![a-zA-Z]))\\s*`, 'i');
+const SUFFIX_RE = new RegExp(`(?:\\s*(${SYMBOL_ALT})|(^|[^a-zA-Z])(${ALPHA_ALT}))(\\s*[+-]?)$`, 'i');
 const HAS_DIGIT_RE = /\d/;
 const STRIP_CHARS_RE = /[\s'`\u2019\u2018]+/g;
 const SWISS_DASH_RE = /[.,][-–—]+$/;
@@ -253,21 +243,10 @@ export function extractCurrency(rawVal: unknown): CurrencyExtractResult {
   // 1. Prefix extraction (up to 2 passes to handle combined "CAD $50" or "USD $100")
   if (!(c0 >= 48 && c0 <= 57)) {
     for (let pass = 0; pass < 2 && s.length > 0; pass++) {
-      const symMatch = s.match(PREFIX_SYMBOL_RE);
-      if (symMatch) {
-        recordToken(symMatch[2]);
-        s = (symMatch[1] ? symMatch[1].trim() : '') + s.slice(symMatch[0].length);
-        s = s.trim();
-        continue;
-      }
-      const alphaMatch = s.match(PREFIX_ALPHA_RE);
-      if (alphaMatch) {
-        recordToken(alphaMatch[2]);
-        s = (alphaMatch[1] ? alphaMatch[1].trim() : '') + s.slice(alphaMatch[0].length);
-        s = s.trim();
-        continue;
-      }
-      break;
+      const m = s.match(PREFIX_RE);
+      if (!m) break;
+      recordToken(m[2] || m[3]);
+      s = ((m[1] ? m[1].trim() : '') + s.slice(m[0].length)).trim();
     }
   }
 
@@ -276,23 +255,13 @@ export function extractCurrency(rawVal: unknown): CurrencyExtractResult {
     const endCh = s.charCodeAt(s.length - 1);
     if (!(endCh >= 48 && endCh <= 57)) {
       for (let pass = 0; pass < 2 && s.length > 0; pass++) {
-        const symMatch = s.match(SUFFIX_SYMBOL_RE);
-        if (symMatch) {
-          recordToken(symMatch[1]);
-          const trailSign = symMatch[2] ? symMatch[2].trim() : '';
-          s = s.slice(0, s.length - symMatch[0].length).trim() + trailSign;
-          continue;
-        }
-        const alphaMatch = s.match(SUFFIX_ALPHA_RE);
-        if (alphaMatch) {
-          recordToken(alphaMatch[2]);
-          const prefixChar = alphaMatch[1] || '';
-          const trailSign = alphaMatch[3] ? alphaMatch[3].trim() : '';
-          const cutStart = s.length - alphaMatch[0].length + prefixChar.length;
-          s = s.slice(0, cutStart).trim() + trailSign;
-          continue;
-        }
-        break;
+        const m = s.match(SUFFIX_RE);
+        if (!m) break;
+        recordToken(m[1] || m[3]);
+        const prefixChar = m[2] || '';
+        const trailSign = m[4] ? m[4].trim() : '';
+        const cutStart = s.length - m[0].length + prefixChar.length;
+        s = s.slice(0, cutStart).trim() + trailSign;
       }
     }
   }
@@ -401,7 +370,7 @@ export function parseCurrencyNumber(rawText: string): string | null {
   return s !== null ? roundNumericString(s, 2) : null;
 }
 
-export function formatNumberCell(val: string): string {
+function formatNumberCell(val: string): string {
   const trimmed = val.trim();
   if (!trimmed || (isNumeric(trimmed) && !/[\s',`+()\u2019\u2018-]$/.test(trimmed) && !/[\s',`\u2019\u2018]/.test(trimmed))) {
     return val;
@@ -430,7 +399,7 @@ const ZERO_WIDTH_RE = /[\u200B-\u200D\uFEFF]/g;
 const H_SPACE_RUN_RE = /[^\S\r\n]+/g;
 const LINE_EDGE_SPACE_RE = /^ | $/gm;
 
-export function cleanWhitespace(val: string): string {
+function cleanWhitespace(val: string): string {
   if (!val) return val;
   return val
     .replace(ZERO_WIDTH_RE, '')
@@ -444,7 +413,7 @@ const NULL_TOKENS = new Set([
   'undefined', '<na>', 'n.a.', 'not available', '#value!', '#ref!', '#div/0!', '#name?'
 ]);
 
-export function normalizeNullLiteral(val: string): string {
+function normalizeNullLiteral(val: string): string {
   if (!val) return val;
   const trimmed = val.trim();
   return trimmed && NULL_TOKENS.has(trimmed.toLowerCase()) ? '' : val;
@@ -452,13 +421,13 @@ export function normalizeNullLiteral(val: string): string {
 
 export const NON_VISUAL_ONLY_RE = /^[\s\u0000-\u001F\u007F-\u009F\u00AD\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFEFF]+$/;
 
-export function cleanEmptyCell(val: string): string {
+function cleanEmptyCell(val: string): string {
   return val && NON_VISUAL_ONLY_RE.test(val) ? '' : val;
 }
 
 const TITLE_WORD_START_RE = /(?:^|[\s\-_/(['"])\p{L}/gu;
 
-export function toTitleCase(val: string): string {
+function toTitleCase(val: string): string {
   if (!val || isNumeric(val) || isIsoDate(val) || isUrl(val)) return val;
   return val.toLowerCase().replace(TITLE_WORD_START_RE, m => m.toUpperCase());
 }
@@ -479,7 +448,7 @@ export function isValidCalendarDate(year: number, month: number, day: number): b
   return day <= daysInMonth[month - 1];
 }
 
-export function parseDateCandidate(rawVal: unknown): { p1: number; p2: number; year: number; raw: string } | null {
+function parseDateCandidate(rawVal: unknown): { p1: number; p2: number; year: number; raw: string } | null {
   if (rawVal == null) return null;
   const raw = String(rawVal).trim();
   const m = raw.match(/^(\d{1,2})[^0-9a-zA-Z]+(\d{1,2})[^0-9a-zA-Z]+(\d{4})$/);
@@ -491,7 +460,7 @@ export function parseDateCandidate(rawVal: unknown): { p1: number; p2: number; y
   return { p1, p2, year, raw };
 }
 
-export function parseYearFirstDate(rawVal: unknown): { year: number; month: number; day: number; raw: string } | null {
+function parseYearFirstDate(rawVal: unknown): { year: number; month: number; day: number; raw: string } | null {
   if (rawVal == null) return null;
   const raw = String(rawVal).trim();
   const m = raw.match(/^(\d{4})[^0-9a-zA-Z]+(\d{1,2})[^0-9a-zA-Z]+(\d{1,2})$/);
@@ -666,14 +635,9 @@ export class DataValidator {
     if (uniqueYs.length === 0) return;
 
     const countLessThan = (target: number): number => {
-      let lo = 0;
-      let hi = uniqueYs.length;
-      while (lo < hi) {
-        const mid = (lo + hi) >>> 1;
-        if (uniqueYs[mid] < target) lo = mid + 1;
-        else hi = mid;
-      }
-      return lo;
+      let i = 0;
+      while (i < uniqueYs.length && uniqueYs[i] < target) i++;
+      return i;
     };
 
     const snapshots = uniqueYs.map(y => ({ y, row: [...(rows[y] || [])] }));
@@ -685,20 +649,14 @@ export class DataValidator {
       newDupOfY: it.dupOfY !== undefined ? it.dupOfY - countLessThan(it.dupOfY!) : undefined,
     }));
 
-    const deletedSet = uniqueYs.length > 1 ? new Set(uniqueYs) : null;
+    const deletedSet = new Set(uniqueYs);
 
     const doFn = () => {
-      if (deletedSet) {
-        let writeIdx = 0;
-        for (let readIdx = 0; readIdx < rows.length; readIdx++) {
-          if (!deletedSet.has(readIdx)) {
-            rows[writeIdx++] = rows[readIdx];
-          }
-        }
-        rows.length = writeIdx;
-      } else {
-        rows.splice(snapshots[0].y, 1);
+      let writeIdx = 0;
+      for (let readIdx = 0; readIdx < rows.length; readIdx++) {
+        if (!deletedSet.has(readIdx)) rows[writeIdx++] = rows[readIdx];
       }
+      rows.length = writeIdx;
       for (const c of savedCoords) {
         c.item.y = c.newY;
         if (c.newDupOfY !== undefined) c.item.dupOfY = c.newDupOfY;
@@ -706,21 +664,17 @@ export class DataValidator {
     };
 
     const undoFn = () => {
-      if (snapshots.length > 1) {
-        const oldLen = rows.length;
-        const newLen = oldLen + snapshots.length;
-        let readIdx = oldLen - 1;
-        let snapIdx = snapshots.length - 1;
-        rows.length = newLen;
-        for (let writeIdx = newLen - 1; writeIdx >= 0; writeIdx--) {
-          if (snapIdx >= 0 && snapshots[snapIdx].y === writeIdx) {
-            rows[writeIdx] = [...snapshots[snapIdx--].row];
-          } else {
-            rows[writeIdx] = rows[readIdx--];
-          }
+      const oldLen = rows.length;
+      const newLen = oldLen + snapshots.length;
+      let readIdx = oldLen - 1;
+      let snapIdx = snapshots.length - 1;
+      rows.length = newLen;
+      for (let writeIdx = newLen - 1; writeIdx >= 0; writeIdx--) {
+        if (snapIdx >= 0 && snapshots[snapIdx].y === writeIdx) {
+          rows[writeIdx] = [...snapshots[snapIdx--].row];
+        } else {
+          rows[writeIdx] = rows[readIdx--];
         }
-      } else {
-        rows.splice(snapshots[0].y, 0, [...snapshots[0].row]);
       }
       for (const c of savedCoords) {
         c.item.y = c.oldY;

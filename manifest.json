@@ -1,7 +1,10 @@
 {
   "name": "NanoCell CSV",
   "short_name": "NanoCell CSV",
+  "title": "NanoCell — Free CSV Editor & Viewer That Never Corrupts Data",
   "description": "Open, edit, and clean CSV/TSV files keeping leading zeros, + signs, and dates intact. Preview multi-GB files instantly—100% offline, free, and open source.",
+  "meta_image": "https://nanocell-csv.com/nanocell_meta_image_banner.webp",
+  "nc-color": "#48a741",
   "display": "standalone",
   "orientation": "portrait",
   "start_url": "/app/home.html",

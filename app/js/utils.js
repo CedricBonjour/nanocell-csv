@@ -6,29 +6,8 @@
 
 // --- Custom Element & DOM Utilities ---
 
-export const BaseElement = typeof HTMLElement !== 'undefined' ? HTMLElement : class {};
-
 export function defineEl(tag, cls) {
-  if (typeof customElements !== 'undefined' && !customElements.get(tag)) {
-    customElements.define(tag, cls);
-  }
-}
-
-export function setOpen(el, open) {
-  if (!el) return;
-  const isOpenState = Boolean(open);
-  el._isOpen = isOpenState;
-  el.classList?.toggle('open', isOpenState);
-  if (isOpenState) el.setAttribute?.('open', '');
-  else el.removeAttribute?.('open');
-}
-
-export function isOpen(el) {
-  if (!el) return false;
-  if (el.classList || el.hasAttribute) {
-    return Boolean(el.classList?.contains('open') || el.hasAttribute?.('open'));
-  }
-  return Boolean(el._isOpen);
+  if (!customElements.get(tag)) customElements.define(tag, cls);
 }
 
 export function isInputElement(el) {
@@ -36,26 +15,61 @@ export function isInputElement(el) {
 }
 
 export function emitChange(el, isUserAction = true) {
-  if (isUserAction && typeof Event !== 'undefined') {
-    el?.dispatchEvent?.(new Event('change', { bubbles: true }));
-  }
+  if (isUserAction) el.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
 export function cycleFocus(event, focusableElements, fallbackElement = null) {
-  if (!focusableElements?.length) return;
+  if (!focusableElements.length) return;
   event.preventDefault();
-  const active = globalThis.document?.activeElement;
-  let index = focusableElements.findIndex(el => el === active || (active && el?.contains?.(active)));
+  const active = document.activeElement;
+  let index = focusableElements.findIndex(el => el === active || el.contains(active));
   if (index === -1 && fallbackElement) {
-    index = focusableElements.findIndex(el => el === fallbackElement || el?.contains?.(fallbackElement));
+    index = focusableElements.findIndex(el => el === fallbackElement || el.contains(fallbackElement));
   }
   const nextIndex = event.shiftKey
     ? (index <= 0 ? focusableElements.length - 1 : index - 1)
     : (index === -1 || index >= focusableElements.length - 1 ? 0 : index + 1);
   const nextEl = focusableElements[nextIndex];
-  nextEl?.focus?.();
-  const scrollTarget = nextEl?.closest?.('.setting-row') || nextEl;
-  try { scrollTarget?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' }); } catch {}
+  nextEl.focus();
+  (nextEl.closest('.setting-row') || nextEl).scrollIntoView({ block: 'nearest', inline: 'nearest' });
+}
+
+/**
+ * Keyboard model shared by every overlay (popups, drawers, palette, dialog):
+ * the overlay owns Escape (-> onEscape) and, when getFocusables is given, traps Tab within it.
+ * Both keys are consumed (stopPropagation) so the document-level router never sees them.
+ * Tracks the last focused descendant in `el.lastFocused` (Tab resumes from it unless `resumeFocus`
+ * is false) and returns the handler so the router can forward Escape/Tab to a modal overlay whose
+ * focus has drifted outside it.
+ */
+export function bindOverlayKeys(el, { onEscape, getFocusables = null, resumeFocus = true, ownsKeyboard = false }) {
+  el.lastFocused = null;
+  el.addEventListener('focusin', (event) => { el.lastFocused = event.target; });
+  if (ownsKeyboard) {
+    el.setAttribute('data-owns-keyboard', '');
+    el.addEventListener('mousedown', (event) => {
+      if (!event.target.closest('input, select, textarea, button, a, ui-glyph, ui-num, ui-list, ui-bool, [tabindex]')) {
+        event.preventDefault();
+        if (!el.contains(document.activeElement)) {
+          (el.lastFocused || getFocusables?.()[0])?.focus();
+        }
+      }
+    });
+  }
+  const handle = (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      onEscape();
+    } else if (event.key === 'Tab' && getFocusables) {
+      const focusables = getFocusables();
+      if (focusables.length === 0) return;
+      event.stopPropagation();
+      cycleFocus(event, focusables, resumeFocus ? el.lastFocused : null);
+    }
+  };
+  el.addEventListener('keydown', handle);
+  return handle;
 }
 
 // --- String, Formatting & Escaping Utilities ---
@@ -150,7 +164,7 @@ export async function copyToClipboard(text) {
   }
 }
 
-export function downloadBlob(blob, filename, doc = globalThis.document) {
+export function downloadBlob(blob, filename, doc = document) {
   if (!doc) return;
   const url = URL.createObjectURL(blob);
   const anchor = doc.createElement('a');

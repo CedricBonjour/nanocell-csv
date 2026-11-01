@@ -1,10 +1,8 @@
-<!-- https://nanocell-csv.com/article-assets/opening-a-large-csv-in-excel.webp -->
-
-<!-- https://nanocell-csv.com/article-assets/csv-data-atlas-pillar.webp -->
-
 # Why Does Editing CSV Files Always Feel So Difficult?
 
 > CSV files are the backbone of data exchange—simple, universal, and incredibly versatile. It's not flashy, it's not trendy, and yet it is everywhere. But if CSV files are so simple, important, and universal, why do they feel so painful to work with?
+
+![csv file as atlas god](/article-assets/opening-a-large-csv-in-excel.webp)
 
 ## What Are CSV Files (a quick reminder)?
 

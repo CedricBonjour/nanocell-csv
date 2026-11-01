@@ -152,16 +152,6 @@ h1 {
   margin: 0 0 1.5rem;
 }
 
-#banner {
-  width: 100%;
-  max-height: 420px;
-  object-fit: cover;
-  border-radius: 12px;
-  border: 1px solid var(--slate-200);
-  margin: 0 0 2rem;
-  display: block;
-}
-
 /* Article Prose */
 .article-prose {
   font-size: 1.05rem;

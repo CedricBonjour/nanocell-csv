@@ -478,16 +478,6 @@ ui-glyph[disabled] {
   pointer-events: none;
 }
 
-.glyph-subtle {
-  opacity: 0.75;
-  transition: opacity 0.15s ease, transform 0.15s ease;
-}
-
-.glyph-subtle:hover {
-  opacity: 1;
-  transform: scale(1.1);
-}
-
 .glyph-dim {
   opacity: 0.6;
 }
@@ -774,7 +764,8 @@ ui-command-palette,
 ui-finder,
 ui-filter,
 ui-validation-pane,
-ui-macro-pane {
+ui-macro-pane,
+ui-file-info-pane {
   display: none;
 }
 
@@ -786,7 +777,8 @@ ui-command-palette.open {
 ui-finder.open,
 ui-filter.open,
 ui-validation-pane.open,
-ui-macro-pane.open {
+ui-macro-pane.open,
+ui-file-info-pane.open {
   display: flex;
 }
 
@@ -1151,9 +1143,10 @@ ui-bool.checked .toggle-thumb { transform: translateX(20px); }
   justify-content: flex-end;
 }
 
-/* 12. Validation & Macro Sidepanes (<ui-validation-pane>, <ui-macro-pane>) */
+/* 12. Validation, Macro & File Info Sidepanes (<ui-validation-pane>, <ui-macro-pane>, <ui-file-info-pane>) */
 ui-validation-pane,
-ui-macro-pane {
+ui-macro-pane,
+ui-file-info-pane {
   flex: 0 0 360px;
   height: 100%;
   background-color: var(--modal-bg);
@@ -1442,6 +1435,60 @@ ui-macro-pane {
   top: -4px;
 }
 
+.file-info-view {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 2px;
+}
+
+.file-info-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.file-info-card {
+  background-color: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.file-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+
+.file-info-row:last-child {
+  border-bottom: none;
+}
+
+.file-info-label {
+  color: var(--txt-soft);
+  flex-shrink: 0;
+}
+
+.file-info-value {
+  color: var(--txt);
+  font-weight: 500;
+  text-align: right;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  user-select: text;
+}
+
+.file-info-value.mono {
+  font-family: var(--font-family-mono);
+}
+
 /* 13. About Pane (<ui-about>) & Print Media */
 ui-about {
   display: flex;
@@ -1576,7 +1623,8 @@ ui-about {
   #popup-stack,
   ui-command-palette,
   ui-validation-pane,
-  ui-macro-pane {
+  ui-macro-pane,
+  ui-file-info-pane {
     display: none !important;
   }
 

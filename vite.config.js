@@ -2,9 +2,8 @@ import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import { resolve } from 'path';
 import { spawnSync } from 'child_process';
-import { readFileSync, writeFileSync, copyFileSync } from 'fs';
-import { marked } from 'marked';
-import { buildArticles, serveArticleDev, renderAllArticlesGrid } from './article-factory.js';
+import { readFileSync } from 'fs';
+import { buildWebpages, serveWebpageDev, renderAllArticlesGrid } from './webpage-factory.js';
 
 const p = (f) => resolve(__dirname, f);
 const pkg = JSON.parse(readFileSync(p('package.json'), 'utf-8'));
@@ -25,10 +24,10 @@ if (!commitHash) {
 
 const version = (pkg.version || '1.0.0').replace(/^v/, '');
 const appVersion = `${version}-${commitHash}`;
-const appTitle = 'NanoCell — Free CSV Editor & Viewer That Never Corrupts Data';
-const appDescription = 'Open, edit, and clean CSV/TSV files keeping leading zeros, + signs, and dates intact. Preview multi-GB files instantly—100% offline, free, and open source.';
-const appMetaImage = 'https://nanocell-csv.com/nanocell_meta_image_banner.webp';
-const articleDefaults = { appDescription, appMetaImage };
+const appTitle = manifestData.title;
+const appDescription = manifestData.description;
+const appMetaImage = manifestData.meta_image;
+const pageDefaults = { appDescription, appMetaImage };
 
 const devServerRoutingPlugin = () => ({
   name: 'dev-server-routing',
@@ -41,7 +40,7 @@ const devServerRoutingPlugin = () => ({
         next();
         return;
       }
-      if (serveArticleDev(url, res, articleDefaults)) return;
+      if (serveWebpageDev(url, res, pageDefaults)) return;
       next();
     });
   }
@@ -50,14 +49,7 @@ const devServerRoutingPlugin = () => ({
 const generateHtmlPlugin = (command) => ({
   name: 'generate-html',
   closeBundle() {
-    if (command !== 'build') return;
-    copyFileSync(p('dist/web/index.html'), p('dist/index.html'));
-    const md = (f) => marked.parse(readFileSync(p(f), 'utf-8'));
-    const style = '<style>body{max-width:800px;margin:2em auto;font:16px/1.6 sans-serif}</style>';
-    const body = `<a href="/">&larr; Home</a>${md('TERMS_OF_USE.md')}<hr>${md('LICENSE.md')}`;
-    writeFileSync(p('dist/terms_of_use_and_license.html'), `<!DOCTYPE html>${style}${body}`);
-
-    buildArticles(articleDefaults);
+    if (command === 'build') buildWebpages(pageDefaults);
   }
 });
 
@@ -69,7 +61,7 @@ const htmlVersionPlugin = () => ({
       .replace(/__APP_TITLE__/g, appTitle)
       .replace(/__APP_DESCRIPTION__/g, appDescription)
       .replace(/__APP_META_IMAGE__/g, appMetaImage)
-      .replace(/__ARTICLE_GRID__/g, () => renderAllArticlesGrid(articleDefaults));
+      .replace(/__ARTICLE_GRID__/g, () => renderAllArticlesGrid(pageDefaults));
   }
 });
 
@@ -118,7 +110,7 @@ export default defineConfig(({ command }) => ({
 
       manifest: {
         ...manifestData,
-        description: appDescription,
+        version: appVersion,
         theme_color: { toJSON: () => undefined },
         background_color: undefined
       }

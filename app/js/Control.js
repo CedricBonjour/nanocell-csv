@@ -7,20 +7,20 @@
  * - <ui-input> (BadgeInput): Text input with optional inline right-aligned status/count badge
  */
 
-import { BaseElement, defineEl, getNextPow2, getPrevPow2, formatThousands, emitChange, clamp } from './utils.js';
+import { defineEl, getNextPow2, getPrevPow2, formatThousands, emitChange, clamp } from './utils.js';
 import { Glyph } from './Glyph.js';
 
-export class BoolInput extends BaseElement {
+export class BoolInput extends HTMLElement {
   constructor(initialValue = false) {
     super();
     this._value = Boolean(initialValue);
-    this.setAttribute?.('tabindex', '0');
-    this.setAttribute?.('role', 'switch');
+    this.setAttribute('tabindex', '0');
+    this.setAttribute('role', 'switch');
     this.innerHTML = '<div class="toggle-track"><div class="toggle-thumb"></div></div>';
     this.render();
 
-    this.addEventListener?.('click', () => { this.focus?.(); this.setValueInternal(!this._value, true); });
-    this.addEventListener?.('keydown', (e) => {
+    this.addEventListener('click', () => { this.focus(); this.setValueInternal(!this._value, true); });
+    this.addEventListener('keydown', (e) => {
       const k = e.key.toUpperCase();
       if (k === ' ' || k === 'ENTER' || k === 'ARROWLEFT' || k === 'ARROWRIGHT') {
         e.preventDefault();
@@ -30,8 +30,8 @@ export class BoolInput extends BaseElement {
   }
 
   render() {
-    this.setAttribute?.('aria-checked', String(this._value));
-    this.classList?.toggle('checked', this._value);
+    this.setAttribute('aria-checked', String(this._value));
+    this.classList.toggle('checked', this._value);
   }
 
   get value() { return this._value; }
@@ -44,18 +44,18 @@ export class BoolInput extends BaseElement {
   }
 }
 
-export class StepperInput extends BaseElement {
+class StepperInput extends HTMLElement {
   initStepper(leftIcon, leftLabel, rightIcon, rightLabel, size, onPrev, onNext) {
-    if (size) this.setAttribute?.('size', size);
-    this.setAttribute?.('tabindex', '0');
+    if (size) this.setAttribute('size', size);
+    this.setAttribute('tabindex', '0');
     this.leftBtn = new Glyph(leftIcon, { title: leftLabel, tabIndex: -1, size });
     this.centerEl = document.createElement('span');
     this.centerEl.className = 'truncate';
     this.rightBtn = new Glyph(rightIcon, { title: rightLabel, tabIndex: -1, size });
-    this.append?.(this.leftBtn, this.centerEl, this.rightBtn);
-    this.leftBtn.addEventListener?.('click', (e) => { e.stopPropagation(); this.focus?.(); onPrev(); });
-    this.rightBtn.addEventListener?.('click', (e) => { e.stopPropagation(); this.focus?.(); onNext(); });
-    this.addEventListener?.('keydown', (e) => {
+    this.append(this.leftBtn, this.centerEl, this.rightBtn);
+    this.leftBtn.addEventListener('click', (e) => { e.stopPropagation(); this.focus(); onPrev(); });
+    this.rightBtn.addEventListener('click', (e) => { e.stopPropagation(); this.focus(); onNext(); });
+    this.addEventListener('keydown', (e) => {
       const k = e.key.toUpperCase();
       if (k === 'ARROWLEFT' || k === 'ARROWDOWN') { e.preventDefault(); onPrev(); }
       else if (k === 'ARROWRIGHT' || k === 'ARROWUP') { e.preventDefault(); onNext(); }
@@ -68,7 +68,7 @@ export class ListInput extends StepperInput {
     super();
     this.options = optionsList.map(String);
     this.selectedIndex = 0;
-    this.setAttribute?.('role', 'listbox');
+    this.setAttribute('role', 'listbox');
     this.initStepper(
       'arrow_left', 'Previous option', 'arrow_right', 'Next option', size,
       () => this.setSelectedIndex(this.selectedIndex - 1, true),
@@ -132,17 +132,10 @@ export class NumInput extends StepperInput {
   }
 }
 
-export class BadgeInput extends BaseElement {
-  constructor(options = {}) {
+class BadgeInput extends HTMLElement {
+  constructor() {
     super();
-    this._initOptions = options;
-    this.ensureRendered();
-  }
-
-  ensureRendered() {
-    if (this._rendered) return;
-    this._rendered = true;
-    this.classList?.add('ctrl-box');
+    this.classList.add('ctrl-box');
 
     this.inputEl = document.createElement('input');
     this.inputEl.type = 'text';
@@ -151,49 +144,33 @@ export class BadgeInput extends BaseElement {
     this.badgeEl = document.createElement('span');
     this.badgeEl.className = 'ctrl-badge';
 
-    this.append?.(this.inputEl, this.badgeEl);
-    this._syncAttributes();
-  }
-
-  _syncAttributes() {
-    const opts = this._initOptions || {};
-    const placeholder = opts.placeholder ?? this.getAttribute?.('placeholder') ?? '';
-    const label = opts.label ?? this.getAttribute?.('label') ?? placeholder;
-    const badgeAttr = opts.badge ?? this.getAttribute?.('badge');
-    const inputCls = opts.inputCls ?? this.getAttribute?.('input-class') ?? '';
-
-    if (placeholder) this.inputEl.placeholder = placeholder;
-    if (label) this.inputEl.setAttribute('aria-label', label);
-    if (inputCls) {
-      for (const c of String(inputCls).split(/\s+/)) {
-        if (c) this.inputEl.classList?.add(c);
-      }
-    }
-    if (badgeAttr !== undefined && badgeAttr !== null) {
-      this.badge = badgeAttr;
-    }
+    this.append(this.inputEl, this.badgeEl);
   }
 
   connectedCallback() {
-    this.ensureRendered();
-    this._syncAttributes();
+    const placeholder = this.getAttribute('placeholder') ?? '';
+    const label = this.getAttribute('label') ?? placeholder;
+    const badgeAttr = this.getAttribute('badge');
+    if (placeholder) this.inputEl.placeholder = placeholder;
+    if (label) this.inputEl.setAttribute('aria-label', label);
+    if (badgeAttr != null) this.badge = badgeAttr;
   }
 
-  get value() { return this.inputEl?.value ?? ''; }
-  set value(val) { if (this.inputEl) this.inputEl.value = val ?? ''; }
+  get value() { return this.inputEl.value; }
+  set value(val) { this.inputEl.value = val ?? ''; }
 
-  get badge() { return this.badgeEl?.textContent ?? ''; }
+  get badge() { return this.badgeEl.textContent; }
   set badge(text) {
     const str = String(text ?? '');
-    if (this.badgeEl) this.badgeEl.textContent = str;
-    this.inputEl?.classList?.toggle('has-badge', str.length > 0);
+    this.badgeEl.textContent = str;
+    this.inputEl.classList.toggle('has-badge', str.length > 0);
   }
 
-  focus() { this.inputEl?.focus?.(); }
-  select() { this.inputEl?.select?.(); }
+  focus() { this.inputEl.focus(); }
+  select() { this.inputEl.select(); }
 }
 
-export class TagInput extends BaseElement {
+export class TagInput extends HTMLElement {
   constructor(optionsList = [], initialValue = []) {
     super();
     this.options = optionsList.map(opt =>
@@ -203,50 +180,42 @@ export class TagInput extends BaseElement {
     );
     this._selected = new Set(Array.isArray(initialValue) ? initialValue.map(String) : []);
     this.activeIndex = 0;
-    this.tagEls = [];
 
-    this.setAttribute?.('tabindex', '0');
-    this.setAttribute?.('role', 'listbox');
-    this.setAttribute?.('aria-multiselectable', 'true');
+    this.setAttribute('tabindex', '0');
+    this.setAttribute('role', 'listbox');
+    this.setAttribute('aria-multiselectable', 'true');
 
-    this._buildTags();
-    this._bindEvents();
-  }
-
-  _buildTags() {
-    this.innerHTML = '';
-    this.tagEls = [];
-    this.options.forEach((opt, idx) => {
+    this.tagEls = this.options.map((opt, idx) => {
       const tag = document.createElement('span');
       tag.className = 'ui-tag';
       tag.setAttribute('role', 'option');
-      tag.dataset.value = opt.value;
+      tag.dataset.idx = String(idx);
       tag.textContent = opt.label;
-      tag.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.activeIndex = idx;
-        this.focus?.();
-        this.toggleTag(opt.value, true);
-      });
-      this.tagEls.push(tag);
-      this.appendChild?.(tag);
+      this.appendChild(tag);
+      return tag;
     });
     this.render();
-  }
 
-  _bindEvents() {
-    this.addEventListener?.('keydown', (e) => {
+    this.addEventListener('click', (e) => {
+      const tag = e.target.closest('.ui-tag');
+      if (!tag) return;
+      e.stopPropagation();
+      this.activeIndex = parseInt(tag.dataset.idx, 10);
+      this.focus();
+      this.toggleTag(this.options[this.activeIndex].value, true);
+    });
+
+    this.addEventListener('keydown', (e) => {
       const len = this.options.length;
       if (len === 0) return;
       const k = e.key.toUpperCase();
-      if (k === 'ARROWRIGHT' || k === 'ARROWDOWN') {
+      if (k === 'ARROWRIGHT' || k === 'ARROWDOWN' || k === 'ARROWLEFT' || k === 'ARROWUP') {
         e.preventDefault();
         e.stopPropagation();
-        this.setActiveIndex((this.activeIndex + 1) % len);
-      } else if (k === 'ARROWLEFT' || k === 'ARROWUP') {
-        e.preventDefault();
-        e.stopPropagation();
-        this.setActiveIndex((this.activeIndex - 1 + len) % len);
+        const delta = (k === 'ARROWRIGHT' || k === 'ARROWDOWN') ? 1 : -1;
+        this.activeIndex = ((this.activeIndex + delta) % len + len) % len;
+        this.render();
+        this.tagEls[this.activeIndex].scrollIntoView({ block: 'nearest', inline: 'nearest' });
       } else if (k === 'ENTER' || k === ' ') {
         e.preventDefault();
         e.stopPropagation();
@@ -254,14 +223,6 @@ export class TagInput extends BaseElement {
         if (activeOpt) this.toggleTag(activeOpt.value, true);
       }
     });
-  }
-
-  setActiveIndex(index) {
-    const len = this.options.length;
-    if (len === 0) return;
-    this.activeIndex = ((index % len) + len) % len;
-    this.render();
-    try { this.tagEls[this.activeIndex]?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' }); } catch {}
   }
 
   toggleTag(val, isUserAction = false) {
@@ -276,11 +237,10 @@ export class TagInput extends BaseElement {
     this.tagEls.forEach((tag, idx) => {
       const opt = this.options[idx];
       const isSelected = Boolean(opt && this._selected.has(opt.value));
-      const isFocused = idx === this.activeIndex;
       if (opt && tag.textContent !== opt.label) tag.textContent = opt.label;
-      tag.classList?.toggle('selected', isSelected);
-      tag.classList?.toggle('focused', isFocused);
-      tag.setAttribute?.('aria-selected', String(isSelected));
+      tag.classList.toggle('selected', isSelected);
+      tag.classList.toggle('focused', idx === this.activeIndex);
+      tag.setAttribute('aria-selected', String(isSelected));
     });
   }
 
@@ -289,8 +249,7 @@ export class TagInput extends BaseElement {
   }
 
   set value(val) {
-    const list = Array.isArray(val) ? val.map(String) : [];
-    this._selected = new Set(list);
+    this._selected = new Set(Array.isArray(val) ? val.map(String) : []);
     this.render();
   }
 }

@@ -3,46 +3,63 @@
  * Floating top-right sheet toolbars: Find & Replace (<ui-finder>) and Column Filter (<ui-filter>).
  */
 
-import { getSheet, getCsvHandle } from './state.js';
-import { defineEl, clamp } from './utils.js';
+import { defineEl, bindOverlayKeys, clamp } from './utils.js';
+import { dom } from './state.js';
 import './Glyph.js';
 import { NumInput } from './Control.js';
-import { Popup } from './Popup.js';
 import { Notification } from './Notification.js';
 
-class FloatingToolbar extends Popup {
+const isCtrlKey = (event, key) => (event.ctrlKey || event.metaKey) && event.key.toUpperCase() === key;
+
+class FloatingToolbar extends HTMLElement {
   constructor(sheet) {
     super();
     this.sheet = sheet;
+    this.classList.add('floating-panel');
+    bindOverlayKeys(this, {
+      onEscape: () => this.close(),
+      getFocusables: () => this.getFocusableElements(),
+      ownsKeyboard: true,
+    });
+    this.colInput = new NumInput(1, 1, 999, 'linear', 'sm');
+    this.colInput.setAttribute('aria-label', 'Column number');
+    this.colInput.setAttribute('title', 'Column number');
   }
 
-  get activeSheet() { return this.sheet || getSheet(); }
-  get matchCase() { return Boolean(this.caseBtn?.active); }
+  get isOpen() { return this.classList.contains('open'); }
+  get matchCase() { return this.caseBtn.active; }
+
+  show() {
+    if (this.parentNode !== dom.popupStack) dom.popupStack?.appendChild(this);
+    this.classList.toggle('open', true);
+    return this;
+  }
+
+  close() {
+    this.classList.toggle('open', false);
+    return this;
+  }
 
   getColIndex() {
-    const df = this.activeSheet?.df;
-    const colVal = Number(this.colInput?.value);
-    return clamp((isNaN(colVal) ? 1 : colVal) - 1, 0, (df?.width || 1) - 1);
+    const df = this.sheet.df;
+    const colVal = Number(this.colInput.value);
+    return clamp((isNaN(colVal) ? 1 : colVal) - 1, 0, df.width - 1);
   }
 
   updateColTitle() {
-    const df = this.activeSheet?.df;
-    if (!this.colTitle) return;
-    if (!df) { this.colTitle.textContent = ''; return; }
+    const df = this.sheet.df;
     const colIndex = this.getColIndex();
-    const title = df.get(colIndex, 0)?.trim() || `Column ${colIndex + 1}`;
+    const title = df.get(colIndex, 0).trim() || `Column ${colIndex + 1}`;
     this.colTitle.textContent = title;
     this.colTitle.setAttribute('title', `Column ${colIndex + 1}: ${title}`);
   }
 
-  syncColBounds(resetToActiveCol = false) {
-    if (!this.colInput) return false;
-    const activeSheet = this.activeSheet;
-    const maxCols = Math.max(1, activeSheet?.df?.width || 1);
+  syncColBounds(resetToActiveCol = false, colIndex = null) {
+    const maxCols = Math.max(1, this.sheet.df.width);
     const prevVal = Number(this.colInput.value) || 1;
     this.colInput.min = 1;
     this.colInput.max = maxCols;
-    const targetCol = resetToActiveCol ? (activeSheet?.x ?? 0) + 1 : prevVal;
+    const targetCol = (colIndex != null && colIndex >= 0) ? colIndex + 1 : (resetToActiveCol ? this.sheet.x + 1 : prevVal);
     const nextVal = clamp(targetCol, 1, maxCols);
     this.colInput.value = nextVal;
     this.updateColTitle();
@@ -50,18 +67,12 @@ class FloatingToolbar extends Popup {
   }
 
   bindColInputSync(onClampedChange) {
-    if (!this.colInput) return;
     const syncNow = (commitEdit = false) => {
-      if (commitEdit && this.activeSheet?.isEditing) this.activeSheet.commitEdit?.();
-      const clamped = this.syncColBounds(false);
-      if (clamped) onClampedChange?.();
+      if (commitEdit && this.sheet.isEditing) this.sheet.commitEdit();
+      if (this.syncColBounds(false)) onClampedChange();
     };
-    this.addEventListener?.('mouseenter', () => syncNow(false));
-    this.colInput.addEventListener?.('mouseenter', () => syncNow(false));
-    this.colInput.addEventListener?.('focusin', () => syncNow(true));
-    this.colInput.addEventListener?.('pointerdown', () => syncNow(true), true);
-    this.colInput.addEventListener?.('mousedown', () => syncNow(true), true);
-    this.colInput.addEventListener?.('keydown', () => syncNow(true), true);
+    this.addEventListener('mouseenter', () => syncNow(false));
+    this.colInput.addEventListener('focusin', () => syncNow(true));
   }
 }
 
@@ -115,10 +126,6 @@ export class FinderDialog extends FloatingToolbar {
     this.colRow = this.querySelector('.col-row');
     this.colToggleBtn = this.querySelector('.col-toggle-btn');
     this.colTitle = this.querySelector('.filter-col-title');
-
-    this.colInput = new NumInput(1, 1, 999, 'linear', 'sm');
-    this.colInput.setAttribute('aria-label', 'Column number');
-    this.colInput.setAttribute('title', 'Column number');
     this.colRow.insertBefore(this.colInput, this.colToggleBtn);
 
     this.caseBtn.onToggle = () => this.find(true);
@@ -131,7 +138,7 @@ export class FinderDialog extends FloatingToolbar {
       if (e.key === 'Enter') { e.preventDefault(); this.replaceAll(); }
     });
     const toggleCol = () => {
-      if (this.activeSheet?.isEditing) this.activeSheet.commitEdit?.();
+      if (this.sheet.isEditing) this.sheet.commitEdit();
       this.syncColBounds(false);
       this.setColEnabled(!this.colEnabled, true);
     };
@@ -147,6 +154,13 @@ export class FinderDialog extends FloatingToolbar {
       this.syncColBounds(false);
       if (!this.colEnabled) this.setColEnabled(true, false);
       this.find(true);
+    });
+    // Ctrl+F / Ctrl+Shift+F inside the finder re-targets it (quick vs. advanced) without leaving it.
+    this.addEventListener('keydown', (e) => {
+      if (!isCtrlKey(e, 'F')) return;
+      e.preventDefault();
+      e.stopPropagation();
+      this.sheet.find(e.shiftKey);
     });
     this.toggleBtn.onClick = () => this.toggleReplaceRow();
     this.prevBtn.onClick = () => this.findPrev();
@@ -169,12 +183,12 @@ export class FinderDialog extends FloatingToolbar {
       this.colToggleBtn.classList.toggle('checked', this.colEnabled);
       this.colToggleBtn.setAttribute('aria-checked', String(this.colEnabled));
     }
-    this.colRow?.classList.toggle('col-disabled', !this.colEnabled);
+    this.colRow.classList.toggle('col-disabled', !this.colEnabled);
     if (recompute) this.find(true);
   }
 
   getSearchQuery() {
-    const df = this.activeSheet?.df;
+    const df = this.sheet.df;
     const colIndex = this.getColIndex();
     const scopeRange = (this.isAdvanced && this.colEnabled && df && df.height > 0 && df.width > 0)
       ? { xmin: colIndex, xmax: colIndex, ymin: 0, ymax: df.height - 1 }
@@ -189,20 +203,20 @@ export class FinderDialog extends FloatingToolbar {
   toggleReplaceRow(show = this.replaceRow.classList.contains('hidden')) {
     const wasAdvanced = this.isAdvanced;
     this.replaceRow.classList.toggle('hidden', !show);
-    this.colRow?.classList.toggle('hidden', !show);
+    this.colRow.classList.toggle('hidden', !show);
     this.toggleBtn.expanded = show;
     this.isAdvanced = Boolean(show);
     if (show && !wasAdvanced) {
       this.syncColBounds(!this.colEnabled);
     }
     if (!show) {
-      const activeEl = globalThis.document?.activeElement;
+      const activeEl = document.activeElement;
       if (
         activeEl === this.replaceInput ||
         activeEl === this.replaceBtn ||
         activeEl === this.colToggleBtn ||
         activeEl === this.colInput ||
-        this.colInput?.contains?.(activeEl)
+        this.colInput.contains(activeEl)
       ) {
         this.findInput.focus();
       }
@@ -216,12 +230,12 @@ export class FinderDialog extends FloatingToolbar {
     this.findBox.badge = this.matches.length === 0 ? 'No match' : `${this.currentIndex + 1} / ${this.matches.length}`;
     if (this.matches.length > 0) {
       const m = this.matches[this.currentIndex];
-      this.activeSheet?.focusCell(m.x, m.y);
+      this.sheet.focusCell(m.x, m.y);
     }
   }
 
   find(forceRecompute = false) {
-    const activeSheet = this.activeSheet;
+    const activeSheet = this.sheet;
     this.query = this.findInput.value;
 
     if (!this.query) {
@@ -233,7 +247,7 @@ export class FinderDialog extends FloatingToolbar {
     } else {
       this.lastQuery = this.query;
       this.currentIndex = 0;
-      this.matches = activeSheet?.df ? activeSheet.df.find(this.getSearchQuery()) : [];
+      this.matches = activeSheet.df.find(this.getSearchQuery());
     }
     this._syncMatchView();
   }
@@ -247,8 +261,8 @@ export class FinderDialog extends FloatingToolbar {
   }
 
   replaceAll() {
-    const activeSheet = this.activeSheet;
-    if (!this.query || !activeSheet?.df) return;
+    const activeSheet = this.sheet;
+    if (!this.query) return;
     activeSheet.df.replaceAll(this.getSearchQuery(), this.replaceInput.value);
     activeSheet.refresh();
     activeSheet.refreshSelection(true);
@@ -273,7 +287,6 @@ export class FinderDialog extends FloatingToolbar {
 export class FilterDialog extends FloatingToolbar {
   constructor(sheet) {
     super(sheet);
-    this._previousLock = null;
 
     this.innerHTML = `
       <div class="finder-row">
@@ -289,9 +302,6 @@ export class FilterDialog extends FloatingToolbar {
       </div>
     `;
 
-    this.colInput = new NumInput(1, 1, 999, 'linear', 'sm');
-    this.colInput.setAttribute('aria-label', 'Column number');
-    this.colInput.setAttribute('title', 'Column number');
     this.firstElementChild.prepend(this.colInput);
 
     this.colTitle = this.querySelector('.filter-col-title');
@@ -303,6 +313,13 @@ export class FilterDialog extends FloatingToolbar {
     this.closeBtn = this.querySelector('.close-btn');
 
     this.caseBtn.onToggle = () => { if (this.filterInput.value) this.applyFilter(); };
+    // Ctrl+Q toggles the filter: inside the toolbar it closes it.
+    this.addEventListener('keydown', (e) => {
+      if (!isCtrlKey(e, 'Q')) return;
+      e.preventDefault();
+      e.stopPropagation();
+      this.close();
+    });
     this.applyBtn.onClick = () => this.applyFilter();
     this.closeBtn.onClick = () => this.close();
 
@@ -313,7 +330,7 @@ export class FilterDialog extends FloatingToolbar {
     this.filterInput.addEventListener('keydown', handleEnter);
     this.filterInput.addEventListener('input', () => {
       if (!this.filterInput.value) {
-        if (this.activeSheet?.filterRows !== null) this.applyFilter();
+        if (this.sheet.filterRows !== null) this.applyFilter();
         else this.filterBox.badge = '';
       }
     });
@@ -333,25 +350,16 @@ export class FilterDialog extends FloatingToolbar {
   }
 
   open(colIndex) {
-    if (getCsvHandle()?.viewOnly) {
+    const activeSheet = this.sheet;
+    if (activeSheet.viewOnly) {
       return Notification.warning('Filter is not available in Fast Preview mode.', 'Filter');
     }
-    const activeSheet = this.activeSheet;
-    if (!activeSheet?.df) return;
+    if (activeSheet.isEditing) activeSheet.commitEdit();
 
-    this._previousLock ??= Boolean(activeSheet.df.lock);
-    activeSheet.df.lock = true;
-    if (activeSheet.isEditing) activeSheet.commitEdit?.();
-    activeSheet.updateFooter?.();
-
-    const maxCols = Math.max(1, activeSheet.df.width);
-    this.colInput.min = 1;
-    this.colInput.max = maxCols;
-    const targetCol = (colIndex != null && colIndex >= 0) ? colIndex + 1 : activeSheet.x + 1;
-    this.colInput.value = clamp(targetCol, 1, maxCols);
-    this.updateColTitle();
-
+    this.syncColBounds(true, colIndex);
     this.show();
+    activeSheet.syncLock();
+    activeSheet.updateFooter();
     if (activeSheet.filterRows === null) this.filterBox.badge = '';
     this.filterInput.focus();
     this.filterInput.select();
@@ -359,20 +367,18 @@ export class FilterDialog extends FloatingToolbar {
 
   close() {
     super.close();
-    const activeSheet = this.activeSheet;
+    const activeSheet = this.sheet;
     if (activeSheet) {
       activeSheet.clearFilter();
-      if (activeSheet.df) activeSheet.df.lock = this._previousLock ?? false;
-      this._previousLock = null;
-      activeSheet.refresh?.();
-      activeSheet.refreshSelection?.(true);
+      activeSheet.syncLock();
+      activeSheet.refresh();
+      activeSheet.refreshSelection(true);
     }
     this.filterBox.badge = '';
   }
 
   applyFilter() {
-    const activeSheet = this.activeSheet;
-    if (!activeSheet?.df) return;
+    const activeSheet = this.sheet;
     this.updateColTitle();
     activeSheet.setFilter(this.getColIndex(), this.filterInput.value, this.matchCase);
     if (activeSheet.filterRows === null) {

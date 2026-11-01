@@ -30,29 +30,50 @@ const stripHtml = (html = '') =>
     .replace(/\s+/g, ' ')
     .trim();
 
-const toLocalAssetPath = (url = '') =>
-  url.replace(/^https?:\/\/(www\.)?nanocell-csv\.com\//i, '/');
-
 const toAbsoluteUrl = (url = '', fallback = '') => {
   if (!url) return fallback;
   if (/^https?:\/\//i.test(url)) return url;
   return `${siteOrigin}${url.startsWith('/') ? '' : '/'}${url}`;
 };
 
+export function formatMetaTitle(title = '', suffix = 'NanoCell CSV', maxLen = 69) {
+  const clean = String(title).trim();
+  const hasBrand = /nanocell/i.test(clean);
+  const withSuffix = hasBrand ? clean : `${clean} — ${suffix}`;
+  if (withSuffix.length <= maxLen) return withSuffix;
+  if (clean.length <= maxLen) return clean;
+  const sliced = clean.slice(0, maxLen - 1);
+  const lastSpace = sliced.lastIndexOf(' ');
+  return `${(lastSpace > 20 ? sliced.slice(0, lastSpace) : sliced).trimEnd()}…`;
+}
+
+export function renderTermsHtml({ appMetaImage = '' } = {}) {
+  const pageTpl = readFileSync(p('templates/terms.html'), 'utf-8');
+  const md = (f) => marked.parse(readFileSync(p(f), 'utf-8'));
+  const title = 'Terms of Use & License';
+  const metaTitle = formatMetaTitle(title);
+  const description = 'Terms of Use and Creative Commons Attribution-NonCommercial-NoDerivs 3.0 Unported License for NanoCell CSV Editor.';
+  const canonicalUrl = `${siteOrigin}/terms_of_use_and_license.html`;
+
+  return pageTpl
+    .replace(/\{\{META_TITLE\}\}/g, escapeHtml(metaTitle))
+    .replace(/\{\{TITLE\}\}/g, escapeHtml(title))
+    .replace(/\{\{DESCRIPTION\}\}/g, escapeHtml(description))
+    .replace(/\{\{CANONICAL_URL\}\}/g, canonicalUrl)
+    .replace(/\{\{OG_IMAGE\}\}/g, escapeHtml(appMetaImage))
+    .replace(/\{\{TERMS_BODY\}\}/g, md('TERMS_OF_USE.md'))
+    .replace(/\{\{LICENSE_BODY\}\}/g, md('LICENSE.md'));
+}
+
 export function parseArticleData(mdFilePath, slug, { appDescription = '', appMetaImage = '' } = {}) {
   const rawMd = readFileSync(mdFilePath, 'utf-8');
   const titleMatch = rawMd.match(/^#\s+(.+)$/m);
   const title = titleMatch ? titleMatch[1].trim() : slug.replace(/-/g, ' ');
 
-  const commentImgMatch = rawMd.match(/<!--\s*((?:https?:\/\/[^\s>]+|\/[^\s>]+)\.(?:webp|png|jpe?g|gif))\s*-->/i);
-  const bannerImgUrl = commentImgMatch ? commentImgMatch[1].trim() : null;
-
   const bodyImgMatch = rawMd.match(/!\[[^\]]*\]\(((?:https?:\/\/[^)\s]+|\/[^)\s]+)\.(?:webp|png|jpe?g|gif))\)/i);
-  const ogImgRaw = bannerImgUrl || (bodyImgMatch ? bodyImgMatch[1].trim() : null);
-  const ogImage = ogImgRaw ? toAbsoluteUrl(ogImgRaw, appMetaImage) : appMetaImage;
+  const ogImage = bodyImgMatch ? toAbsoluteUrl(bodyImgMatch[1].trim(), appMetaImage) : appMetaImage;
 
   const cleanedMd = rawMd
-    .replace(/<!--[\s\S]*?-->/g, '')
     .replace(/^#\s+.+$/m, '')
     .trim()
     .replace(/(!\[[^\]]*\]\()https?:\/\/(www\.)?nanocell-csv\.com\//gi, '$1/');
@@ -64,7 +85,6 @@ export function parseArticleData(mdFilePath, slug, { appDescription = '', appMet
   return {
     slug,
     title,
-    bannerSrc: bannerImgUrl ? toLocalAssetPath(bannerImgUrl) : null,
     ogImage,
     description,
     htmlBody
@@ -125,16 +145,13 @@ export function renderArticleHtml(article, allArticles = []) {
   ).slice(0, 3);
   const moreArticlesHtml = renderArticleCards(related);
 
-  const bannerHtml = article.bannerSrc
-    ? `<img id="banner" src="${escapeHtml(article.bannerSrc)}" alt="${escapeHtml(article.title)}" loading="eager" />`
-    : '';
-
+  const metaTitle = formatMetaTitle(article.title);
   return pageTpl
+    .replace(/\{\{META_TITLE\}\}/g, escapeHtml(metaTitle))
     .replace(/\{\{TITLE\}\}/g, escapeHtml(article.title))
     .replace(/\{\{DESCRIPTION\}\}/g, escapeHtml(article.description))
     .replace(/\{\{CANONICAL_URL\}\}/g, `${siteOrigin}/article/${article.slug}.html`)
     .replace(/\{\{OG_IMAGE\}\}/g, escapeHtml(article.ogImage))
-    .replace(/\{\{BANNER\}\}/g, bannerHtml)
     .replace(/\{\{BODY\}\}/g, article.htmlBody)
     .replace(/\{\{MORE_ARTICLES\}\}/g, moreArticlesHtml);
 }
@@ -153,7 +170,13 @@ export function syncSitemapWithArticles(sitemapPath, articles) {
   writeFileSync(sitemapPath, xml, 'utf-8');
 }
 
-export function serveArticleDev(url, res, defaults = {}) {
+export function serveWebpageDev(url, res, defaults = {}) {
+  if (url === '/terms_of_use_and_license.html' || url === '/terms_of_use_and_license') {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.end(renderTermsHtml(defaults));
+    return true;
+  }
+
   const articleMatch = url.match(/^\/article\/([a-zA-Z0-9_-]+)(?:\.html)?$/);
   if (!articleMatch) return false;
 
@@ -168,8 +191,11 @@ export function serveArticleDev(url, res, defaults = {}) {
   return true;
 }
 
-export function buildArticles(defaults = {}) {
+export function buildWebpages(defaults = {}) {
+  copyFileSync(p('dist/web/index.html'), p('dist/index.html'));
+  writeFileSync(p('dist/terms_of_use_and_license.html'), renderTermsHtml(defaults), 'utf-8');
   copyFileSync(p('web/article-theme.css'), p('dist/web/article-theme.css'));
+
   const allArticles = getAllArticles(defaults);
   if (allArticles.length === 0) return;
 

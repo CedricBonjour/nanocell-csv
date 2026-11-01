@@ -1,6 +1,7 @@
-<!-- https://nanocell-csv.com/nanocell-landingpage-screenshot.webp -->
+# Clean and Prepare Messy CSV Files for SQL Imports
 
-# How to Clean and Prepare Messy CSV Files for SQL & Database Imports
+
+![csv file in nanocell screenshot](/nanocell-landingpage-screenshot.webp)
 
 > Database `COPY` and CSV import pipelines fail constantly due to dirty column headers, European decimal commas, currency symbols, `NULL` strings, and unescaped quotes. Learn how to sanitize messy CSV exports for SQL in seconds with NanoCell CSV.
 

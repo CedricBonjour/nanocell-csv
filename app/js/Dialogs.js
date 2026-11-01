@@ -4,34 +4,30 @@
  */
 
 import { getSheet, getCsvHandle, Setting, settings, pwa, getNewIssueUrl } from './state.js';
-import { BaseElement, defineEl, cycleFocus, copyToClipboard } from './utils.js';
+import { defineEl, bindOverlayKeys, copyToClipboard } from './utils.js';
 import { Glyph } from './Glyph.js';
 import { BoolInput, ListInput, NumInput, TagInput } from './Control.js';
 import { Notification } from './Notification.js';
 
 export class DialogManager {
   static container = null;
-  static _lastFocused = null;
 
   static init(container) {
-    this.container = container || globalThis.document?.getElementById?.('dialog') || null;
-    if (!this.container || this.container._dialogManagerBound) return;
-    this.container._dialogManagerBound = true;
-    this.container.addEventListener('keydown', (event) => this.handleKeyDown(event));
-    this.container.addEventListener('focusin', (event) => {
-      if (event.target && this.container?.contains?.(event.target)) {
-        this._lastFocused = event.target;
-      }
+    this.container = container;
+    this.handleOverlayKey = bindOverlayKeys(container, {
+      onEscape: () => this.close(),
+      getFocusables: () => this.getFocusableElements(),
+    });
+    // Wrapping focus back to the first control also reveals the dialog header.
+    container.addEventListener('focusin', (event) => {
+      if (event.target === this.getFocusableElements()[0]) container.scrollTop = 0;
     });
   }
 
   static open(element, { closeButton = true, autoFocus = true } = {}) {
-    if (!this.container) this.init();
-    if (!this.container) return;
-
     this.close();
-    globalThis.document?.activeElement?.blur?.();
-    getSheet()?.finder?.close?.();
+    document.activeElement?.blur();
+    getSheet().finder.close();
 
     this.container.classList.add('dialog-large', 'scroll');
     this.container.appendChild(element);
@@ -46,38 +42,27 @@ export class DialogManager {
     }
 
     const firstFocusable = autoFocus ? this.getFocusableElements()[0] : null;
-    if (firstFocusable?.focus) {
-      this._lastFocused = firstFocusable;
-      setTimeout(() => { try { firstFocusable.focus(); } catch {} }, 0);
+    if (firstFocusable) {
+      this.container.lastFocused = firstFocusable;
+      setTimeout(() => firstFocusable.focus(), 0);
     }
   }
 
   static close() {
-    if (!this.container) return;
-    this._lastFocused = null;
+    this.container.lastFocused = null;
     this.container.innerHTML = '';
     this.container.className = '';
-    getSheet()?.refreshScrollbars?.();
   }
 
-  static get isBusy() { return Boolean(this.container?.children.length > 0); }
+  static get isBusy() { return this.container.children.length > 0; }
 
   static getFocusableElements() {
-    if (!this.container) return [];
     const selector = 'ui-list, ui-num, ui-bool, ui-tags, a[href]:not([tabindex="-1"]), button:not([tabindex="-1"]), input:not([tabindex="-1"]), select:not([tabindex="-1"]), textarea:not([tabindex="-1"]), [tabindex="0"]';
     return Array.from(this.container.querySelectorAll(selector))
-      .filter(el => !el.disabled && !el.hidden && !el.closest?.('.hidden'))
+      .filter(el => !el.disabled && !el.hidden && !el.closest('.hidden'))
       .filter((el, _, arr) => !arr.some(p => p !== el && p.contains(el)));
   }
 
-  static handleKeyDown(event) {
-    if (event.defaultPrevented || event.key !== 'Tab' || !this.container) return;
-    const focusables = this.getFocusableElements();
-    cycleFocus(event, focusables, this._lastFocused);
-    if (focusables.length > 0 && globalThis.document?.activeElement === focusables[0]) {
-      this.container.scrollTop = 0;
-    }
-  }
 }
 
 export class SettingDialog {
@@ -153,10 +138,10 @@ const RESET_WARNINGS = [
   'Clear cached files and offline data',
 ];
 
-export class AboutDialog extends BaseElement {
+export class AboutDialog extends HTMLElement {
   constructor() {
     super();
-    this.version = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'v1.0.1-dev';
+    this.version = __APP_VERSION__;
     this.isStandalone = pwa.getState().isStandalone;
     this.renderMain();
   }
@@ -200,11 +185,7 @@ export class AboutDialog extends BaseElement {
   async checkResetPreconditions() {
     const sheet = getSheet();
     const csvHandle = getCsvHandle();
-    const isEditingDoc = Boolean(
-      sheet?.isEditing ||
-      (sheet?.df && !sheet.df.isSaved) ||
-      (csvHandle && csvHandle.readId > 0 && !csvHandle.isReadComplete)
-    );
+    const isEditingDoc = sheet.isEditing || !sheet.df.isSaved || (csvHandle.readId > 0 && !csvHandle.isReadComplete);
     if (isEditingDoc) {
       return {
         ok: false,
@@ -213,8 +194,7 @@ export class AboutDialog extends BaseElement {
       };
     }
 
-    const nav = globalThis.navigator;
-    if (nav && nav.onLine === false) {
+    if (navigator.onLine === false) {
       return {
         ok: false,
         title: 'No Internet Connection',
@@ -222,42 +202,25 @@ export class AboutDialog extends BaseElement {
       };
     }
 
-    if (typeof globalThis.fetch === 'function') {
-      const origin = globalThis.location?.origin && globalThis.location.origin !== 'null'
-        ? globalThis.location.origin
-        : 'https://nanocell-csv.com';
-      const pingUrl = `${origin}/?_ping=${Date.now()}`;
-      const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-      const timeoutId = controller ? setTimeout(() => controller.abort(), 5000) : null;
-      try {
-        let res = await globalThis.fetch(pingUrl, {
-          method: 'HEAD',
-          cache: 'no-store',
-          signal: controller?.signal,
-        });
-        if (res.status === 405) {
-          res = await globalThis.fetch(pingUrl, {
-            method: 'GET',
-            cache: 'no-store',
-            signal: controller?.signal,
-          });
-        }
-        if (timeoutId) clearTimeout(timeoutId);
-        if (!res.ok) {
-          return {
-            ok: false,
-            title: 'Site Unreachable',
-            message: `The server responded with status ${res.status}. Cannot clear cached files while the site is unavailable.`,
-          };
-        }
-      } catch {
-        if (timeoutId) clearTimeout(timeoutId);
+    const origin = location.origin !== 'null' ? location.origin : 'https://nanocell-csv.com';
+    const pingUrl = `${origin}/?_ping=${Date.now()}`;
+    const signal = AbortSignal.timeout(5000);
+    try {
+      let res = await fetch(pingUrl, { method: 'HEAD', cache: 'no-store', signal });
+      if (res.status === 405) res = await fetch(pingUrl, { method: 'GET', cache: 'no-store', signal });
+      if (!res.ok) {
         return {
           ok: false,
           title: 'Site Unreachable',
-          message: 'Unable to reach the server. Please verify your internet connection and ensure the site is online before resetting.',
+          message: `The server responded with status ${res.status}. Cannot clear cached files while the site is unavailable.`,
         };
       }
+    } catch {
+      return {
+        ok: false,
+        title: 'Site Unreachable',
+        message: 'Unable to reach the server. Please verify your internet connection and ensure the site is online before resetting.',
+      };
     }
 
     return { ok: true };
@@ -288,10 +251,8 @@ export class AboutDialog extends BaseElement {
       </div>
     `;
     const cancelBtn = this.querySelector('.about-reset-cancel');
-    if (cancelBtn) {
-      cancelBtn.onclick = () => this.renderMain();
-      setTimeout(() => { try { cancelBtn.focus(); } catch {} }, 0);
-    }
+    cancelBtn.onclick = () => this.renderMain();
+    setTimeout(() => cancelBtn.focus(), 0);
   }
 
   renderConfirm() {
@@ -322,38 +283,29 @@ export class AboutDialog extends BaseElement {
     const cancelBtn = this.querySelector('.about-reset-cancel');
     const confirmBtn = this.querySelector('.about-reset-confirm');
 
-    checklistEl?.addEventListener('click', (e) => {
+    checklistEl.addEventListener('click', (e) => {
       const row = e.target.closest('.about-check-row');
       if (!row) return;
       const idx = parseInt(row.dataset.checkIdx, 10);
       if (Number.isNaN(idx) || idx < 0 || idx >= checked.length) return;
       checked[idx] = !checked[idx];
       row.classList.toggle('checked', checked[idx]);
-      const glyph = row.querySelector('.about-check-glyph');
-      if (glyph) glyph.icon = checked[idx] ? 'checkbox_on' : 'checkbox_off';
-      if (confirmBtn) confirmBtn.disabled = !checked.every(Boolean);
+      row.querySelector('.about-check-glyph').icon = checked[idx] ? 'checkbox_on' : 'checkbox_off';
+      confirmBtn.disabled = !checked.every(Boolean);
     });
 
-    if (cancelBtn) {
-      cancelBtn.onclick = () => this.renderMain();
-    }
+    cancelBtn.onclick = () => this.renderMain();
+    confirmBtn.onclick = () => {
+      if (checked.every(Boolean)) this.executeHardReset(confirmBtn, cancelBtn);
+    };
 
-    if (confirmBtn) {
-      confirmBtn.onclick = () => {
-        if (!checked.every(Boolean)) return;
-        this.executeHardReset(confirmBtn, cancelBtn);
-      };
-    }
-
-    const firstGlyph = checklistEl?.querySelector('.about-check-glyph');
-    if (firstGlyph) {
-      setTimeout(() => { try { firstGlyph.focus(); } catch {} }, 0);
-    }
+    const firstGlyph = checklistEl.querySelector('.about-check-glyph');
+    setTimeout(() => firstGlyph.focus(), 0);
   }
 
   async executeHardReset(confirmBtn, cancelBtn) {
-    if (confirmBtn) confirmBtn.disabled = true;
-    if (cancelBtn) cancelBtn.disabled = true;
+    confirmBtn.disabled = true;
+    cancelBtn.disabled = true;
 
     const check = await this.checkResetPreconditions();
     if (!check.ok) {
@@ -362,43 +314,35 @@ export class AboutDialog extends BaseElement {
       return;
     }
 
-    try { globalThis.localStorage?.clear?.(); } catch {}
-    try { globalThis.sessionStorage?.clear?.(); } catch {}
+    try { localStorage.clear(); } catch {}
+    try { sessionStorage.clear(); } catch {}
 
-    if (typeof globalThis.navigator?.serviceWorker?.getRegistrations === 'function') {
-      try {
-        const registrations = await globalThis.navigator.serviceWorker.getRegistrations();
-        await Promise.allSettled(registrations.map(reg => reg.unregister()));
-      } catch {}
-    }
-
-    if (typeof globalThis.caches?.keys === 'function') {
-      try {
-        const keys = await globalThis.caches.keys();
-        await Promise.allSettled(keys.map(key => globalThis.caches.delete(key)));
-      } catch {}
-    }
-
-    if (typeof globalThis.indexedDB?.databases === 'function') {
-      try {
-        const dbs = await globalThis.indexedDB.databases();
-        await Promise.allSettled(
-          (dbs || []).map(db => db?.name ? new Promise(resolve => {
-            const req = globalThis.indexedDB.deleteDatabase(db.name);
-            req.onsuccess = req.onerror = req.onblocked = () => resolve();
-          }) : Promise.resolve())
-        );
-      } catch {}
-    }
-
-    const sheet = getSheet();
-    if (sheet?.df) sheet.df.isSaved = true;
-
+    // Capability checks: these APIs are missing in some browsers / insecure contexts.
     try {
-      await globalThis.fetch?.(globalThis.location?.href || '/', { cache: 'reload' });
+      const registrations = await navigator.serviceWorker?.getRegistrations() ?? [];
+      await Promise.allSettled(registrations.map(reg => reg.unregister()));
     } catch {}
 
-    globalThis.location?.reload?.();
+    try {
+      const keys = await globalThis.caches?.keys() ?? [];
+      await Promise.allSettled(keys.map(key => caches.delete(key)));
+    } catch {}
+
+    try {
+      const dbs = await indexedDB.databases?.() ?? [];
+      await Promise.allSettled(dbs.filter(db => db.name).map(db => new Promise(resolve => {
+        const req = indexedDB.deleteDatabase(db.name);
+        req.onsuccess = req.onerror = req.onblocked = () => resolve();
+      })));
+    } catch {}
+
+    getSheet().df.isSaved = true;
+
+    try {
+      await fetch(location.href, { cache: 'reload' });
+    } catch {}
+
+    location.reload();
   }
 
   static show() {

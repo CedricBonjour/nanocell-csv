@@ -18,6 +18,9 @@ if (typeof globalThis.HTMLElement === 'undefined') {
       return this.children.includes(child);
     }
     setAttribute() {}
+    getAttribute() { return null; }
+    hasAttribute() { return false; }
+    removeAttribute() {}
     addEventListener() {}
     removeEventListener() {}
     remove() {

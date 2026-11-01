@@ -3,7 +3,6 @@ import { CsvSerializer } from '../core/Csv.js';
 import { getSheet, settings } from './state.js';
 import { downloadBlob, copyToClipboard } from './utils.js';
 import { Notification, showBrowserCompatibilityNotice } from './Notification.js';
-import { Sheet } from './Sheet.js';
 import CsvWorker from './csvWorker.js?worker';
 
 export class CsvHandle {
@@ -14,7 +13,7 @@ export class CsvHandle {
   constructor(options = {}) {
     this.win = options.window !== undefined ? options.window : (globalThis.window ?? null);
     this.doc = options.document !== undefined ? options.document : (globalThis.document ?? null);
-    this.createSheet = options.createSheet || ((df) => new Sheet(df));
+    this.createSheet = options.createSheet;
     this.handle = null;
     this.file = null;
     this.isFirstChunkLoaded = false;
@@ -31,22 +30,35 @@ export class CsvHandle {
     });
   }
 
-  loadFile(file, handle = null) {
-    if (!file) return;
-    this.handle = handle;
-    this.file = file;
-    if (this.doc) this.doc.title = file.name || 'csv';
-    this.read(file);
+  confirmIfUnsaved(action, force = false) {
+    const sheet = getSheet();
+    if (sheet?.isEditing) sheet.commitEdit();
+    return (sheet && !sheet.df.isSaved && !force)
+      ? Notification.choice('Changes will be lost ? ', action)
+      : action();
   }
 
-  async launchFile(handle) {
+  loadFile(file, handle = null, force = false) {
+    if (!file) return;
+    return this.confirmIfUnsaved(() => {
+      this.handle = handle;
+      this.file = file;
+      if (this.doc) this.doc.title = file.name || 'csv';
+      this.read(file);
+    }, force);
+  }
+
+  async launchFile(handle, force = false) {
     if (!handle || typeof handle.getFile !== 'function' || this._launchingHandle === handle) return;
-    this._launchingHandle = handle;
-    try {
-      this.loadFile(await handle.getFile(), handle);
-    } finally {
-      this._launchingHandle = null;
-    }
+    return this.confirmIfUnsaved(async () => {
+      if (this._launchingHandle === handle) return;
+      this._launchingHandle = handle;
+      try {
+        this.loadFile(await handle.getFile(), handle, true);
+      } finally {
+        this._launchingHandle = null;
+      }
+    }, force);
   }
 
   initListeners(win = this.win) {
@@ -77,6 +89,7 @@ export class CsvHandle {
 
       win.addEventListener('drop', async (event) => {
         event.preventDefault();
+        const file = event.dataTransfer?.files?.[0];
         const item = event.dataTransfer?.items?.[0];
         if (typeof item?.getAsFileSystemHandle === 'function') {
           try {
@@ -86,7 +99,6 @@ export class CsvHandle {
             }
           } catch {}
         }
-        const file = event.dataTransfer?.files?.[0];
         if (file) this.loadFile(file, null);
       });
     }
@@ -108,10 +120,11 @@ export class CsvHandle {
       if (data.encoding) this.detectedEncoding = data.encoding;
       if (data.sep) this.detectedSeparator = data.sep;
       const initialRows = data.chunk?.length > 0 ? data.chunk : [['']];
-      sheet = this.createSheet(new Dataframe(initialRows));
+      const df = new Dataframe(initialRows);
+      df.lock = this.viewOnly;
+      sheet = this.createSheet(df);
       if (!isComplete) {
         sheet.df.isSaved = true;
-        sheet.df.lock = this.viewOnly;
         sheet.fixTop = settings.freezeHeaderOnOpen;
       }
     } else {
@@ -119,9 +132,9 @@ export class CsvHandle {
       if (sheet?.df && data.chunk?.length > 0) {
         sheet.df.appendRows(data.chunk, true);
         if (!isComplete) {
-          if (this.viewOnly) sheet.df.isSaved = true;
-          sheet.refreshScrollbars?.();
-          sheet.refresh?.();
+          sheet.df.isSaved = true;
+          sheet.refreshScrollbars();
+          sheet.refresh();
         }
       }
     }
@@ -137,9 +150,8 @@ export class CsvHandle {
     if (settings.trim && !this.viewOnly) sheet.df.trimAll();
     sheet.fixTop = settings.freezeHeaderOnOpen;
     sheet.df.isSaved = true;
-    sheet.df.lock = this.viewOnly;
-    sheet.refreshScrollbars?.();
-    sheet.refresh?.();
+    sheet.refreshScrollbars();
+    sheet.refresh();
   }
 
   read(file) {
@@ -229,11 +241,10 @@ export class CsvHandle {
     if (this.handle === null && this.file === null) {
       return Notification.quick('No file to reload from.');
     }
-    const doReload = () => this.handle !== null ? this.launchFile(this.handle) : this.loadFile(this.file, null);
-    const sheet = getSheet();
-    return (sheet && !sheet.df.isSaved && !force)
-      ? Notification.choice('Changes will be lost ? ', doReload)
-      : doReload();
+    return this.confirmIfUnsaved(
+      () => this.handle !== null ? this.launchFile(this.handle, true) : this.loadFile(this.file, null, true),
+      force
+    );
   }
 
   new() {
@@ -261,10 +272,12 @@ export class CsvHandle {
       const writableStream = await this.handle.createWritable();
       await writableStream.write(CsvHandle.serializeMatrix(sheet.df.data));
       await writableStream.close();
-      sheet.df.isSaved = true;
-      sheet.refresh?.();
+      this.detectedEncoding = 'utf-8';
+      this.detectedSeparator = settings.delimiter || ',';
       this.file = await this.handle.getFile();
       if (this.doc) this.doc.title = this.file.name;
+      sheet.df.isSaved = true;
+      sheet.refresh();
     } catch (err) {
       console.error('Error saving file:', err);
       Notification.confirm(err);
@@ -280,7 +293,7 @@ export class CsvHandle {
       filename ||= this.file?.name || 'export.csv';
       downloadBlob(blob, filename, doc);
       sheet.df.isSaved = true;
-      sheet.refresh?.();
+      sheet.refresh();
       Notification.quick(`File saved as ${filename}`);
     } catch (err) {
       console.error('Error downloading file:', err);
@@ -313,7 +326,7 @@ export class CsvHandle {
   async _copyFormatted(message, format) {
     const sheet = getSheet();
     if (!sheet) return;
-    const { matrix, hasHeader } = sheet.getCopyMatrix ? sheet.getCopyMatrix() : { matrix: sheet.getSelectedMatrix(), hasHeader: Boolean(settings.freezeHeaderOnOpen) };
+    const { matrix, hasHeader } = sheet.getCopyMatrix();
     const text = CsvHandle.formatData(format, matrix, true, hasHeader);
     if (await copyToClipboard(text)) {
       Notification.quick(message);

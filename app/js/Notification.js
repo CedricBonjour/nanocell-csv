@@ -1,9 +1,8 @@
-import { defineEl, cycleFocus } from './utils.js';
+import { defineEl, bindOverlayKeys } from './utils.js';
 import { Glyph } from './Glyph.js';
-import { Popup } from './Popup.js';
-import { env, pwa } from './state.js';
+import { dom, env, pwa } from './state.js';
 
-export class Notification extends Popup {
+export class Notification extends HTMLElement {
   constructor(message, options = {}) {
     super();
     this.message = message;
@@ -13,11 +12,9 @@ export class Notification extends Popup {
       (options.mode === 'confirm' && !options.duration) ||
       (!options.duration && Boolean(options.onConfirm || options.onCancel));
 
-    if (typeof document === 'undefined') return;
-
     this.content = document.createElement('div');
     this.content.className = 'ui-msg-text';
-    if (typeof HTMLElement !== 'undefined' && message instanceof HTMLElement) this.content.appendChild(message);
+    if (message instanceof HTMLElement) this.content.appendChild(message);
     else if (options.allowHtml && typeof message === 'string') this.content.innerHTML = message;
     else this.content.innerText = message ?? '';
 
@@ -33,23 +30,11 @@ export class Notification extends Popup {
         onClick: () => this.resolve(true),
       });
     }
-
-    this.keyHandler = (e) => {
-      if (!this.isConnected || e.defaultPrevented) return;
-      if (e.key === 'Escape') {
-        e.preventDefault(); e.stopPropagation();
-        this.close();
-      } else if (e.key === 'Enter' && this.hasButtons && document.activeElement !== this.closeBtn) {
-        e.preventDefault(); e.stopPropagation();
-        this.resolve(true);
-      } else if (e.key === 'Tab' && this.hasButtons) {
-        cycleFocus(e, this.getFocusableElements(), this._lastFocused);
-      }
-    };
-  }
-
-  getFocusableElements() {
-    return (this.hasButtons ? [this.closeBtn, this.okBtn] : [this.closeBtn]).filter(Boolean);
+    bindOverlayKeys(this, {
+      onEscape: () => this.close(),
+      getFocusables: () => (this.hasButtons ? [this.closeBtn, this.okBtn] : [this.closeBtn]),
+      ownsKeyboard: true,
+    });
   }
 
   close() {
@@ -57,7 +42,7 @@ export class Notification extends Popup {
   }
 
   connectedCallback() {
-    if (this._initialized || typeof document === 'undefined') return;
+    if (this._initialized) return;
     this._initialized = true;
     const isChoice = this.options.mode === 'choice';
     this.setAttribute('role', isChoice ? 'alertdialog' : 'status');
@@ -94,17 +79,14 @@ export class Notification extends Popup {
       this.appendChild(progress);
       this.timer = setTimeout(() => this.dismiss(), duration);
     }
-
-    document.addEventListener('keydown', this.keyHandler);
   }
 
   disconnectedCallback() {
-    if (typeof document !== 'undefined') document.removeEventListener('keydown', this.keyHandler);
-    if (this.timer) clearTimeout(this.timer);
+    clearTimeout(this.timer);
   }
 
   show() {
-    this.mountToStack();
+    if (this.parentNode !== dom.popupStack) dom.popupStack?.appendChild(this);
     if (!this._initialized) this.connectedCallback();
     return this;
   }
@@ -112,7 +94,7 @@ export class Notification extends Popup {
   dismiss() {
     if (this._closing) return;
     this._closing = true;
-    this.remove?.();
+    this.remove();
   }
 
   resolve(confirmed) {
@@ -121,6 +103,11 @@ export class Notification extends Popup {
     if (confirmed) this.options.onConfirm?.();
     else this.options.onCancel?.();
     this.dismiss();
+  }
+
+  /** Escape pressed outside any overlay dismisses (or cancels) every visible notification. */
+  static closeAll() {
+    for (const notification of dom.popupStack.querySelectorAll('ui-msg')) notification.close();
   }
 
   static quick(message, duration = 2000, type = 'info', title = '') {

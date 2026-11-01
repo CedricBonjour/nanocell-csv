@@ -187,11 +187,10 @@ if (typeof self !== 'undefined' && typeof self.addEventListener === 'function') 
     if (cmd === 'read') {
       currentAbort = false;
       loadCsv(event.data.data);
-    } else if (cmd === 'abort' || cmd === 'cancel') {
+    } else if (cmd === 'abort') {
       currentAbort = true;
     }
   });
 }
 
 export { loadCsv, loadCsvViewOnly };
-export default class CsvWorkerFallback {}

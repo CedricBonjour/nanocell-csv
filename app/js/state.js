@@ -14,10 +14,16 @@ export function setSheet(sheet) { activeSheet = sheet; }
 export function getCsvHandle() { return activeCsvHandle; }
 export function setCsvHandle(handle) { activeCsvHandle = handle; }
 
+/**
+ * Registry of boot-time DOM singletons (panes, palette, footer, scrollers...).
+ * Filled once by AppLayout.init(); empty in headless (Node) contexts.
+ */
+export const dom = {};
+
 // --- Persistent Settings Store ---
 
 const settings = {};
-if (typeof globalThis !== 'undefined') globalThis.settings = settings;
+globalThis.settings = settings;
 
 function cloneArrayValue(arr) {
   return arr.map(item =>
@@ -113,14 +119,12 @@ Setting.list = [
   { key: 'font', defaultValue: 13, name: 'Font Size', min: 7, max: 24, onChange: (fontSize) => {
     globalThis.document?.body?.style?.setProperty('--app-font-size', `${fontSize}px`);
   } },
-  { key: 'rows', defaultValue: 25, name: 'Rows', min: 10, max: 60, onChange: () => getSheet()?.reload?.() },
-  { key: 'cols', defaultValue: 7, name: 'Cols', min: 3, max: 30, onChange: () => getSheet()?.reload?.() },
+  { key: 'rows', defaultValue: 25, name: 'Rows', min: 10, max: 60, onChange: () => getSheet()?.reload() },
+  { key: 'cols', defaultValue: 7, name: 'Cols', min: 3, max: 30, onChange: () => getSheet()?.reload() },
   { key: 'actionBar', defaultValue: true, name: 'Action Bar', onChange: (isVisible) => {
-    const header = globalThis.document?.getElementById?.('header') || globalThis.document?.querySelector?.('header');
-    header?.classList?.toggle('hidden', !isVisible);
-    getSheet()?.refreshScrollbars?.();
+    dom.header?.classList.toggle('hidden', !isVisible);
   } },
-  { key: 'highlightNonCompliant', defaultValue: true, name: 'Warning color on line return, comma and double quote values', onChange: () => getSheet()?.reload?.() },
+  { key: 'highlightNonCompliant', defaultValue: true, name: 'Warning color on line return, comma and double quote values', onChange: () => getSheet()?.reload() },
 
   { title: 'Csv Save' },
   { key: 'encoding', defaultValue: 'utf-8', name: 'Encoding' },
@@ -149,23 +153,17 @@ Setting.list = [
   { title: 'Data Validation' },
   { key: 'commaReplacement', defaultValue: '-', name: 'Text comma replacement character', list: [...COMMA_REPLACEMENTS], onChange: (val) => {
     setCommaReplacement(val);
-    globalThis.document?.querySelectorAll?.('ui-tags')?.forEach?.(el => el.render?.());
-    const pane = globalThis.document?.getElementById?.('validation-pane') || globalThis.document?.querySelector?.('ui-validation-pane');
-    pane?.refreshRules?.();
-    const macroPane = globalThis.document?.getElementById?.('macro-pane') || globalThis.document?.querySelector?.('ui-macro-pane');
-    macroPane?.refreshFromSettings?.();
+    globalThis.document?.querySelectorAll('ui-tags').forEach(el => el.render());
+    refreshValidationPanes();
   } },
-  { key: 'pinnedValidations', defaultValue: [], name: 'Pinned validation rules', tags: VALIDATION_RULES.map(r => ({ value: r.id, get label() { return r.label; } })), onChange: () => {
-    const pane = globalThis.document?.getElementById?.('validation-pane') || globalThis.document?.querySelector?.('ui-validation-pane');
-    pane?.refreshRules?.();
-    const macroPane = globalThis.document?.getElementById?.('macro-pane') || globalThis.document?.querySelector?.('ui-macro-pane');
-    macroPane?.refreshFromSettings?.();
-  } },
-  { key: 'macros', defaultValue: DEFAULT_MACROS, hidden: true, onChange: () => {
-    const macroPane = globalThis.document?.getElementById?.('macro-pane') || globalThis.document?.querySelector?.('ui-macro-pane');
-    macroPane?.refreshFromSettings?.();
-  } },
+  { key: 'pinnedValidations', defaultValue: [], name: 'Pinned validation rules', tags: VALIDATION_RULES.map(r => ({ value: r.id, get label() { return r.label; } })), onChange: () => refreshValidationPanes() },
+  { key: 'macros', defaultValue: DEFAULT_MACROS, hidden: true, onChange: () => dom.macroPane?.refreshFromSettings() },
 ];
+
+function refreshValidationPanes() {
+  dom.validationPane?.refreshRules();
+  dom.macroPane?.refreshFromSettings();
+}
 
 Setting.map = new Map(Setting.list.filter(def => def.key).map(def => [def.key, def]));
 Setting.getDef = (key) => Setting.map.get(key);

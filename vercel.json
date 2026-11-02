@@ -1,4 +1,21 @@
 {
-    "buildCommand": "npm run build",
-    "outputDirectory": "dist"
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "redirects": [
+    {
+      "source": "/article/how-to-open-a-csv-file.html",
+      "destination": "/article/open-large-csv-files.html",
+      "permanent": true
+    },
+    {
+      "source": "/article/about-csv-files.html",
+      "destination": "/article/why-excel-corrupts-csv-files.html",
+      "permanent": true
+    },
+    {
+      "source": "/article/lets-fix-csv-files.html",
+      "destination": "/article/free-offline-csv-editor-and-validator.html",
+      "permanent": true
+    }
+  ]
 }

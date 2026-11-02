@@ -347,9 +347,21 @@ h1 {
   border: 1px solid var(--slate-200);
   border-radius: 12px;
   padding: 1.2rem 1.3rem;
+  overflow: hidden;
   text-decoration: none;
   color: inherit;
   transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.article-card-img {
+  width: calc(100% + 2.6rem);
+  margin: -1.2rem -1.3rem 1rem;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  object-position: top center;
+  border-bottom: 1px solid var(--slate-200);
+  background: var(--slate-50);
+  display: block;
 }
 
 .article-link-card:hover {

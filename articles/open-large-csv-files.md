@@ -1,4 +1,4 @@
-# How to Open Large CSV Files with NanoCell CSV
+# How to Open Large CSV Files Without Freezing (1M+ Rows & Multi-GB)
 
 > CSV files are a universal data table format, so why is it complicated to open them? NanoCell CSV provides a fast, verbatim, and lightweight solution—especially when previewing multi-gigabyte datasets.
 
@@ -54,6 +54,6 @@ Editing multi-gigabyte tables manually in a spreadsheet is error-prone and belon
 > Millisecond `O(1)` interval preview
 > Safe View-Only lock prevents accidental overwrites
 
-![screenshot of big data view](/article-assets/bigdata_preview.webp)
+![screenshot of big data view](/nanocell-large-file-sampling-screenshot.webp)
 
 [Launch NanoCell CSV](https://nanocell-csv.com/)

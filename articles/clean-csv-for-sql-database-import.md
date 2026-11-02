@@ -1,7 +1,7 @@
-# Clean and Prepare Messy CSV Files for SQL Imports
+# Clean and Prepare Messy CSV Files for SQL Database Imports
 
 
-![csv file in nanocell screenshot](/nanocell-landingpage-screenshot.webp)
+![csv file in nanocell screenshot](/nanocell-macro-finder-screenshot.webp)
 
 > Database `COPY` and CSV import pipelines fail constantly due to dirty column headers, European decimal commas, currency symbols, `NULL` strings, and unescaped quotes. Learn how to sanitize messy CSV exports for SQL in seconds with NanoCell CSV.
 
@@ -55,4 +55,4 @@ Unescaped double quotes (`"`), embedded line breaks (`\n`), or stray commas insi
 
 If you receive the same messy report every week, you don't even have to click each rule individually. Open the **Macro Pane** (`Ctrl+Shift+M`), chain your validation steps (for example: *Headers & SQL Compliance* &rarr; *Standardize Null Values* &rarr; *Format Numbers* &rarr; *Format Dates* &rarr; *Remove Duplicate Rows*), and run the entire pipeline in one undoable keystroke.
 
-Ready to clean your next CSV file locally in your browser? [Launch NanoCell CSV Editor](https://nanocell-csv.com/app/home.html), or check out our guides on [preserving leading zeros and dates](/article/edit-csv-without-losing-leading-zeros.html) and [previewing multi-gigabyte CSV files](/article/how-to-open-a-csv-file.html).
+Ready to clean your next CSV file locally in your browser? [Launch NanoCell CSV Editor](https://nanocell-csv.com/app/home.html), or check out our guides on [preserving leading zeros and dates](/article/edit-csv-without-losing-leading-zeros.html) and [previewing multi-gigabyte CSV files](/article/open-large-csv-files.html).

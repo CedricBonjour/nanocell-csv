@@ -1,8 +1,8 @@
 # Fix Garbled CSV Encoding (UTF-8) and Delimiters
 
-![csv file in nanocell screenshot](/nanocell-landingpage-screenshot.webp)
-
 > Opening a CSV file only to see garbled characters like `Ã©` and `Ã¼`—or every column jammed into a single column A—is caused by encoding and delimiter mismatches. Here is how to fix both instantly in NanoCell CSV.
+
+![csv file in nanocell screenshot](/article-assets/perfect-csv-standard.webp)
 
 Few things are more frustrating than opening a CSV file and seeing two classic symptoms:
 1. Names and addresses are full of mojibake symbols like `MÃ¼ller`, `RenÃ©`, `CafÃ©`, or `ï»¿`.

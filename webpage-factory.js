@@ -79,8 +79,9 @@ export function parseArticleData(mdFilePath, slug, { appDescription = '', appMet
     .replace(/(!\[[^\]]*\]\()https?:\/\/(www\.)?nanocell-csv\.com\//gi, '$1/');
 
   const htmlBody = marked.parse(cleanedMd, { breaks: true });
-  const firstPMatch = htmlBody.match(/<p>([\s\S]*?)<\/p>/i);
-  const description = firstPMatch ? stripHtml(firstPMatch[1]) : appDescription;
+  const description =
+    Array.from(htmlBody.matchAll(/<p>([\s\S]*?)<\/p>/gi), (m) => stripHtml(m[1])).find(Boolean) ||
+    appDescription;
 
   return {
     slug,
@@ -103,10 +104,10 @@ export function getAllArticles(defaults = {}) {
 const FEATURED_ARTICLE_ORDER = [
   'edit-csv-without-losing-leading-zeros',
   'clean-csv-for-sql-database-import',
-  'how-to-open-a-csv-file',
+  'open-large-csv-files',
   'fix-csv-encoding-and-delimiters',
-  'about-csv-files',
-  'lets-fix-csv-files'
+  'why-excel-corrupts-csv-files',
+  'free-offline-csv-editor-and-validator'
 ];
 
 function sortByFeaturedOrder(articles = []) {
@@ -122,12 +123,17 @@ function sortByFeaturedOrder(articles = []) {
 export function renderArticleCards(articles = []) {
   const cardTpl = readFileSync(p('templates/article-card.html'), 'utf-8');
   return articles
-    .map((a) =>
-      cardTpl
+    .map((a) => {
+      const cardImg = (a.ogImage || '/nanocell_meta_image_banner.webp').replace(
+        /^https?:\/\/(www\.)?nanocell-csv\.com\//i,
+        '/'
+      );
+      return cardTpl
         .replace(/\{\{SLUG\}\}/g, escapeHtml(a.slug))
+        .replace(/\{\{OG_IMAGE\}\}/g, escapeHtml(cardImg))
         .replace(/\{\{TITLE\}\}/g, escapeHtml(a.title))
-        .replace(/\{\{DESCRIPTION\}\}/g, escapeHtml(a.description))
-    )
+        .replace(/\{\{DESCRIPTION\}\}/g, escapeHtml(a.description));
+    })
     .join('\n');
 }
 

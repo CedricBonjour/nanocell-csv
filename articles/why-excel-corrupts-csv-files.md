@@ -1,4 +1,4 @@
-# Why Does Editing CSV Files Always Feel So Difficult?
+# Why Spreadsheets Corrupt CSV Files (And Why Plain-Text Matters)
 
 > CSV files are the backbone of data exchange—simple, universal, and incredibly versatile. It's not flashy, it's not trendy, and yet it is everywhere. But if CSV files are so simple, important, and universal, why do they feel so painful to work with?
 

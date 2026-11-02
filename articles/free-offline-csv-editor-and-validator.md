@@ -1,4 +1,4 @@
-# Why CSV Files Are Frustrating — And How to Fix Them
+# Free Offline CSV Editor & Validator for Developers (100% Local)
 
 > CSV files are universal, yet frustrating. NanoCell CSV fixes this with a free, fast, and privacy-first editor for verbatim table editing, one-click data sanitization, and instant multi-gigabyte file previews.
 

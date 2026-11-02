@@ -463,7 +463,6 @@ header {
   display: block;
   background: #2e3440;
   border-radius: 14px;
-  border: 1px solid rgba(15, 23, 42, 0.18);
   box-shadow:
     0 28px 70px -12px rgba(15, 23, 42, 0.32),
     0 0 40px -10px rgba(61, 154, 55, 0.22),

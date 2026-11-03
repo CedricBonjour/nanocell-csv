@@ -5,9 +5,10 @@
  * AppLayout.init() fills the shared `dom` registry (state.js).
  */
 
-import { defineEl, cycleFocus, bindOverlayKeys, escapeHtml, fuzzyScore, formatCellHtml } from './utils.js';
+import { defineEl, cycleFocus, bindOverlayKeys, escapeHtml, fuzzyScore, formatCellHtml, clamp } from './utils.js';
 import { Glyph } from './Glyph.js';
-import { dom, getSheet, getCsvHandle, pwa, formatShortcut } from './state.js';
+import { dom, getSheet, getCsvHandle, pwa, formatShortcut, settings } from './state.js';
+import { QUOTED_EMPTY_CELL } from '../core/Dataframe.js';
 import { DialogManager } from './Dialogs.js';
 import { triggerAppInstall } from './Notification.js';
 
@@ -51,7 +52,7 @@ function initFooterEvents() {
   left.addEventListener('click', (e) => {
     if (!e.target.closest('.coord-editor')) startCoordEdit();
   });
-  lock.addEventListener('click', () => getSheet()?.warnIfLocked('View-Only Mode'));
+  lock.addEventListener('click', () => getSheet()?.unlock());
 }
 
 export function startCoordEdit(sheet = getSheet()) {
@@ -139,7 +140,9 @@ export function updateFooter(sheet = getSheet()) {
     : `${sheet.df.width}:${sheet.df.height}`;
 
   const cellValue = (actualY >= 0 && actualY < sheet.df.height) ? sheet.df.get(sheet.x, actualY) : '';
-  footer.center.innerHTML = formatCellHtml(cellValue, true);
+  footer.center.innerHTML = cellValue === QUOTED_EMPTY_CELL
+    ? (settings.preserveQuotedEmpty ? '<span class="empty-string-badge">empty string</span>' : '')
+    : formatCellHtml(cellValue, true);
 
   const lockReason = sheet.lockReason;
   const isLocked = lockReason !== null;
@@ -149,7 +152,9 @@ export function updateFooter(sheet = getSheet()) {
   let lockTitle = hasFileHandle ? 'Unsaved changes relative to disk' : 'New file edit';
   if (isLocked) {
     lockIcon = 'lock';
-    lockTitle = lockReason === 'filter' ? 'Locked (filter active)' : 'Locked (view-only mode)';
+    lockTitle = lockReason === 'filter'
+      ? 'Locked (filter active)'
+      : (lockReason === 'read-only' ? 'Locked (read-only mode — click to unlock)' : 'Locked (view-only mode)');
   } else if (hasFileHandle && sheet.df.isSaved) {
     lockIcon = 'save_disk';
     lockTitle = 'File saved (no edits ongoing)';
@@ -164,14 +169,18 @@ export function updateFooter(sheet = getSheet()) {
 function buildMenu(commands) {
   const menuItems = [
     'new', 'open', 'save', 'reloadFile', 'fileInfo', 'undo', 'redo', '',
-    'fixTop', 'sortAscending', 'sortDescending', 'transpose', 'trim', 'date', 'integer', 'decimal', 'validateData', 'macros',
+    'fixTop', ' ', 'sortAscending', 'sortDescending', ' ', 'transpose', 'trim', 'date', ' ', 'integer', 'decimal', ' ', 'validateData', 'macros', ' ',
     'filter', 'find', '', 'about', 'settings', 'shortcuts'
   ];
 
+  let section = 0;
   for (const itemId of menuItems) {
-    if (!itemId) {
+    if (!itemId || itemId === ' ') {
       const spacer = document.createElement('div');
-      spacer.className = 'grow';
+      const isGrow = !itemId;
+      spacer.className = isGrow ? 'grow' : 'glyph-spacer';
+      if (section === 1) spacer.classList.add('header-mid');
+      if (isGrow) section++;
       dom.header.appendChild(spacer);
       continue;
     }
@@ -179,6 +188,7 @@ function buildMenu(commands) {
     const shortcut = formatShortcut(command);
     const label = command.label || command.description || itemId;
     dom.header.appendChild(new Glyph(command.icon || itemId, {
+      cls: section === 1 ? 'header-mid' : '',
       title: shortcut ? `${label} (${shortcut})` : label,
       onClick: () => command.run(),
     }));
@@ -256,7 +266,7 @@ export class CommandPalette extends HTMLElement {
   getCommands() {
     const canInstall = pwa.getState().canInstall;
     return Object.entries(this.commands)
-      .filter(([id]) => id !== 'installApp' || canInstall)
+      .filter(([id]) => (id !== 'installApp' || canInstall) && (id !== 'emptyString' || settings.preserveQuotedEmpty))
       .map(([id, cmd]) => ({
         id,
         label: cmd.label || id,
@@ -364,88 +374,398 @@ export class CommandPalette extends HTMLElement {
 
 // --- Context Menu (<ui-cmenu>) ---
 
+const CMENU_ROW_DEFS = [
+  {
+    id: 'copy',
+    label: 'Copy',
+    actions: [
+      { id: 'copyTsv', icon: 'tsv_file', title: 'Copy as TSV (Ctrl+C)', commandId: 'copyTsv' },
+      { id: 'copyHtml', icon: 'table', title: 'Copy as HTML', commandId: 'copyHtml' },
+      { id: 'copyMd', icon: 'md_file', title: 'Copy as Markdown', commandId: 'copyMarkdown' },
+      { id: 'copyCsv', icon: 'csv_file', title: 'Copy as CSV', commandId: 'copyCsv' },
+    ],
+  },
+  {
+    id: 'trim',
+    label: 'Trim',
+    actions: [
+      { id: 'trim', icon: 'trim', title: 'Trim Empty Rows/Cols (Ctrl+Alt+T)', commandId: 'trim' },
+    ],
+  },
+  {
+    id: 'toggleActionBar',
+    label: 'Display action bar',
+    actions: [
+      { id: 'toggleActionBar', icon: 'menu', title: 'Toggle Action Bar (Ctrl+M)', commandId: 'toggleActionBar' },
+    ],
+  },
+  {
+    id: 'transpose',
+    label: 'Transpose',
+    actions: [
+      { id: 'transpose', icon: 'transpose', title: 'Transpose Sheet (Ctrl+Shift+T)', commandId: 'transpose' },
+    ],
+  },
+  {
+    id: 'fixTop',
+    label: 'Freeze header row',
+    actions: [
+      { id: 'fixTop', icon: 'fix_top', title: 'Freeze Header Row (Ctrl+B)', commandId: 'fixTop' },
+    ],
+  },
+  {
+    id: 'filter',
+    label: 'Filter',
+    actions: [
+      { id: 'filter', icon: 'filter', title: 'Filter Column (Ctrl+Q)', commandId: 'filter', passCol: true },
+    ],
+  },
+  {
+    id: 'sort',
+    label: 'Sort',
+    actions: [
+      { id: 'sortAsc', icon: 'sort', title: 'Sort Ascending (Ctrl+L)', commandId: 'sortAscending', passCol: true },
+      { id: 'sortDesc', icon: 'sort_reverse', title: 'Sort Descending (Ctrl+Shift+L)', commandId: 'sortDescending', passCol: true },
+    ],
+  },
+  {
+    id: 'round',
+    label: 'Round',
+    actions: [
+      { id: 'roundInt', icon: 'integer', title: 'Round to Integer (Ctrl+I)', commandId: 'integer' },
+      { id: 'roundDec', icon: 'decimal', title: 'Round to Decimal (Ctrl+$)', commandId: 'decimal' },
+    ],
+  },
+  {
+    id: 'expand',
+    label: 'Expand',
+    actions: [
+      { id: 'expand', icon: 'insert', title: 'Expand Series (Ctrl+E)', commandId: 'expand' },
+    ],
+  },
+  {
+    id: 'emptyStr',
+    label: 'Empty string',
+    actions: [
+      { id: 'emptyStr', icon: 'empty_string', title: 'Set to Empty String ("")', commandId: 'emptyString' },
+    ],
+  },
+  {
+    id: 'clear',
+    label: 'Clear',
+    actions: [
+      { id: 'clear', icon: 'clear', title: 'Clear Selection (Backspace)', commandId: 'delete' },
+    ],
+  },
+  {
+    id: 'insert',
+    label: 'Insert',
+    structural: true,
+    actions: [
+      { id: 'insertUp', icon: 'arrow_up', title: 'Insert Row Above (Shift+Alt+Up)', commandId: 'insertUp' },
+      { id: 'insertDown', icon: 'arrow_down', title: 'Insert Row Below (Shift+Alt+Down)', commandId: 'insertDown' },
+      { id: 'insertLeft', icon: 'arrow_left', title: 'Insert Col Left (Shift+Alt+Left)', commandId: 'insertLeft' },
+      { id: 'insertRight', icon: 'arrow_right', title: 'Insert Col Right (Shift+Alt+Right)', commandId: 'insertRight' },
+    ],
+  },
+  {
+    id: 'shift',
+    label: 'Shift',
+    structural: true,
+    actions: [
+      { id: 'shiftUp', icon: 'arrow_up', title: 'Shift Row Up (Alt+Up)', commandId: 'shiftUp' },
+      { id: 'shiftDown', icon: 'arrow_down', title: 'Shift Row Down (Alt+Down)', commandId: 'shiftDown' },
+      { id: 'shiftLeft', icon: 'arrow_left', title: 'Shift Col Left (Alt+Left)', commandId: 'shiftLeft' },
+      { id: 'shiftRight', icon: 'arrow_right', title: 'Shift Col Right (Alt+Right)', commandId: 'shiftRight' },
+    ],
+  },
+  {
+    id: 'delete',
+    label: 'Delete',
+    structural: true,
+    actions: [
+      { id: 'deleteRow', icon: 'row', title: 'Delete Row (Ctrl+Backspace)', commandId: 'deleteRow' },
+      { id: 'deleteCol', icon: 'col', title: 'Delete Col (Ctrl+Shift+Backspace)', commandId: 'deleteCol' },
+    ],
+  },
+];
+
 export class ContextMenu extends HTMLElement {
   constructor() {
     super();
     this.commands = {};
-    this.table = document.createElement('table');
     this.headerEl = document.createElement('div');
     this.headerEl.className = 'cmenu-header';
+    this.listEl = document.createElement('div');
+    this.listEl.className = 'cmenu-list';
     this.targetCol = null;
+    this.rows = [];
+    this.actionMap = new Map();
 
-    // [menu item id, label, symbol, command id]
-    this.items = [
-      ['filter', 'Filter', '', 'filter'],
-      ['sortAsc', 'Sort', 'A<br>Z', 'sortAscending'],
-      ['sortDesc', 'Sort', 'Z<br>A', 'sortDescending'],
-      ['roundInt', 'Round', 'N', 'integer'],
-      ['roundDec', 'Round', '$', 'decimal'],
-      ['insertCol', 'Insert', '&verbar;', 'insertLeft'],
-      ['insertRow', 'Insert', '&horbar;', 'insertUp'],
-      ['deleteCol', 'Delete', '&verbar;', 'deleteCol'],
-      ['deleteRow', 'Delete', '&horbar;', 'deleteRow'],
-    ].map(([id, label, symbol, commandId]) => ({ id, label, symbol, commandId }));
+    for (const def of CMENU_ROW_DEFS) {
+      const rowEl = document.createElement('div');
+      rowEl.className = 'cmenu-row';
+      rowEl.dataset.rowId = def.id;
 
-    for (const item of this.items) {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td><div>${item.label}</div></td>${item.symbol ? `<td><div class="cmenu-opt">${item.symbol}</div></td>` : ''}`;
-      tr.addEventListener('click', () => {
-        this.hide();
-        this.commands[item.commandId].run(item.id === 'filter' ? this.targetCol : undefined);
+      const labelEl = document.createElement('span');
+      labelEl.className = 'cmenu-label';
+      labelEl.textContent = def.label;
+
+      const actionsEl = document.createElement('div');
+      actionsEl.className = 'cmenu-actions';
+
+      const actionEntries = def.actions.map((action) => {
+        const glyph = new Glyph(action.icon, {
+          size: 'sm',
+          cls: 'cmenu-glyph',
+          title: action.title,
+          onClick: (e) => {
+            e.stopPropagation();
+            this.runAction(action);
+          },
+        });
+        actionsEl.appendChild(glyph);
+        const entry = { ...action, glyph, visible: false };
+        this.actionMap.set(action.id, entry);
+        return entry;
       });
-      this.table.appendChild(tr);
+
+      const rowEntry = { ...def, rowEl, actions: actionEntries, activeSingleAction: null };
+      rowEl.addEventListener('click', () => {
+        if (rowEntry.activeSingleAction) {
+          this.runAction(rowEntry.activeSingleAction);
+        }
+      });
+
+      rowEl.append(labelEl, actionsEl);
+      this.listEl.appendChild(rowEl);
+      this.rows.push(rowEntry);
     }
 
-    this.addEventListener('mouseout', (e) => {
-      if (!this.contains(e.relatedTarget)) this.hide();
-    });
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+      window.addEventListener('blur', () => this.hide());
+      window.addEventListener('resize', () => this.hide());
+    }
   }
 
+  get isOpen() { return this.classList.contains('open'); }
+
   connectedCallback() {
-    if (!this.headerEl.parentNode) this.append(this.headerEl, this.table);
+    if (!this.headerEl.parentNode) this.append(this.headerEl, this.listEl);
     this.hide();
   }
 
   hide() { this.classList.toggle('open', false); }
 
-  showItems(visibleIds) {
-    this.items.forEach((item, i) => this.table.rows[i].classList.toggle('hidden', !visibleIds.includes(item.id)));
+  runAction(action) {
+    this.hide();
+    const cmd = this.commands[action.commandId];
+    if (cmd) cmd.run(action.passCol ? this.targetCol : undefined);
+  }
+
+  showItems(visibleActionIds) {
+    const visibleSet = new Set(visibleActionIds);
+    let hasNonStructural = false;
+    let firstStructuralShown = false;
+
+    for (const row of this.rows) {
+      const visibleActions = [];
+      for (const action of row.actions) {
+        const show = visibleSet.has(action.id);
+        action.visible = show;
+        action.glyph.classList.toggle('hidden', !show);
+        if (show) visibleActions.push(action);
+      }
+
+      const rowVisible = visibleActions.length > 0;
+      row.rowEl.classList.toggle('hidden', !rowVisible);
+      row.activeSingleAction = visibleActions.length === 1 ? visibleActions[0] : null;
+      row.rowEl.classList.toggle('single-action', visibleActions.length === 1);
+
+      const showDivider = rowVisible && Boolean(row.structural) && hasNonStructural && !firstStructuralShown;
+      row.rowEl.classList.toggle('cmenu-divider', showDivider);
+
+      if (rowVisible) {
+        if (row.structural) firstStructuralShown = true;
+        else hasNonStructural = true;
+      }
+    }
   }
 
   openAt(event) {
     const sheet = getSheet();
     const targetCell = event.target.closest('td, th');
-    if (!sheet || !targetCell || !sheet.contains(targetCell) || (targetCell.colOffset < 0 && targetCell.rowOffset < 0)) return;
+    if (!sheet || !targetCell || !sheet.contains(targetCell)) return;
 
     const { colOffset, rowOffset } = targetCell;
-    const menuWidth = 140, menuHeight = 220;
-    this.style.left = `${event.clientX + menuWidth > window.innerWidth ? Math.max(0, event.clientX - menuWidth) : event.clientX - 2}px`;
-    this.style.top = `${event.clientY + menuHeight > window.innerHeight ? Math.max(0, event.clientY - menuHeight) : event.clientY - 2}px`;
+    const isCorner = colOffset < 0 && rowOffset < 0;
+    const isColHeader = rowOffset < 0 && colOffset >= 0;
+    const isRowHeader = colOffset < 0 && rowOffset >= 0;
+    const isCell = colOffset >= 0 && rowOffset >= 0;
 
-    if (rowOffset < 0) {
-      this.targetCol = colOffset + sheet.baseX;
-      sheet.selectCol(this.targetCol);
-      this.headerEl.innerText = `col : ${targetCell.innerText}`;
-      this.showItems(['filter', 'sortAsc', 'sortDesc', 'roundInt', 'roundDec', 'insertCol', 'deleteCol']);
-    } else if (colOffset < 0) {
+    const prevRange = sheet.getOrderedRange();
+    const maxCol = Math.max(0, sheet.df.width - 1);
+    const maxRow = Math.max(0, sheet.rowCount - 1);
+
+    if (isCorner) {
       this.targetCol = null;
-      sheet.selectRow(rowOffset + sheet.baseY);
-      this.headerEl.innerText = `row : ${targetCell.innerText}`;
-      this.showItems(['roundInt', 'roundDec', 'insertRow', 'deleteRow']);
-    } else if (targetCell.classList.contains('selected')) {
+      const isAllSelected = prevRange.xmin === 0 && prevRange.xmax >= maxCol && prevRange.ymin === 0 && prevRange.ymax >= maxRow;
+      if (!isAllSelected) sheet.selectAll();
+      this.headerEl.innerText = 'sheet';
+    } else if (isColHeader) {
+      const col = colOffset + sheet.baseX;
+      if (sheet.df.lock && col >= sheet.df.width) return;
+      this.targetCol = col;
+      const isColFullySelected = prevRange.ymin === 0 && prevRange.ymax >= maxRow && col >= prevRange.xmin && col <= prevRange.xmax;
+      if (!isColFullySelected) sheet.selectCol(col);
+      const curRange = sheet.getOrderedRange();
+      this.headerEl.innerText = curRange.xmax > curRange.xmin
+        ? `cols : ${curRange.xmin + 1}-${curRange.xmax + 1}`
+        : `col : ${targetCell.innerText}`;
+    } else if (isRowHeader) {
+      const row = rowOffset + sheet.baseY;
+      if (sheet.df.lock && row >= sheet.rowCount) return;
       this.targetCol = null;
-      this.headerEl.innerText = 'selection';
-      this.showItems(['roundInt', 'roundDec', 'deleteCol', 'deleteRow']);
+      const isRowFullySelected = prevRange.xmin === 0 && prevRange.xmax >= maxCol && row >= prevRange.ymin && row <= prevRange.ymax;
+      if (!isRowFullySelected) sheet.selectRow(row);
+      const curRange = sheet.getOrderedRange();
+      this.headerEl.innerText = curRange.ymax > curRange.ymin
+        ? `rows : ${sheet.getRowIndex(curRange.ymin) + 1}-${sheet.getRowIndex(curRange.ymax) + 1}`
+        : `row : ${targetCell.innerText}`;
     } else {
-      this.targetCol = colOffset + sheet.baseX;
-      sheet.x = colOffset + sheet.baseX;
-      sheet.y = rowOffset + sheet.baseY;
-      sheet.refreshSelection();
-      this.headerEl.innerText = 'cell';
-      this.showItems(['roundInt', 'roundDec', 'insertCol', 'insertRow', 'deleteCol', 'deleteRow']);
+      const col = colOffset + sheet.baseX;
+      const row = rowOffset + sheet.baseY;
+      if (sheet.df.lock && (col >= sheet.df.width || row >= sheet.rowCount)) return;
+      const inSelection = col >= prevRange.xmin && col <= prevRange.xmax && row >= prevRange.ymin && row <= prevRange.ymax;
+      if (!inSelection) sheet.selectRange(col, row);
+      const curRange = sheet.getOrderedRange();
+      const isMulti = curRange.xmax > curRange.xmin || curRange.ymax > curRange.ymin;
+      this.targetCol = col;
+      this.headerEl.innerText = isMulti ? 'selection' : 'cell';
     }
 
+    const r = sheet.getOrderedRange();
+    const locked = Boolean(sheet.df.lock);
+    const colSpan = r.xmax - r.xmin + 1;
+    const rowSpan = r.ymax - r.ymin + 1;
+    const isMultiCell = colSpan > 1 || rowSpan > 1;
+
+    let hasContent = false;
+    let hasNonEmptyString = false;
+    let hasRoundable = false;
+    let hasNonQuotedEmpty = false;
+    let inspected = 0;
+    const maxInspect = 2000;
+    const yLimit = Math.min(r.ymax, Math.max(0, sheet.rowCount - 1));
+    const xLimit = Math.min(r.xmax, Math.max(0, sheet.df.width - 1));
+
+    if (r.xmax >= sheet.df.width || r.ymax >= sheet.rowCount) {
+      hasNonQuotedEmpty = true;
+    }
+
+    outer: for (let y = r.ymin; y <= yLimit; y++) {
+      const actualY = sheet.getRowIndex(y);
+      if (actualY < 0 || actualY >= sheet.df.height) {
+        hasNonQuotedEmpty = true;
+        continue;
+      }
+      for (let x = r.xmin; x <= xLimit; x++) {
+        const val = sheet.df.get(x, actualY);
+        if (val !== QUOTED_EMPTY_CELL) hasNonQuotedEmpty = true;
+        if (val !== '') {
+          hasContent = true;
+          if (val !== QUOTED_EMPTY_CELL) {
+            hasNonEmptyString = true;
+            const trimmed = val.trim();
+            if (trimmed !== '' && !Number.isNaN(Number(trimmed))) {
+              hasRoundable = true;
+            }
+          }
+        }
+        if (++inspected >= maxInspect) {
+          hasContent = hasNonEmptyString = hasRoundable = hasNonQuotedEmpty = true;
+          break outer;
+        }
+      }
+    }
+
+    const visibleActions = [];
+
+    if (hasContent) {
+      visibleActions.push('copyTsv', 'copyHtml', 'copyMd', 'copyCsv');
+    }
+
+    if (isCorner) {
+      if (!locked) visibleActions.push('trim');
+      visibleActions.push('toggleActionBar');
+      if (!locked) visibleActions.push('transpose');
+      visibleActions.push('fixTop');
+      const actionBarEntry = this.actionMap.get('toggleActionBar');
+      if (actionBarEntry) actionBarEntry.glyph.icon = settings.actionBar !== false ? 'checkbox_on' : 'checkbox_off';
+    }
+
+    if (sheet.df.height > 1 && this.targetCol !== null && this.targetCol < sheet.df.width) {
+      if (isColHeader || (isCell && colSpan === 1)) {
+        visibleActions.push('filter');
+      }
+      if (!locked && isColHeader) {
+        visibleActions.push('sortAsc', 'sortDesc');
+      }
+    }
+
+    if (!locked) {
+      if (hasRoundable) {
+        visibleActions.push('roundInt', 'roundDec');
+      }
+      if (!isCorner && isMultiCell && hasNonEmptyString) {
+        visibleActions.push('expand');
+      }
+      if (settings.preserveQuotedEmpty && hasNonQuotedEmpty) {
+        visibleActions.push('emptyStr');
+      }
+      if (hasContent) {
+        visibleActions.push('clear');
+      }
+
+      if (isRowHeader && r.ymin < sheet.df.height) {
+        visibleActions.push('insertUp', 'insertDown');
+        if (r.ymax < sheet.df.height) {
+          if (r.ymin > 0) visibleActions.push('shiftUp');
+          if (r.ymax < sheet.df.height - 1) visibleActions.push('shiftDown');
+        }
+      } else if (isColHeader && r.xmin < sheet.df.width) {
+        visibleActions.push('insertLeft', 'insertRight');
+        if (r.xmax < sheet.df.width) {
+          if (r.xmin > 0) visibleActions.push('shiftLeft');
+          if (r.xmax < sheet.df.width - 1) visibleActions.push('shiftRight');
+        }
+      }
+
+      const canDeleteRow = r.ymin < sheet.df.height && sheet.df.height > 1 && rowSpan < sheet.df.height;
+      const canDeleteCol = r.xmin < sheet.df.width && sheet.df.width > 1 && colSpan < sheet.df.width;
+
+      if ((isRowHeader || isCell) && canDeleteRow) {
+        visibleActions.push('deleteRow');
+      }
+      if ((isColHeader || isCell) && canDeleteCol) {
+        visibleActions.push('deleteCol');
+      }
+    }
+
+    if (visibleActions.length === 0) {
+      this.hide();
+      return;
+    }
+
+    this.showItems(visibleActions);
     this.classList.toggle('open', true);
+
+    const menuWidth = this.offsetWidth || 180;
+    const menuHeight = this.offsetHeight || 220;
+    const maxLeft = Math.max(4, (window.innerWidth || 800) - menuWidth - 4);
+    const maxTop = Math.max(4, (window.innerHeight || 600) - menuHeight - 4);
+    this.style.left = `${clamp(event.clientX - 2, 4, maxLeft)}px`;
+    this.style.top = `${clamp(event.clientY - 2, 4, maxTop)}px`;
   }
 }
 

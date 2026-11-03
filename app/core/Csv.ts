@@ -5,7 +5,7 @@
  * ZERO browser/DOM imports.
  */
 
-import { CellValue, normalizeCellValue } from './Dataframe.js';
+import { CellValue, normalizeCellValue, displayCellValue, QUOTED_EMPTY_CELL } from './Dataframe.js';
 
 export interface CsvDialect {
   readonly delimiter: string;
@@ -19,6 +19,7 @@ export interface CsvDialect {
   readonly quoteAlways?: boolean;
   readonly commentChar?: string;
   readonly encoding?: string;
+  readonly preserveQuotedEmpty?: boolean;
 }
 
 export const DEFAULT_CSV_DIALECT: CsvDialect = {
@@ -31,7 +32,8 @@ export const DEFAULT_CSV_DIALECT: CsvDialect = {
   fixedWidth: 0,
   trimUnquotedWhitespace: false,
   quoteAlways: false,
-  commentChar: ''
+  commentChar: '',
+  preserveQuotedEmpty: false
 };
 
 function resolveDialect(base: CsvDialect, override?: Partial<CsvDialect>): CsvDialect {
@@ -399,7 +401,13 @@ export class CsvParser {
     if (this.buffer === '' && text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
 
     const len = text.length;
-    const { delimiter: sep, quoteChar: quote, commentChar = '', trimUnquotedWhitespace: trimUnquoted = false } = this.dialect;
+    const {
+      delimiter: sep,
+      quoteChar: quote,
+      commentChar = '',
+      trimUnquotedWhitespace: trimUnquoted = false,
+      preserveQuotedEmpty = false,
+    } = this.dialect;
     const isBackslashEscape = (this.dialect.escapeChar ?? '"') === '\\';
 
     let parsedRows: string[][] = [];
@@ -423,7 +431,8 @@ export class CsvParser {
       } else if (stripCr && currentCell.endsWith('\r')) {
         currentCell = currentCell.slice(0, -1);
       }
-      currentRow.push((!cellWasQuoted && trimUnquoted) ? currentCell.trim() : currentCell);
+      const cellVal = (!cellWasQuoted && trimUnquoted) ? currentCell.trim() : currentCell;
+      currentRow.push((preserveQuotedEmpty && cellWasQuoted && cellVal === '') ? QUOTED_EMPTY_CELL : cellVal);
       currentCell = '';
       cellWasQuoted = quoteClosed = false;
     };
@@ -526,9 +535,10 @@ export class CsvParser {
     return this.parseChunk(input, true);
   }
 
-  static parseHtmlTable(html: string, options?: { trimWhitespace?: boolean }): string[][] | null {
+  static parseHtmlTable(html: string, options?: { trimWhitespace?: boolean; preserveQuotedEmpty?: boolean }): string[][] | null {
     if (!html || typeof html !== 'string' || !/<table[\s>]/i.test(html)) return null;
     const trimWhitespace = options?.trimWhitespace ?? true;
+    const preserveQuotedEmpty = Boolean(options?.preserveQuotedEmpty);
 
     const cleaned = html
       .replace(/<!--[\s\S]*?-->/g, '')
@@ -546,6 +556,7 @@ export class CsvParser {
     let cellStartIdx = 0;
     let cellColspan = 1;
     let cellRowspan = 1;
+    let cellEmptyStr = false;
 
     const rawRows: { text: string; colspan: number; rowspan: number }[][] = [];
     let currentRow: { text: string; colspan: number; rowspan: number }[] = [];
@@ -575,12 +586,14 @@ export class CsvParser {
     const closeCell = (endIdx: number) => {
       if (!inCell) return;
       const rawInner = content.slice(cellStartIdx, endIdx);
+      const text = extractCellText(rawInner);
       currentRow.push({
-        text: extractCellText(rawInner),
+        text: (cellEmptyStr && text === '') ? QUOTED_EMPTY_CELL : text,
         colspan: cellColspan,
         rowspan: cellRowspan,
       });
       inCell = false;
+      cellEmptyStr = false;
     };
 
     const closeRow = (endIdx: number) => {
@@ -633,6 +646,7 @@ export class CsvParser {
           cellStartIdx = tagEnd;
           cellColspan = parseSpanAttr(attrs, 'colspan');
           cellRowspan = parseSpanAttr(attrs, 'rowspan');
+          cellEmptyStr = preserveQuotedEmpty && /\bdata-empty-str\b/i.test(attrs);
         }
       } else if (isClosing && (tagName === 'thead' || tagName === 'tbody' || tagName === 'tfoot')) {
         if (inRow) closeRow(tagStart);
@@ -703,6 +717,11 @@ export class CsvSerializer {
     const isBackslash = (opts.escapeChar ?? '"') === '\\';
 
     return matrix.map(row => row.map(val => {
+      if (val === QUOTED_EMPTY_CELL) {
+        if (!opts.preserveQuotedEmpty && !opts.quoteAlways) return fw > 0 ? spaces : '';
+        if (isStrict) throw new Error('Strict csv format not respected: save aborted');
+        return fw > 2 ? (spaces + '""').slice(-fw) : '""';
+      }
       let cellStr = normalizeCellValue(val);
       let requiresQuote = opts.quoteAlways ?? false;
 
@@ -729,12 +748,12 @@ export class CsvSerializer {
     const indent = options?.pretty !== false ? 2 : undefined;
 
     if (!hasHeader || matrix.length <= 1) {
-      return JSON.stringify(matrix.map(row => row.map(normalizeCellValue)), null, indent);
+      return JSON.stringify(matrix.map(row => row.map(displayCellValue)), null, indent);
     }
 
     const seenHeaders = new Map<string, number>();
     const headers = matrix[0].map((h, colIdx) => {
-      const key = normalizeCellValue(h).trim() || `col_${colIdx + 1}`;
+      const key = displayCellValue(h).trim() || `col_${colIdx + 1}`;
       const count = seenHeaders.get(key) ?? 0;
       seenHeaders.set(key, count + 1);
       return count > 0 ? `${key}_${count + 1}` : key;
@@ -742,7 +761,7 @@ export class CsvSerializer {
 
     const records = matrix.slice(1).map(row => {
       const record: Record<string, string> = {};
-      for (let c = 0; c < headers.length; c++) record[headers[c]] = normalizeCellValue(row[c]);
+      for (let c = 0; c < headers.length; c++) record[headers[c]] = displayCellValue(row[c]);
       return record;
     });
 
@@ -756,26 +775,41 @@ export class CsvSerializer {
     if (colCount === 0) return '';
 
     const formatCell = (val: CellValue) =>
-      normalizeCellValue(val).replace(/\|/g, '\\|').replace(/\r?\n/g, '<br>');
+      displayCellValue(val).replace(/\|/g, '\\|').replace(/\r?\n/g, '<br>');
 
     const headerRow = hasHeader ? matrix[0] : null;
-    const headerCells = Array.from({ length: colCount }, (_, c) => {
-      const raw = headerRow ? normalizeCellValue(headerRow[c]).trim() : '';
-      return ` ${raw ? formatCell(headerRow![c]) : `col_${c + 1}`} `;
+    const headers = Array.from({ length: colCount }, (_, c) => {
+      const raw = headerRow ? displayCellValue(headerRow[c]).trim() : '';
+      return raw ? formatCell(headerRow![c]) : `col_${c + 1}`;
     });
 
+    const startRow = headerRow ? 1 : 0;
+    const bodyRows: string[][] = [];
+    const colWidths = headers.map(h => Math.max(3, h.length));
+
+    for (let r = startRow; r < matrix.length; r++) {
+      const row = matrix[r];
+      const formattedRow = Array.from({ length: colCount }, (_, c) => {
+        const cell = formatCell(row[c]);
+        if (cell.length > colWidths[c]) colWidths[c] = cell.length;
+        return cell;
+      });
+      bodyRows.push(formattedRow);
+    }
+
+    const formatRow = (cells: string[]) =>
+      `| ${cells.map((cell, c) => cell.padEnd(colWidths[c], ' ')).join(' | ')} |`;
+
     const lines = [
-      `|${headerCells.join('|')}|`,
-      `|${new Array(colCount).fill(' --- ').join('|')}|`
+      formatRow(headers),
+      `| ${colWidths.map(w => '-'.repeat(w)).join(' | ')} |`
     ];
 
-    for (let r = headerRow ? 1 : 0; r < matrix.length; r++) {
-      const row = matrix[r];
-      lines.push(`|${Array.from({ length: colCount }, (_, c) => ` ${formatCell(row[c])} `).join('|')}|`);
+    for (let r = 0; r < bodyRows.length; r++) {
+      lines.push(formatRow(bodyRows[r]));
     }
     return lines.join('\n');
   }
-
   serializeTsv(matrix: readonly (readonly CellValue[])[], dialect?: Partial<CsvDialect>): string {
     return this.serialize(matrix, { ...dialect, delimiter: '\t' });
   }
@@ -783,9 +817,10 @@ export class CsvSerializer {
   serializeHtml(matrix: readonly (readonly CellValue[])[], options?: { hasHeader?: boolean }): string {
     if (!matrix || matrix.length === 0 || matrix[0].length === 0) return '';
     const hasHeader = Boolean(options?.hasHeader && matrix.length > 1);
+    const preserveEmpty = Boolean(this.dialect.preserveQuotedEmpty);
 
     const escapeHtml = (val: CellValue): string =>
-      normalizeCellValue(val)
+      displayCellValue(val)
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
@@ -793,6 +828,7 @@ export class CsvSerializer {
         .replace(/'/g, '&#39;')
         .replace(/\r?\n/g, '<br style="mso-data-placement:same-cell;">');
 
+    const emptyAttr = (val: CellValue) => (preserveEmpty && val === QUOTED_EMPTY_CELL) ? ' data-empty-str="1"' : '';
     const cellStyle = 'mso-number-format:\'\\@\';padding:4px 8px;border:1px solid #d0d7de;';
     const headStyle = `${cellStyle}font-weight:600;background:#f6f8fa;`;
 
@@ -800,13 +836,13 @@ export class CsvSerializer {
     const startRow = hasHeader ? 1 : 0;
 
     if (hasHeader) {
-      const ths = matrix[0].map(c => `<th style="${headStyle}">${escapeHtml(c)}</th>`).join('');
+      const ths = matrix[0].map(c => `<th${emptyAttr(c)} style="${headStyle}">${escapeHtml(c)}</th>`).join('');
       sections.push(`<thead><tr>${ths}</tr></thead>`);
     }
 
     const bodyRows: string[] = [];
     for (let r = startRow; r < matrix.length; r++) {
-      const tds = matrix[r].map(c => `<td style="${cellStyle}">${escapeHtml(c)}</td>`).join('');
+      const tds = matrix[r].map(c => `<td${emptyAttr(c)} style="${cellStyle}">${escapeHtml(c)}</td>`).join('');
       bodyRows.push(`<tr>${tds}</tr>`);
     }
     sections.push(`<tbody>${bodyRows.join('')}</tbody>`);

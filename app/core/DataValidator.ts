@@ -4,7 +4,7 @@
  * ZERO browser/DOM imports.
  */
 
-import { Dataframe, isNumeric, isIsoDate, isUrl, roundNumericString } from './Dataframe.js';
+import { Dataframe, isNumeric, isIsoDate, isUrl, roundNumericString, QUOTED_EMPTY_CELL } from './Dataframe.js';
 
 export interface ValidationProposal {
   x: number;
@@ -54,9 +54,14 @@ const COMMA_REPLACEMENT_META: Record<string, { name: string; desc: string }> = {
 };
 
 let commaReplacement = '-';
+let preserveQuotedEmpty = false;
 
 export function setCommaReplacement(char: string): void {
   commaReplacement = char || '-';
+}
+
+export function setPreserveQuotedEmpty(val: boolean): void {
+  preserveQuotedEmpty = Boolean(val);
 }
 
 const TEXT_COMMA_RE = /([^\S\r\n]*),([^\S\r\n]*)/g;
@@ -422,6 +427,7 @@ function normalizeNullLiteral(val: string): string {
 export const NON_VISUAL_ONLY_RE = /^[\s\u0000-\u001F\u007F-\u009F\u00AD\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFEFF]+$/;
 
 function cleanEmptyCell(val: string): string {
+  if (preserveQuotedEmpty && val === QUOTED_EMPTY_CELL) return val;
   return val && NON_VISUAL_ONLY_RE.test(val) ? '' : val;
 }
 
@@ -484,7 +490,7 @@ export class DataValidator {
       const rowLen = Math.min(width, row.length);
       for (let x = 0; x < rowLen; x++) {
         const raw = row[x];
-        if (raw) fn(String(raw), x, y);
+        if (raw && (!preserveQuotedEmpty || raw !== QUOTED_EMPTY_CELL)) fn(String(raw), x, y);
       }
     }
   }
@@ -549,7 +555,7 @@ export class DataValidator {
 
       for (let y = startY; y < height; y++) {
         const raw = rows[y]?.[x];
-        if (!raw) continue;
+        if (!raw || (preserveQuotedEmpty && raw === QUOTED_EMPTY_CELL)) continue;
         const lower = String(raw).trim().toLowerCase();
         if (!lower) continue;
         nonEmpty++;
@@ -563,7 +569,7 @@ export class DataValidator {
 
       for (let y = 0; y < height; y++) {
         const raw = rows[y]?.[x];
-        if (!raw) continue;
+        if (!raw || (preserveQuotedEmpty && raw === QUOTED_EMPTY_CELL)) continue;
         const str = String(raw);
         const lower = str.trim().toLowerCase();
         if (!lower) continue;
@@ -594,7 +600,7 @@ export class DataValidator {
       let key = '';
       for (let x = 0; x < width; x++) {
         const v = String(row[x] ?? '');
-        if (!hasContent && v.trim() !== '') hasContent = true;
+        if (!hasContent && ((preserveQuotedEmpty && v === QUOTED_EMPTY_CELL) || v.trim() !== '')) hasContent = true;
         key = x === 0 ? v : `${key}\x1f${v}`;
       }
       if (!hasContent) continue;
@@ -837,8 +843,8 @@ export class DataValidator {
 
     for (let y = 0; y < height; y++) {
       const raw = rows[y]?.[colIndex] ?? '';
-      if (!raw) {
-        swapCol[y] = '';
+      if (!raw || (preserveQuotedEmpty && raw === QUOTED_EMPTY_CELL)) {
+        swapCol[y] = raw;
         isoCol[y] = '';
         continue;
       }

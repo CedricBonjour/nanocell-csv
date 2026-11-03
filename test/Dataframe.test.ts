@@ -2,7 +2,7 @@
  * @file test/Dataframe.test.ts
  * Tests for Dataframe streaming row ingestion, lock state handling, and view-only support.
  */
-import { Dataframe } from '../app/core/Dataframe.js';
+import { Dataframe, QUOTED_EMPTY_CELL, displayCellValue } from '../app/core/Dataframe.js';
 
 interface TestResult {
   passed: number;
@@ -354,6 +354,75 @@ export function runDataframeTests(): TestResult {
     dfMulti.redo();
     assertEqual(dfMulti.get(0, 2), '2026-12-01', 'Redo restores expanded cell (0,2)');
     assertEqual(dfMulti.get(1, 3), '2026-04-30', 'Redo restores expanded cell (1,3)');
+  });
+
+  // =========================================================================
+  // 8. QUOTED_EMPTY_CELL ('\0') Tracker Behavior
+  // =========================================================================
+  test('QUOTED_EMPTY_CELL: displayCellValue normalizes tracker byte to empty string', () => {
+    assertEqual(displayCellValue(QUOTED_EMPTY_CELL), '', 'displayCellValue(QUOTED_EMPTY_CELL) is ""');
+    assertEqual(displayCellValue(''), '', 'displayCellValue("") is ""');
+    assertEqual(displayCellValue('abc'), 'abc', 'displayCellValue("abc") is "abc"');
+  });
+
+  test('QUOTED_EMPTY_CELL: Sort treats QUOTED_EMPTY_CELL as empty (sorted to bottom alongside unquoted empty)', () => {
+    const df = new Dataframe([
+      ['header'],
+      ['b'],
+      [QUOTED_EMPTY_CELL],
+      ['a'],
+      ['']
+    ]);
+    df.sort(0, { ascending: true, hasHeader: true });
+    assertSeries(
+      [df.get(0, 0), df.get(0, 1), df.get(0, 2), df.get(0, 3), df.get(0, 4)],
+      ['header', 'a', 'b', QUOTED_EMPTY_CELL, ''],
+      'Ascending sort places non-empty values first, and keeps empty / QUOTED_EMPTY_CELL rows at the bottom'
+    );
+  });
+
+  test('QUOTED_EMPTY_CELL: Find, replaceAll, and filterColumn do not match raw \\0 byte on non-empty queries', () => {
+    const df = new Dataframe([
+      ['col'],
+      [QUOTED_EMPTY_CELL],
+      ['x'],
+      ['']
+    ]);
+
+    // Regex matching any 1 character must NOT match QUOTED_EMPTY_CELL
+    const oneCharMatches = df.find({ term: '^.$', useRegex: true });
+    assertEqual(oneCharMatches.length, 1, 'Regex ^.$ only matches "x", not QUOTED_EMPTY_CELL');
+    assertEqual(oneCharMatches[0].y, 2, 'Match is at row 2 ("x")');
+
+    // Empty regex ^$ matches both '' and QUOTED_EMPTY_CELL
+    const emptyMatches = df.find({ term: '^$', useRegex: true });
+    assertEqual(emptyMatches.length, 2, 'Regex ^$ matches both QUOTED_EMPTY_CELL and ""');
+
+    // filterColumn with raw '\0' does not match QUOTED_EMPTY_CELL because displayCellValue normalizes it to ''
+    const filteredNullByte = df.filterColumn(0, '\0', false, true);
+    assertSeries(filteredNullByte, [], 'filterColumn("\\0") does not match QUOTED_EMPTY_CELL');
+
+    // filterColumn with "x" only keeps row 2
+    const filteredRows = df.filterColumn(0, 'x', false, true);
+    assertSeries(filteredRows, [2], 'filterColumn("x") only keeps row 2 ("x")');
+
+    // replaceAll with "^.$" replaces "x" but does not touch QUOTED_EMPTY_CELL
+    df.replaceAll({ term: '^.$', useRegex: true }, 'Y');
+    assertEqual(df.get(0, 1), QUOTED_EMPTY_CELL, 'QUOTED_EMPTY_CELL untouched by ^.$ replaceAll');
+    assertEqual(df.get(0, 2), 'Y', '"x" replaced with "Y"');
+  });
+
+  test('QUOTED_EMPTY_CELL: Editing a badged cell completely overwrites \\0 and supports undo/redo', () => {
+    const df = new Dataframe([[QUOTED_EMPTY_CELL, 'normal']]);
+    df.editRange({ xmin: 0, xmax: 0, ymin: 0, ymax: 0 }, 'edited');
+    assertEqual(df.get(0, 0), 'edited', 'Edit overwrites QUOTED_EMPTY_CELL completely');
+    assertEqual(df.get(0, 0).includes('\0'), false, 'No \\0 byte remains after edit');
+
+    df.undo();
+    assertEqual(df.get(0, 0), QUOTED_EMPTY_CELL, 'Undo restores QUOTED_EMPTY_CELL');
+
+    df.redo();
+    assertEqual(df.get(0, 0), 'edited', 'Redo reapplies "edited"');
   });
 
   return { passed, failed };

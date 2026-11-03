@@ -252,6 +252,14 @@ footer {
   line-height: normal;
 }
 
+@media (max-width: 800px) {
+  .header-mid { display: none; }
+}
+
+@media (max-width: 880px) {
+  header:has(#menu-install-btn:not(.hidden)) .header-mid { display: none; }
+}
+
 #footer-left,
 #footer-right {
   white-space: nowrap;
@@ -690,6 +698,7 @@ ui-sheet,
   text-align: end;
   width: 36px;
   padding: 0 6px;
+  line-height: 0;
 }
 
 .sheet td div {
@@ -725,6 +734,20 @@ ui-sheet,
 .error { color: var(--red); justify-content: center; }
 .non-compliant { color: var(--purple); }
 .cell-space-dot { color: var(--active); }
+.empty-string { justify-content: center; }
+
+.empty-string::before,
+.empty-string-badge {
+  content: "empty string";
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background-color: var(--border);
+  color: var(--txt-soft);
+  opacity: 0.75;
+}
 
 ui-scroller {
   display: block;
@@ -784,34 +807,74 @@ ui-file-info-pane.open {
 
 ui-cmenu {
   position: fixed;
-  width: 140px;
+  min-width: 170px;
+  width: max-content;
   top: 0;
   left: 0;
   overflow: hidden;
   padding: 4px 0;
   z-index: 1000;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
 }
 
 .cmenu-header {
   text-align: center;
   font-weight: 600;
-  margin: 4px;
+  font-size: 12px;
+  padding: 2px 10px 5px;
+  margin-bottom: 2px;
   color: var(--txt-soft);
   border-bottom: 1px solid var(--border);
-  padding-bottom: 4px;
 }
 
-.cmenu-opt { text-align: right; }
-ui-cmenu div { margin: 4px 10px; }
-
-ui-cmenu table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 4px;
+.cmenu-list {
+  display: flex;
+  flex-direction: column;
 }
 
-ui-cmenu tr { cursor: pointer; }
-ui-cmenu tr:hover { background-color: var(--bg2); }
+.cmenu-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 2px 8px 2px 10px;
+  min-height: 26px;
+  user-select: none;
+}
+
+.cmenu-row.cmenu-divider {
+  border-top: 1px solid var(--border);
+  margin-top: 2px;
+  padding-top: 4px;
+}
+
+.cmenu-row.single-action {
+  cursor: pointer;
+}
+
+.cmenu-row:hover {
+  background-color: color-mix(in srgb, var(--bg2) 60%, transparent);
+}
+
+.cmenu-row.single-action:hover {
+  background-color: var(--bg2);
+}
+
+.cmenu-row.single-action:hover .cmenu-glyph::before {
+  background-color: var(--active);
+}
+
+.cmenu-label {
+  font-size: 13px;
+  white-space: nowrap;
+  color: var(--txt);
+}
+
+.cmenu-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
 
 /* 7. Modals & Dialogs (#dialog) */
 #dialog {

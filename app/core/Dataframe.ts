@@ -68,8 +68,14 @@ export function isIsoDate(val: unknown): boolean {
   return typeof val === 'string' && val.length === 10 && /^\d{4}-[01]\d-[0123]\d$/.test(val);
 }
 
+export const QUOTED_EMPTY_CELL = '\0';
+
 export function normalizeCellValue(val: unknown): string {
   return val === null || val === undefined ? '' : String(val);
+}
+
+export function displayCellValue(val: unknown): string {
+  return val === null || val === undefined || val === QUOTED_EMPTY_CELL ? '' : String(val);
 }
 
 export function roundNumericString(str: string, decimals = 2): string {
@@ -463,7 +469,7 @@ export class Dataframe {
 
     for (let idx = hasHeader ? 1 : 0; idx < this.height; idx++) {
       const val = this._data[idx][n];
-      if (!val) {
+      if (!val || val === QUOTED_EMPTY_CELL) {
         empty.push(idx);
       } else {
         const trimmed = val.trim();
@@ -603,7 +609,7 @@ export class Dataframe {
     const matches: number[] = [];
     for (let r = startRow; r < totalRows; r++) {
       const cellVal = this._data[r]?.[colIndex];
-      if (cellVal == null) continue;
+      if (cellVal == null || cellVal === QUOTED_EMPTY_CELL) continue;
       const strVal = caseSensitive ? String(cellVal) : String(cellVal).toLowerCase();
       if (strVal.includes(needle)) matches.push(r);
     }
@@ -623,7 +629,7 @@ export class Dataframe {
     for (let y = yStart; y <= yEnd; y++) {
       const row = this._data[y];
       for (let x = xStart; x <= xEnd; x++) {
-        const value = normalizeCellValue(row?.[x]);
+        const value = displayCellValue(row?.[x]);
         regex.lastIndex = 0;
         onCell(x, y, value, regex);
       }
@@ -659,7 +665,8 @@ export class Dataframe {
       if (regex.test(value)) {
         regex.lastIndex = 0;
         const newValue = value.replace(regex, replacement);
-        if (newValue !== value) changes.push({ x, y, oldValue: value, newValue });
+        const oldValue = this.get(x, y);
+        if (newValue !== oldValue) changes.push({ x, y, oldValue, newValue });
       }
     });
     this.applyChanges(changes);

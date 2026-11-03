@@ -40,7 +40,7 @@ Click the Settings icon in the top-right corner (or press `Ctrl+,`) to tailor th
 
 - **7 Built-In Themes:** Switch between `Nord`, `Light`, `Slate`, `Dark`, `Solarized`, `Night`, and `Dracula`.
 - **Grid & Typography:** Adjust visible rows, columns, and font size, or open the fuzzy Command Palette (`Ctrl+K` or `Ctrl+P`) to access any action by keyboard.
-- **CSV Open & Save Rules:** Configure delimiter, encoding, fixed-width padding, header freezing (`Ctrl+B`), and Strict RFC 4180 Save Guard.
+- **CSV Open & Save Rules:** Configure delimiter, encoding, fixed-width padding, header freezing (`Ctrl+B`), quoted empty string preservation (`""` vs `NULL`), and Strict RFC 4180 Save Guard.
 
 ## What If the File Is Huge—Say 5 GB or 20 GB?
 

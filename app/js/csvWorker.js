@@ -21,7 +21,7 @@ async function readSliceBytes(slice) {
 
 async function loadCsv(data, postFn = postWorkerMessage) {
   if (data.viewOnly) return loadCsvViewOnly(data, postFn);
-  const { file, readId, trimUnquoted, commentChar = '', escapeChar = '"' } = data;
+  const { file, readId, trimUnquoted, preserveQuotedEmpty = false, commentChar = '', escapeChar = '"' } = data;
   const fileSize = file?.size || 0;
 
   if (!file || fileSize === 0) {
@@ -65,9 +65,9 @@ async function loadCsv(data, postFn = postWorkerMessage) {
     if (!sepDetected && rawText.length > 0) {
       sep = SeparatorDetector.detect(rawText);
       sepDetected = true;
-      if (parser) parser = new CsvParser({ delimiter: sep, trimUnquotedWhitespace: Boolean(trimUnquoted), commentChar, escapeChar, encoding });
+      if (parser) parser = new CsvParser({ delimiter: sep, trimUnquotedWhitespace: Boolean(trimUnquoted), preserveQuotedEmpty: Boolean(preserveQuotedEmpty), commentChar, escapeChar, encoding });
     }
-    parser ||= new CsvParser({ delimiter: sep, trimUnquotedWhitespace: Boolean(trimUnquoted), commentChar, escapeChar, encoding });
+    parser ||= new CsvParser({ delimiter: sep, trimUnquotedWhitespace: Boolean(trimUnquoted), preserveQuotedEmpty: Boolean(preserveQuotedEmpty), commentChar, escapeChar, encoding });
 
     const parsedRows = parser.parseChunk(rawText, isFileReadComplete);
     for (let r = 0; r < parsedRows.length; r++) pendingRows.push(parsedRows[r]);
@@ -110,7 +110,7 @@ async function loadCsv(data, postFn = postWorkerMessage) {
 }
 
 async function loadCsvViewOnly(data, postFn = postWorkerMessage) {
-  const { file, readId, previewChunks = 1, previewRows = 100, trimUnquoted, commentChar = '', escapeChar = '"' } = data;
+  const { file, readId, previewChunks = 1, previewRows = 100, trimUnquoted, preserveQuotedEmpty = false, commentChar = '', escapeChar = '"' } = data;
   const fileSize = file?.size || 0;
   let sep = ',', encoding = 'utf-8';
 
@@ -161,7 +161,7 @@ async function loadCsvViewOnly(data, postFn = postWorkerMessage) {
     }
 
     let matrix = result
-      ? new CsvParser({ delimiter: sep, trimUnquotedWhitespace: Boolean(trimUnquoted), commentChar, escapeChar, encoding }).parseChunk(result, true)
+      ? new CsvParser({ delimiter: sep, trimUnquotedWhitespace: Boolean(trimUnquoted), preserveQuotedEmpty: Boolean(preserveQuotedEmpty), commentChar, escapeChar, encoding }).parseChunk(result, true)
       : [];
     matrix = iteration === 1
       ? matrix.slice(0, rowsPerChunk)

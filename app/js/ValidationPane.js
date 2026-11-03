@@ -15,6 +15,7 @@ import {
   DEFAULT_MACROS,
   NON_VISUAL_ONLY_RE,
 } from '../core/DataValidator.js';
+import { QUOTED_EMPTY_CELL, displayCellValue } from '../core/Dataframe.js';
 
 const ITEM_HEIGHT = 44;
 
@@ -198,7 +199,7 @@ export class ValidationPane extends SideDrawerPane {
   }
 
   getColHeader(colIndex) {
-    return getSheet().df.get(colIndex, 0) || `col_${colIndex + 1}`;
+    return displayCellValue(getSheet().df.get(colIndex, 0)) || `col_${colIndex + 1}`;
   }
 
   getPendingItems(colIndex = null) {
@@ -491,6 +492,9 @@ export class ValidationPane extends SideDrawerPane {
 
   formatValue(value) {
     if (!value) return '<em>empty</em>';
+    if (value === QUOTED_EMPTY_CELL && settings.preserveQuotedEmpty) {
+      return '<span class="empty-string-badge">empty string</span>';
+    }
     if (NON_VISUAL_ONLY_RE.test(value)) {
       const visible = value
         .replaceAll('\r', '\\r')

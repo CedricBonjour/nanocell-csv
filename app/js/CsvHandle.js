@@ -123,6 +123,10 @@ export class CsvHandle {
       const df = new Dataframe(initialRows);
       df.lock = this.viewOnly;
       sheet = this.createSheet(df);
+      if (!this.viewOnly && settings.readOnlyOnOpen) {
+        sheet.readOnly = true;
+        sheet.df.lock = true;
+      }
       if (!isComplete) {
         sheet.df.isSaved = true;
         sheet.fixTop = settings.freezeHeaderOnOpen;
@@ -176,7 +180,8 @@ export class CsvHandle {
       this.postToWorker('read', {
         readId: currentReadId, file, viewOnly: this.viewOnly,
         previewChunks: settings.previewChunks, previewRows: settings.previewRows,
-        trimUnquoted: Boolean(settings.trimUnquoted)
+        trimUnquoted: Boolean(settings.trimUnquoted),
+        preserveQuotedEmpty: Boolean(settings.preserveQuotedEmpty)
       });
     }
   }
@@ -303,7 +308,8 @@ export class CsvHandle {
 
   static formatData(format, rows, pretty = true, hasHeader = Boolean(settings.freezeHeaderOnOpen)) {
     if (format === 'csv') return CsvHandle.serializeMatrix(rows);
-    const s = new CsvSerializer(format === 'tsv' ? { delimiter: '\t' } : undefined);
+    const preserveQuotedEmpty = Boolean(settings.preserveQuotedEmpty);
+    const s = new CsvSerializer(format === 'tsv' ? { delimiter: '\t', preserveQuotedEmpty } : { preserveQuotedEmpty });
     if (format === 'json') return s.serializeJson(rows, { pretty, hasHeader });
     if (format === 'md') return s.serializeMarkdown(rows, { hasHeader });
     if (format === 'html') return s.serializeHtml(rows, { hasHeader });
@@ -328,13 +334,17 @@ export class CsvHandle {
     if (!sheet) return;
     const { matrix, hasHeader } = sheet.getCopyMatrix();
     const text = CsvHandle.formatData(format, matrix, true, hasHeader);
-    if (await copyToClipboard(text)) {
+    const html = format === 'html' ? text : '';
+    if (await copyToClipboard(text, html)) {
       Notification.quick(message);
     } else if (globalThis.navigator?.clipboard?.writeText) {
       Notification.quick('Clipboard copy not permitted by browser');
     }
   }
 
+  async copyTsv() { return this._copyFormatted('Copied selection as TSV', 'tsv'); }
+  async copyCsv() { return this._copyFormatted('Copied selection as CSV', 'csv'); }
+  async copyHtml() { return this._copyFormatted('Copied selection as HTML table', 'html'); }
   async copyMarkdown() { return this._copyFormatted('Copied selection as Markdown table', 'md'); }
   async copyJson() { return this._copyFormatted('Copied selection as JSON to clipboard', 'json'); }
 
@@ -342,7 +352,8 @@ export class CsvHandle {
     return new CsvSerializer({
       delimiter: settings.delimiter,
       isStrict: settings.strictSave,
-      fixedWidth: settings.fixedWidthSize
+      fixedWidth: settings.fixedWidthSize,
+      preserveQuotedEmpty: Boolean(settings.preserveQuotedEmpty)
     }).serialize(matrix);
   }
 }

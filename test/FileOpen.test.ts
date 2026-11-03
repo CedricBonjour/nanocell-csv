@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 import { loadCsv, loadCsvViewOnly } from '../app/js/csvWorker.js';
 import { getSheet, setSheet } from '../app/js/state.js';
-import { Dataframe } from '../app/core/Dataframe.js';
+import { Dataframe, QUOTED_EMPTY_CELL } from '../app/core/Dataframe.js';
 
 if (typeof globalThis.HTMLElement === 'undefined') {
   (globalThis as any).HTMLElement = class {
@@ -1019,6 +1019,46 @@ export async function runFileOpenTests(): Promise<{ passed: number; failed: numb
     assert.strictEqual(getSheet().df.get(0, 0), 'ID', 'View-Only locked Dataframe must reject edits');
     await csvHandle.save();
     await csvHandle.saveAs();
+  });
+
+  await test('preserveQuotedEmpty E2E: Round-trips unquoted empty vs "" on open and save, preserves "" under trim=true, and does not silent reload on setting toggle', async () => {
+    const { csvHandle } = createMockTestHarness();
+    settings.preserveQuotedEmpty = true;
+    settings.trim = true;
+
+    const rawCsv = 'id,nullable_col,empty_str_col\r\n1,,""\r\n2,"",\r\n';
+    const handle = createMockFileHandle(rawCsv, 'pg_roundtrip.csv');
+    await csvHandle.launchFile(handle);
+    await waitForReadComplete(csvHandle);
+
+    // 1. Verify parsed Dataframe distinguishes '' vs QUOTED_EMPTY_CELL and trim=true did not strip column 2 ('""')
+    assert.deepStrictEqual(getSheet().df.data, [
+      ['id', 'nullable_col', 'empty_str_col'],
+      ['1', '', QUOTED_EMPTY_CELL],
+      ['2', QUOTED_EMPTY_CELL, '']
+    ]);
+
+    // 2. Save in-place and verify exact round-trip without any \0 byte written
+    getSheet().df.isSaved = false;
+    await csvHandle.save();
+    assert.strictEqual(getSheet().df.isSaved, true);
+    const written = handle.getWrittenContent();
+    assert.strictEqual(written, 'id,nullable_col,empty_str_col\r\n1,,""\r\n2,"",');
+    assert.strictEqual(written.includes('\0'), false, 'Saved file must never contain raw \\0 byte');
+
+    // 3. Toggling preserveQuotedEmpty in Settings refreshes sheet without triggering a silent reload
+    const callsBeforeToggle = handle.getCallCount();
+    const refreshesBeforeToggle = getSheet().refreshCount;
+    settings.preserveQuotedEmpty = false;
+
+    assert.strictEqual(handle.getCallCount(), callsBeforeToggle, 'Toggling preserveQuotedEmpty must not silent-reload file from disk');
+    assert.ok(getSheet().refreshCount > refreshesBeforeToggle, 'Toggling preserveQuotedEmpty should refresh the sheet view');
+
+    // Saving while preserveQuotedEmpty=false outputs unquoted empty for existing QUOTED_EMPTY_CELL
+    getSheet().df.isSaved = false;
+    await csvHandle.save();
+    assert.strictEqual(handle.getWrittenContent(), 'id,nullable_col,empty_str_col\r\n1,,\r\n2,,');
+    assert.strictEqual(handle.getWrittenContent().includes('\0'), false);
   });
 
   return { passed, failed };

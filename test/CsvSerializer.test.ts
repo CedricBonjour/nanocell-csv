@@ -1,5 +1,6 @@
 import assert from 'node:assert';
 import { CsvSerializer } from '../app/core/Csv.js';
+import { QUOTED_EMPTY_CELL } from '../app/core/Dataframe.js';
 
 export function runCsvSerializerTests(): { passed: number; failed: number } {
   let passed = 0;
@@ -247,10 +248,10 @@ export function runCsvSerializerTests(): { passed: number; failed: number } {
       ['Bob', 'Editor']
     ];
     const md = serializer.serializeMarkdown(data);
-    assert.ok(md.includes('| Name | Role |'));
-    assert.ok(md.includes('| --- | --- |'));
-    assert.ok(md.includes('| Alice | Admin |'));
-    assert.ok(md.includes('| Bob | Editor |'));
+    assert.ok(md.includes('| Name  | Role   |'));
+    assert.ok(md.includes('| ----- | ------ |'));
+    assert.ok(md.includes('| Alice | Admin  |'));
+    assert.ok(md.includes('| Bob   | Editor |'));
   });
 
   test('Markdown Export: escapes pipe character (|) and converts newlines to <br>', () => {
@@ -320,6 +321,70 @@ export function runCsvSerializerTests(): { passed: number; failed: number } {
     const serializer = new CsvSerializer();
     assert.strictEqual(serializer.serializeHtml([]), '');
     assert.strictEqual(serializer.serializeHtml([[]]), '');
+  });
+
+  // =========================================================================
+  // 11. Preserve Quoted Empty Strings (preserveQuotedEmpty)
+  // =========================================================================
+  test('preserveQuotedEmpty=true: Serializes QUOTED_EMPTY_CELL as "" and never writes \\0 to output', () => {
+    const serializer = new CsvSerializer({ preserveQuotedEmpty: true });
+    const csv = serializer.serialize([
+      ['id', 'name', 'notes'],
+      ['1', '', QUOTED_EMPTY_CELL],
+      [QUOTED_EMPTY_CELL, 'Alice', '']
+    ]);
+    assert.strictEqual(csv, 'id,name,notes\r\n1,,""\r\n"",Alice,');
+    assert.strictEqual(csv.includes('\0'), false, 'Output must never contain raw \\0 byte');
+  });
+
+  test('preserveQuotedEmpty=false (default): Normalizes QUOTED_EMPTY_CELL to unquoted empty and never writes \\0', () => {
+    const serializer = new CsvSerializer({ preserveQuotedEmpty: false });
+    const csv = serializer.serialize([
+      ['1', QUOTED_EMPTY_CELL, '']
+    ]);
+    assert.strictEqual(csv, '1,,');
+    assert.strictEqual(csv.includes('\0'), false, 'Output must never contain raw \\0 byte');
+  });
+
+  test('preserveQuotedEmpty=true with isStrict=true: Throws strict CSV error on QUOTED_EMPTY_CELL', () => {
+    const strictSerializer = new CsvSerializer({ preserveQuotedEmpty: true, isStrict: true });
+    assert.throws(
+      () => strictSerializer.serialize([['1', QUOTED_EMPTY_CELL]]),
+      /Strict csv format not respected: save aborted/
+    );
+  });
+
+  test('preserveQuotedEmpty=true with fixedWidth=4: Accounts for 2-char "" width when aligning columns', () => {
+    const fwSerializer = new CsvSerializer({ preserveQuotedEmpty: true, fixedWidth: 4 });
+    const csv = fwSerializer.serialize([
+      ['a', 'b'],
+      [QUOTED_EMPTY_CELL, 'x']
+    ]);
+    assert.strictEqual(csv, '   a,   b\r\n  "",   x');
+    assert.strictEqual(csv.includes('\0'), false);
+  });
+
+  test('Non-CSV Exports (JSON, Markdown, HTML): Normalize QUOTED_EMPTY_CELL to empty string and never leak \\0', () => {
+    const serializer = new CsvSerializer({ preserveQuotedEmpty: true });
+    const data = [
+      ['id', 'nullable_col', 'empty_str_col'],
+      ['1', '', QUOTED_EMPTY_CELL]
+    ];
+
+    const json = serializer.serializeJson(data);
+    assert.strictEqual(json.includes('\0'), false);
+    assert.strictEqual(json.includes('\\u0000'), false);
+    assert.deepStrictEqual(JSON.parse(json), [
+      { id: '1', nullable_col: '', empty_str_col: '' }
+    ]);
+
+    const md = serializer.serializeMarkdown(data);
+    assert.strictEqual(md.includes('\0'), false);
+    assert.ok(md.includes('| 1   |              |               |'));
+
+    const html = serializer.serializeHtml(data, { hasHeader: true });
+    assert.strictEqual(html.includes('\0'), false);
+    assert.ok(html.includes('<td data-empty-str="1"'));
   });
 
   return { passed, failed };

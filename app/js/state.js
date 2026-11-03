@@ -4,7 +4,7 @@
  * declarative environment detection, and PWA install state manager.
  */
 
-import { VALIDATION_RULES, COMMA_REPLACEMENTS, DEFAULT_MACROS, setCommaReplacement } from '../core/DataValidator.js';
+import { VALIDATION_RULES, COMMA_REPLACEMENTS, DEFAULT_MACROS, setCommaReplacement, setPreserveQuotedEmpty } from '../core/DataValidator.js';
 
 let activeSheet = null;
 let activeCsvHandle = null;
@@ -86,6 +86,7 @@ export class Setting {
       if (!def.title) new Setting(def);
     }
     setCommaReplacement(settings.commaReplacement);
+    setPreserveQuotedEmpty(settings.preserveQuotedEmpty);
     Setting.setTheme();
   }
 
@@ -133,9 +134,15 @@ Setting.list = [
   { key: 'strictSave', defaultValue: false, name: 'Save-Strict (error on comma  or double quotes)' },
 
   { title: 'Csv Open' },
+  { key: 'readOnlyOnOpen', defaultValue: false, name: 'Open in read-only mode' },
   { key: 'freezeHeaderOnOpen', defaultValue: true, name: 'Set headers' },
   { key: 'trim', defaultValue: false, name: 'Remove empty rows and columns' },
   { key: 'trimUnquoted', defaultValue: true, name: 'Trim unquoted whitespace' },
+  { key: 'preserveQuotedEmpty', defaultValue: false, name: 'Preserve quoted empty strings ("")', onChange: (val) => {
+    setPreserveQuotedEmpty(val);
+    dom.validationPane?.syncWithSheet?.();
+    getSheet()?.refresh();
+  } },
 
   { title: 'Csv View Only' },
   { key: 'editMaxFileSize', defaultValue: 10, name: 'Max editable file size (Mo)', min: 1, max: Infinity, stepMode: 'pow2' },
@@ -147,7 +154,7 @@ Setting.list = [
   { key: 'sortNumbersFirst', defaultValue: false, name: 'Numbers are sorted before text' },
 
   { title: 'Copy / Paste' },
-  { key: 'copyPasteHtml', defaultValue: true, name: 'Context-aware HTML copy & paste' },
+  { key: 'copyPasteHtml', defaultValue: false, name: 'Context-aware HTML copy & paste' },
   { key: 'copyIncludeHeaders', defaultValue: false, name: 'Always include header/title row of selected cells' },
 
   { title: 'Data Validation' },

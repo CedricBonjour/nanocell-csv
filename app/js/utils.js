@@ -154,7 +154,18 @@ export function getPrevPow2(value) {
 
 // --- Browser I/O & Async Utilities ---
 
-export async function copyToClipboard(text) {
+export async function copyToClipboard(text, html = '') {
+  if (html && globalThis.navigator?.clipboard?.write && typeof globalThis.ClipboardItem === 'function') {
+    try {
+      await globalThis.navigator.clipboard.write([
+        new globalThis.ClipboardItem({
+          'text/plain': new Blob([text], { type: 'text/plain' }),
+          'text/html': new Blob([html], { type: 'text/html' }),
+        }),
+      ]);
+      return true;
+    } catch {}
+  }
   if (!globalThis.navigator?.clipboard?.writeText) return false;
   try {
     await globalThis.navigator.clipboard.writeText(text);

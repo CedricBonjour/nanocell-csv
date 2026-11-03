@@ -4,10 +4,10 @@
  * viewport & range selection, inline cell editing, clipboard operations, and mouse/key routing.
  */
 
-import { Dataframe, orderRange, isUrl, isIsoDate } from '../core/Dataframe.js';
+import { Dataframe, orderRange, isUrl, isIsoDate, QUOTED_EMPTY_CELL, displayCellValue } from '../core/Dataframe.js';
 import { CsvParser, CsvSerializer, SeparatorDetector } from '../core/Csv.js';
 import { dom, getSheet, setSheet, Setting, settings } from './state.js';
-import { defineEl, formatCellHtml, getTodayIsoDate, clamp } from './utils.js';
+import { defineEl, formatCellHtml, getTodayIsoDate, clamp, isInputElement } from './utils.js';
 import { updateFooter } from './AppLayout.js';
 import { FinderDialog, FilterDialog } from './SheetOverlays.js';
 import { Notification } from './Notification.js';
@@ -42,8 +42,12 @@ class Scroller extends HTMLElement {
     if (!bounds) return;
     const pos = this.vertical ? event.clientY : event.clientX;
     const ratio = clamp((pos - bounds.offset) / bounds.dragSpan, 0, 1);
-    if (this.vertical) sheet.baseY = Math.floor(sheet.rowCount * ratio);
-    else sheet.baseX = Math.floor(sheet.df.width * ratio);
+    if (this.vertical) {
+      const maxScroll = sheet.df.lock ? sheet.maxBaseY : sheet.rowCount;
+      sheet.baseY = Math.floor(maxScroll * ratio);
+    } else {
+      sheet.baseX = Math.floor((sheet.df.lock ? sheet.maxBaseX : sheet.df.width) * ratio);
+    }
     sheet.refreshSelection(false);
   }
 
@@ -51,12 +55,15 @@ class Scroller extends HTMLElement {
     if (!sheet) return;
     const isY = this.vertical;
     const count = isY ? sheet.rowCount : sheet.df.width;
-    const visible = isY ? count >= sheet.viewRows / 2 : count >= sheet.viewCols - 2;
+    const visible = isY
+      ? (sheet.df.lock ? sheet.maxBaseY > 0 : count >= sheet.viewRows / 2)
+      : (sheet.df.lock ? sheet.maxBaseX > 0 : count >= sheet.viewCols - 2);
     this.classList.toggle('hidden', !visible);
     if (!visible) return;
 
     const base = isY ? sheet.baseY : sheet.baseX;
-    const total = Math.max(count - 1, base, 1);
+    const maxScroll = sheet.df.lock ? (isY ? sheet.maxBaseY : sheet.maxBaseX) : count - 1;
+    const total = Math.max(maxScroll, base, 1);
     const [lg, md] = isY ? [100, 1000] : [30, 100];
     this.setAttribute('data-size', total < lg ? 'lg' : (total < md ? 'md' : 'sm'));
 
@@ -81,6 +88,7 @@ let globalMouseBound = false;
 
 const LOCK_MESSAGES = {
   'view-only': 'File is in View-Only mode. Edits are disabled.',
+  'read-only': 'File is in Read-Only mode. Click the lock icon to unlock.',
   filter: 'File is locked while a filter is active.',
 };
 
@@ -101,12 +109,15 @@ function startOutOfBoundsScroll() {
       changed = true;
     }
     if (mouseX >= rect.right - 5) {
-      if (sheet.rangeEnd) sheet.rangeEnd.x = sheet.baseX + sheet.width - 1;
+      if (sheet.rangeEnd) sheet.rangeEnd.x = Math.min(sheet.baseX + sheet.width - 1, sheet.maxCol);
       sheet.baseX++;
       changed = true;
     }
     if (mouseY >= rect.bottom) {
-      if (sheet.rangeEnd) sheet.rangeEnd.y = sheet.baseY + sheet.height - 1;
+      if (sheet.rangeEnd) {
+        const maxRow = sheet.maxRow;
+        sheet.rangeEnd.y = Math.min(sheet.baseY + sheet.height - 1, maxRow);
+      }
       sheet.baseY++;
       changed = true;
     }
@@ -127,7 +138,7 @@ function bindGlobalMouse() {
   globalMouseBound = true;
 
   document.addEventListener('contextmenu', (event) => {
-    if (!event.ctrlKey) {
+    if (!event.ctrlKey && !isInputElement(event.target)) {
       event.preventDefault();
       dom.contextMenu.openAt(event);
     }
@@ -164,6 +175,9 @@ function bindGlobalMouse() {
   });
 
   document.addEventListener('mousedown', (event) => {
+    if (dom.contextMenu?.isOpen && !dom.contextMenu.contains(event.target)) {
+      dom.contextMenu.hide();
+    }
     const tag = event.target.tagName;
     const sheet = getSheet();
     const isSheetInteraction = sheet.contains(event.target) || event.target instanceof Scroller;
@@ -199,20 +213,23 @@ function bindGlobalMouse() {
       dragTarget = 'cornerHeader';
       sheet.selectAll();
     } else if (cell.rowOffset < 0) {
-      dragTarget = 'colHeader';
       const col = cell.colOffset + sheet.baseX;
+      if (sheet.df.lock && col >= sheet.df.width) return;
+      dragTarget = 'colHeader';
       sheet.selectCol(event.shiftKey ? sheet.x : col, col);
       startOutOfBoundsScroll();
     } else if (cell.colOffset < 0) {
-      dragTarget = 'rowHeader';
       const row = cell.rowOffset + sheet.baseY;
+      if (sheet.df.lock && (cell.colOffset >= 0 && col >= sheet.df.width || row >= sheet.rowCount)) return;
+      dragTarget = 'rowHeader';
       sheet.selectRow(event.shiftKey ? sheet.y : row, row);
       startOutOfBoundsScroll();
     } else {
-      dragTarget = 'cell';
-      mousedownCell = cell;
       const col = cell.colOffset + sheet.baseX;
       const row = cell.rowOffset + sheet.baseY;
+      if (sheet.df.lock && (cell.colOffset >= 0 && col >= sheet.df.width || row >= sheet.rowCount)) return;
+      dragTarget = 'cell';
+      mousedownCell = cell;
       const existing = (isCtrlDrag && sheet.rangeEnd) ? sheet.getOrderedRange() : null;
       if (existing && col >= existing.xmin && col <= existing.xmax && row >= existing.ymin && row <= existing.ymax) {
         dragBaseRange = existing;
@@ -258,6 +275,7 @@ export class Sheet extends HTMLElement {
     this.df = df;
     // A dataframe handed over locked (large-file preview) stays read-only for the sheet's lifetime.
     this.viewOnly = df.lock;
+    this.readOnly = false;
     setSheet(this);
 
     this.table = document.createElement('table');
@@ -306,13 +324,17 @@ export class Sheet extends HTMLElement {
   get width() { return this.rows[0] ? this.rows[0].cells.length - 1 : this.viewCols; }
   get height() { return this.rows.length - 1; }
   get rowCount() { return this.filterRows ? this.filterRows.length : this.df.height; }
+  get maxCol() { return this.df.lock ? Math.max(0, this.df.width - 1) : Infinity; }
+  get maxRow() { return this.df.lock ? Math.max(0, this.rowCount - 1) : Infinity; }
+  get maxBaseX() { return this.df.lock ? Math.max(0, this.df.width - this.width) : Infinity; }
+  get maxBaseY() { return this.df.lock ? Math.max(0, this.rowCount - this.height) : Infinity; }
 
   get x() { return this._x; }
   set x(col) {
     if (this.isEditing) this.commitEdit();
     if (!this.isSelectingRange) this.rangeEnd = undefined;
     else if (!this.rangeEnd) this.rangeEnd = { x: this._x, y: this._y };
-    this._x = Math.max(0, col);
+    this._x = clamp(col, 0, this.maxCol);
   }
 
   get y() { return this._y; }
@@ -320,18 +342,19 @@ export class Sheet extends HTMLElement {
     if (this.isEditing) this.commitEdit();
     if (!this.isSelectingRange) this.rangeEnd = undefined;
     else if (!this.rangeEnd) this.rangeEnd = { x: this._x, y: this._y };
-    this._y = Math.max(0, row);
+    const max = this.maxRow;
+    this._y = clamp(row, 0, max);
   }
 
   get baseX() { return this._baseX; }
   set baseX(col) {
-    const next = Math.max(0, col);
+    const next = clamp(col, 0, this.maxBaseX);
     if (next !== this._baseX) { this._baseX = next; this.refresh(); }
   }
 
   get baseY() { return this._baseY; }
   set baseY(row) {
-    const next = Math.max(0, row);
+    const next = clamp(row, 0, this.maxBaseY);
     if (next !== this._baseY) { this._baseY = next; this.refresh(); }
   }
 
@@ -396,8 +419,8 @@ export class Sheet extends HTMLElement {
     const contentDiv = cellEl?.firstChild;
     if (!contentDiv) return;
     const value = (y >= 0 && y < this.df.height) ? this.df.get(x, y) : '';
-    if (!value) {
-      contentDiv.className = '';
+    if (!value || value === QUOTED_EMPTY_CELL) {
+      contentDiv.className = (value === QUOTED_EMPTY_CELL && settings.preserveQuotedEmpty) ? 'empty-string' : '';
       contentDiv.textContent = '';
       return;
     }
@@ -423,7 +446,12 @@ export class Sheet extends HTMLElement {
     const cell = this.rows[0]?.cells[viewX + 1];
     if (!cell) return;
     const colIndex = this.baseX + viewX;
-    const headerText = this.fixTop ? this.df.get(colIndex, 0) : '';
+    if (this.df.lock && colIndex >= this.df.width) {
+      cell.textContent = '';
+      cell.classList.remove('col-expanded', 'col-collapsed');
+      return;
+    }
+    const headerText = this.fixTop ? displayCellValue(this.df.get(colIndex, 0)) : '';
     cell.textContent = headerText.length > 0 ? headerText : colIndex + 1;
 
     const isExpanded = this.expandedCol != null && colIndex === this.expandedCol;
@@ -479,8 +507,9 @@ export class Sheet extends HTMLElement {
       if (!td || td.colOffset === undefined || td.rowOffset === undefined) return;
 
       if (dragTarget === 'cell') {
-        const endX = td.colOffset + this.baseX;
-        const endY = td.rowOffset + this.baseY;
+        const endX = Math.min(td.colOffset + this.baseX, this.maxCol);
+        const rawEndY = td.rowOffset + this.baseY;
+        const endY = Math.min(rawEndY, this.maxRow);
         if (td !== mousedownCell) didDrag = true;
         if (dragBaseRange) {
           this.rangeEnd = {
@@ -493,10 +522,13 @@ export class Sheet extends HTMLElement {
         this.refreshSelection(false);
       } else if (dragTarget === 'colHeader' && td.colOffset >= 0) {
         didDrag = true;
-        this.selectCol(this.x, td.colOffset + this.baseX);
+        this.selectCol(this.x, Math.min(td.colOffset + this.baseX, this.maxCol));
       } else if (dragTarget === 'rowHeader' && td.rowOffset >= 0) {
+        const endY = this.filterRows
+          ? Math.min(td.rowOffset + this.baseY, Math.max(0, this.filterRows.length - 1))
+          : td.rowOffset + this.baseY;
         didDrag = true;
-        this.selectRow(this.y, td.rowOffset + this.baseY);
+        this.selectRow(this.y, endY);
       }
     });
 
@@ -507,6 +539,7 @@ export class Sheet extends HTMLElement {
         if (!this.df.lock) this.startEdit();
       } else if (td.rowOffset < 0 && td.colOffset >= 0) {
         const colIdx = this.baseX + td.colOffset;
+        if (this.df.lock && colIdx >= this.df.width) return;
         this.expandedCol = this.expandedCol === colIdx ? null : colIdx;
         this.refresh();
       }
@@ -578,7 +611,7 @@ export class Sheet extends HTMLElement {
   }
 
   getRowIndex(viewY) {
-    if (!this.filterRows) return viewY;
+    if (!this.filterRows) return (this.df.lock && viewY >= this.df.height) ? -1 : viewY;
     return (viewY >= 0 && viewY < this.filterRows.length) ? this.filterRows[viewY] : -1;
   }
 
@@ -587,15 +620,38 @@ export class Sheet extends HTMLElement {
   get lockReason() {
     if (this.viewOnly) return 'view-only';
     if (this.filterRows !== null || this.filter.isOpen) return 'filter';
+    if (this.readOnly) return 'read-only';
     return null;
   }
 
-  syncLock() { this.df.lock = this.lockReason !== null; }
+  syncLock() {
+    const wasLocked = Boolean(this.df.lock);
+    const isLocked = this.lockReason !== null;
+    this.df.lock = isLocked;
+    if (isLocked && !wasLocked) {
+      this._baseX = Math.min(this._baseX, this.maxBaseX);
+      this._baseY = Math.min(this._baseY, this.maxBaseY);
+      this.clampSelection();
+    } else if (wasLocked !== isLocked) {
+      this.refresh();
+    }
+  }
 
   warnIfLocked(title) {
     const reason = this.lockReason;
     if (reason) Notification.warning(LOCK_MESSAGES[reason], title);
     return reason !== null;
+  }
+
+  unlock() {
+    if (this.lockReason === 'read-only') {
+      this.readOnly = false;
+      this.syncLock();
+      this.updateFooter();
+      return true;
+    }
+    this.warnIfLocked('Locked');
+    return false;
   }
 
   setFilter(colIndex, text, matchCase = false) {
@@ -626,21 +682,35 @@ export class Sheet extends HTMLElement {
     return orderRange({ xmin: this.x, xmax: end.x, ymin: this.y, ymax: end.y });
   }
 
-  getSelectedMatrix() { return this.df.slice(this.getOrderedRange()); }
+  getSelectedMatrix() {
+    const range = this.getOrderedRange();
+    if (!this.filterRows) return this.df.slice(range);
+    const rows = [];
+    for (let y = range.ymin; y <= range.ymax; y++) {
+      const actualY = this.getRowIndex(y);
+      if (actualY < 0) continue;
+      const row = [];
+      for (let x = range.xmin; x <= range.xmax; x++) row.push(this.df.get(x, actualY));
+      rows.push(row);
+    }
+    return rows;
+  }
 
   selectRange(x, y, endX, endY, scrollIntoView = false) {
     this.isSelectingRange = false;
     this.x = x;
     this.y = y;
-    this.rangeEnd = (endX !== undefined && endY !== undefined && (endX !== x || endY !== y))
-      ? { x: endX, y: endY }
+    const clampedEndX = endX !== undefined ? clamp(endX, 0, this.maxCol) : undefined;
+    const clampedEndY = endY !== undefined ? clamp(endY, 0, this.maxRow) : undefined;
+    this.rangeEnd = (clampedEndX !== undefined && clampedEndY !== undefined && (clampedEndX !== this.x || clampedEndY !== this.y))
+      ? { x: clampedEndX, y: clampedEndY }
       : undefined;
     this.refreshSelection(scrollIntoView);
   }
 
   focusCell(x, y) { this.selectRange(x, y, undefined, undefined, true); }
-  selectAll() { this.selectRange(0, 0, this.df.width - 1, this.df.height - 1, false); }
-  selectCol(startCol, endCol = startCol) { this.selectRange(startCol, 0, endCol, Math.max(0, this.df.height - 1), false); }
+  selectAll() { this.selectRange(0, 0, this.df.width - 1, Math.max(0, this.rowCount - 1), false); }
+  selectCol(startCol, endCol = startCol) { this.selectRange(startCol, 0, endCol, Math.max(0, this.rowCount - 1), false); }
   selectRow(startRow, endRow = startRow) { this.selectRange(0, startRow, Math.max(0, this.df.width - 1), endRow, false); }
 
   isCellInView(x, y) {
@@ -721,6 +791,7 @@ export class Sheet extends HTMLElement {
   }
 
   scroll(event) {
+    dom.contextMenu?.hide();
     if (event.ctrlKey) {
       event.preventDefault();
       const minRows = Setting.getDef('rows').min;
@@ -754,7 +825,7 @@ export class Sheet extends HTMLElement {
     if (!cell) return;
     const actualY = this.getRowIndex(this.y);
     this.isEditing = true;
-    this.inputField.value = initialText || (actualY >= 0 ? this.df.get(this.x, actualY).replaceAll('\n', '\u25BE') : '');
+    this.inputField.value = initialText || (actualY >= 0 ? displayCellValue(this.df.get(this.x, actualY)).replaceAll('\n', '\u25BE') : '');
     cell.appendChild(this.inputField);
     this.inputField.focus();
   }
@@ -775,22 +846,23 @@ export class Sheet extends HTMLElement {
 
   getCopyMatrix() {
     const range = this.getOrderedRange();
+    const firstActualY = this.getRowIndex(range.ymin);
     let matrix = this.getSelectedMatrix();
     const includeHeaders = Boolean(settings.copyIncludeHeaders);
-    if (includeHeaders && range.ymin > 0 && this.df.height > 0) {
+    if (includeHeaders && firstActualY > 0 && this.df.height > 0) {
       const headerRow = this.df.slice({ xmin: range.xmin, xmax: range.xmax, ymin: 0, ymax: 0 })[0];
       if (headerRow) matrix = [headerRow, ...matrix];
     }
-    const hasHeader = includeHeaders || (range.ymin === 0 && Boolean(this.fixTop || settings.freezeHeaderOnOpen));
+    const hasHeader = (includeHeaders && matrix.length > 0) || (firstActualY === 0 && Boolean(this.fixTop || settings.freezeHeaderOnOpen));
     return { matrix, hasHeader };
   }
 
   copySelectionData() {
     const { matrix, hasHeader } = this.getCopyMatrix();
-    const serializer = new CsvSerializer({ delimiter: '\t' });
+    const serializer = new CsvSerializer({ delimiter: '\t', preserveQuotedEmpty: Boolean(settings.preserveQuotedEmpty) });
     const text = serializer.serialize(matrix);
     const cellCount = matrix.length * (matrix[0]?.length || 0);
-    const html = (settings.copyPasteHtml !== false && cellCount > 1)
+    const html = (Boolean(settings.copyPasteHtml) && cellCount > 1)
       ? serializer.serializeHtml(matrix, { hasHeader })
       : '';
     return { text, html };
@@ -805,8 +877,11 @@ export class Sheet extends HTMLElement {
 
   pasteClipboard(rawText, rawHtml) {
     if (this.df.lock) return;
-    if (settings.copyPasteHtml !== false && rawHtml) {
-      const htmlMatrix = CsvParser.parseHtmlTable(rawHtml, { trimWhitespace: Boolean(settings.trimUnquoted) });
+    if (settings.copyPasteHtml && rawHtml) {
+      const htmlMatrix = CsvParser.parseHtmlTable(rawHtml, {
+        trimWhitespace: Boolean(settings.trimUnquoted),
+        preserveQuotedEmpty: Boolean(settings.preserveQuotedEmpty),
+      });
       if (htmlMatrix?.length > 0) {
         this.paste(htmlMatrix);
         return;
@@ -818,7 +893,11 @@ export class Sheet extends HTMLElement {
   pasteText(rawText) {
     if (!rawText || this.df.lock) return;
     const delimiter = rawText.includes('\t') ? '\t' : SeparatorDetector.detect(rawText);
-    const matrix = new CsvParser({ delimiter, trimUnquotedWhitespace: Boolean(settings.trimUnquoted) }).parse(rawText);
+    const matrix = new CsvParser({
+      delimiter,
+      trimUnquotedWhitespace: Boolean(settings.trimUnquoted),
+      preserveQuotedEmpty: Boolean(settings.preserveQuotedEmpty),
+    }).parse(rawText);
     if (matrix.length > 0) this.paste(matrix);
   }
 
@@ -837,6 +916,7 @@ export class Sheet extends HTMLElement {
 
   editSelection(value) { this.df.editRange(this.getOrderedRange(), value); }
   deleteSelection() { this.editSelection(''); this.refresh(); }
+  setEmptyString() { this.editSelection(QUOTED_EMPTY_CELL); this.refresh(); }
 
   _deleteAxis(isRow) {
     const r = this.getOrderedRange();
@@ -889,17 +969,20 @@ export class Sheet extends HTMLElement {
   }
 
   insert(direction) {
-    if (direction === 0) { this.df.insertRow(this.y); this.y++; }
-    else if (direction === 1) { this.df.insertCol(this.x + 1); }
-    else if (direction === 2) { this.df.insertRow(this.y + 1); }
-    else if (direction === 3) { this.df.insertCol(this.x); this.x++; }
+    const range = this.getOrderedRange();
+    if (direction === 0) { this.df.insertRow(range.ymin); this._y++; if (this.rangeEnd) this.rangeEnd.y++; }
+    else if (direction === 1) { this.df.insertCol(range.xmax + 1); }
+    else if (direction === 2) { this.df.insertRow(range.ymax + 1); }
+    else if (direction === 3) { this.df.insertCol(range.xmin); this._x++; if (this.rangeEnd) this.rangeEnd.x++; }
     this.refresh();
     this.refreshSelection();
   }
 
   transposeSelection() {
     if (this.df.lock) return;
-    if (!this.rangeEnd) {
+    const r = this.getOrderedRange();
+    const isWholeSheet = !this.rangeEnd || (r.xmin === 0 && r.ymin === 0 && r.xmax >= this.df.width - 1 && r.ymax >= this.df.height - 1);
+    if (isWholeSheet) {
       this.df.transpose();
       this.focusCell(
         Math.min(this.y, Math.max(0, this.df.width - 1)),
@@ -935,7 +1018,7 @@ export class Sheet extends HTMLElement {
   }
 
   find(isAdvanced = false) {
-    this.finder.open(this.df.get(this.x, this.getRowIndex(this.y)), isAdvanced);
+    this.finder.open(displayCellValue(this.df.get(this.x, this.getRowIndex(this.y))), isAdvanced);
   }
 
   clampSelection() {

@@ -25,6 +25,7 @@ const commands = {
   trim: { label: 'Trim Empty Rows/Cols', key: 'T', ctrl: true, alt: true, run: () => getSheet().trim(), description: 'Trim : remove all empty rows/cols' },
   integer: { label: 'Round to Integer', key: 'I', ctrl: true, run: () => getSheet().round(true), description: 'Round selection to integer' },
   decimal: { label: 'Round to Decimal', key: '$', ctrl: true, run: () => getSheet().round(false), description: 'Round selection to decimal' },
+  emptyString: { label: 'Empty String', run: () => getSheet().setEmptyString(), description: 'Set selection to empty string ("")' },
   fixTop: { label: 'Freeze Header Row', icon: 'fix_top', key: 'B', ctrl: true, run: () => getSheet().toggleFixTop(), description: 'Freeze Header Row' },
   undo: { label: 'Undo', key: 'Z', ctrl: true, run: () => getSheet().undo(), description: 'Undo' },
   redo: { label: 'Redo', key: 'Z', ctrl: true, shift: true, run: () => getSheet().redo(), description: 'Redo' },
@@ -39,13 +40,13 @@ const commands = {
   reloadFile: { label: 'Reload File', icon: 'reload_file', key: 'R', ctrl: true, whileEditing: true, run: () => getCsvHandle().reloadFile(), description: 'Reload file from last save' },
   fileInfo: { label: 'File Info', icon: 'info', run: () => dom.fileInfoPane.toggle(), description: 'Show file details, encoding, separator, and sheet dimensions' },
   expand: { label: 'Expand Row', key: 'E', ctrl: true, run: () => getSheet().expand(), description: 'Expand first row to selection' },
-  validateData: { label: 'Validate Data: Open Pane', icon: 'validate_data', key: 'P', ctrl: true, shift: true, run: () => dom.validationPane.toggle(), description: 'Open data validation pane with all validation rules' },
+  validateData: { label: 'Validate Data: Open Pane', icon: 'task', key: 'P', ctrl: true, shift: true, run: () => dom.validationPane.toggle(), description: 'Open data validation pane with all validation rules' },
   macros: { label: 'Macros: Open Pane', icon: 'macro', key: 'M', ctrl: true, shift: true, run: () => dom.macroPane.toggle(), description: 'Open macros pane to run or edit validation macros' },
   nextOccurrence: { label: 'Next Occurrence', key: 'D', ctrl: true, run: () => getSheet().goToOccurrence(true), description: 'Go to next occurrence of cell value' },
   prevOccurrence: { label: 'Previous Occurrence', key: 'D', ctrl: true, shift: true, run: () => getSheet().goToOccurrence(false), description: 'Go to previous occurrence of cell value' },
   goToCoordinate: { label: 'Go to Coordinate', key: 'G', ctrl: true, run: () => startCoordEdit(), description: 'Go to coordinate' },
-  sortAscending: { label: 'Sort Ascending', icon: 'sort', key: 'L', ctrl: true, run: () => { const s = getSheet(); s.sort(s.x, true); }, description: 'Sort rows based on active column (ascending order)' },
-  sortDescending: { label: 'Sort Descending', icon: 'sort_reverse', key: 'L', ctrl: true, shift: true, run: () => { const s = getSheet(); s.sort(s.x, false); }, description: 'Sort rows based on active column (descending order)' },
+  sortAscending: { label: 'Sort Ascending', icon: 'sort', key: 'L', ctrl: true, run: (col) => { const s = getSheet(); s.sort(col ?? s.x, true); }, description: 'Sort rows based on active column (ascending order)' },
+  sortDescending: { label: 'Sort Descending', icon: 'sort_reverse', key: 'L', ctrl: true, shift: true, run: (col) => { const s = getSheet(); s.sort(col ?? s.x, false); }, description: 'Sort rows based on active column (descending order)' },
   shiftUp: { label: 'Shift Row Up', key: 'ARROWUP', alt: true, run: () => getSheet().shift(0), description: 'Shift row up' },
   shiftDown: { label: 'Shift Row Down', key: 'ARROWDOWN', alt: true, run: () => getSheet().shift(2), description: 'Shift row down' },
   shiftRight: { label: 'Shift Col Right', key: 'ARROWRIGHT', alt: true, run: () => getSheet().shift(1), description: 'Shift col right' },
@@ -57,6 +58,9 @@ const commands = {
   exportJson: { label: 'Export as JSON', run: () => getCsvHandle().exportJson(), description: 'Export current sheet as JSON file' },
   exportTsv: { label: 'Export as TSV', run: () => getCsvHandle().exportTsv(), description: 'Export current sheet as Tab-Separated Values (TSV) file' },
   exportMarkdown: { label: 'Export as Markdown', run: () => getCsvHandle().exportMarkdown(), description: 'Export current sheet as GitHub Flavored Markdown table' },
+  copyTsv: { label: 'Copy as TSV', run: () => getCsvHandle().copyTsv(), description: 'Copy active selection as TSV to clipboard' },
+  copyCsv: { label: 'Copy as CSV', run: () => getCsvHandle().copyCsv(), description: 'Copy active selection as CSV to clipboard' },
+  copyHtml: { label: 'Copy as HTML', run: () => getCsvHandle().copyHtml(), description: 'Copy active selection as HTML table to clipboard' },
   copyMarkdown: { label: 'Copy as Markdown', run: () => getCsvHandle().copyMarkdown(), description: 'Copy active selection as Markdown table to clipboard' },
   copyJson: { label: 'Copy as JSON', run: () => getCsvHandle().copyJson(), description: 'Copy active selection as JSON to clipboard' },
 };
@@ -118,6 +122,11 @@ function onKeyDown(event) {
 
   // Unclaimed Escape steps back in the open drawer, otherwise dismisses notifications.
   if (key === 'ESCAPE') {
+    if (dom.contextMenu?.isOpen) {
+      event.preventDefault();
+      dom.contextMenu.hide();
+      return;
+    }
     const drawer = [dom.validationPane, dom.macroPane, dom.fileInfoPane].find(pane => pane?.isOpen);
     if (drawer) {
       event.preventDefault();
@@ -159,10 +168,14 @@ function onKeyUp(event) {
   if ((key === 'CONTROL' || key === 'SHIFT') && !event.shiftKey) getSheet().isSelectingRange = false;
 }
 
-function getClipboardSheet(requireUnlocked) {
+function getClipboardSheet(event, lockTitle) {
   if (isInputElement(document.activeElement)) return null;
   const sheet = getSheet();
-  return (requireUnlocked && sheet.df.lock) ? null : sheet;
+  if (lockTitle && sheet.warnIfLocked(lockTitle)) {
+    event.preventDefault();
+    return null;
+  }
+  return sheet;
 }
 
 function writeClipboard(event, { text, html }) {
@@ -175,15 +188,15 @@ export function buildKeys() {
   document.addEventListener('keydown', onKeyDown);
   document.addEventListener('keyup', onKeyUp);
   document.addEventListener('copy', (event) => {
-    const sheet = getClipboardSheet(false);
+    const sheet = getClipboardSheet(event);
     if (sheet) writeClipboard(event, sheet.copySelectionData());
   });
   document.addEventListener('cut', (event) => {
-    const sheet = getClipboardSheet(true);
+    const sheet = getClipboardSheet(event, 'Cut');
     if (sheet) writeClipboard(event, sheet.cutSelectionData());
   });
   document.addEventListener('paste', (event) => {
-    const sheet = getClipboardSheet(true);
+    const sheet = getClipboardSheet(event, 'Paste');
     if (!sheet) return;
     event.preventDefault();
     const rawText = event.clipboardData.getData('text/plain') || event.clipboardData.getData('text');

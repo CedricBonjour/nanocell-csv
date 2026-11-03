@@ -5,6 +5,7 @@
 
 import { defineEl, bindOverlayKeys, clamp } from './utils.js';
 import { dom } from './state.js';
+import { displayCellValue } from '../core/Dataframe.js';
 import './Glyph.js';
 import { NumInput } from './Control.js';
 import { Notification } from './Notification.js';
@@ -49,7 +50,7 @@ class FloatingToolbar extends HTMLElement {
   updateColTitle() {
     const df = this.sheet.df;
     const colIndex = this.getColIndex();
-    const title = df.get(colIndex, 0).trim() || `Column ${colIndex + 1}`;
+    const title = displayCellValue(df.get(colIndex, 0)).trim() || `Column ${colIndex + 1}`;
     this.colTitle.textContent = title;
     this.colTitle.setAttribute('title', `Column ${colIndex + 1}: ${title}`);
   }

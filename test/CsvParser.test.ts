@@ -1,5 +1,6 @@
 import assert from 'node:assert';
 import { CsvParser, CsvSerializer } from '../app/core/Csv.js';
+import { QUOTED_EMPTY_CELL } from '../app/core/Dataframe.js';
 
 export function runCsvParserTests(): { passed: number; failed: number } {
   let passed = 0;
@@ -849,6 +850,77 @@ export function runCsvParserTests(): { passed: number; failed: number } {
       ['ID', 'LABEL'],
       ['001', 'Line A\nLine B']
     ]);
+  });
+
+  // =========================================================================
+  // 16. Preserve Quoted Empty Strings (preserveQuotedEmpty)
+  // =========================================================================
+  test('preserveQuotedEmpty=false (default RFC 4180): Treats both ,, and ,"", as empty string ""', () => {
+    const parser = new CsvParser({ preserveQuotedEmpty: false });
+    assert.deepStrictEqual(
+      parser.parse('1,,""\r\n"",2,'),
+      [
+        ['1', '', ''],
+        ['', '2', '']
+      ]
+    );
+  });
+
+  test('preserveQuotedEmpty=true: Distinguishes unquoted empty (,, -> "") from quoted empty (,"", -> QUOTED_EMPTY_CELL)', () => {
+    const parser = new CsvParser({ preserveQuotedEmpty: true, trimUnquotedWhitespace: true });
+    assert.deepStrictEqual(
+      parser.parse('id,name,notes\r\n1,,"",\r\n2,  ""  ,""""\r\n"",  ,normal'),
+      [
+        ['id', 'name', 'notes'],
+        ['1', '', QUOTED_EMPTY_CELL, ''],
+        ['2', QUOTED_EMPTY_CELL, '"'],
+        [QUOTED_EMPTY_CELL, '', 'normal']
+      ]
+    );
+  });
+
+  test('preserveQuotedEmpty=true: Streaming chunk split across "" still produces QUOTED_EMPTY_CELL', () => {
+    const parser = new CsvParser({ preserveQuotedEmpty: true });
+    const rows = [
+      ...parser.parseChunk('1,"', false),
+      ...parser.parseChunk('",\r\n"",', true)
+    ];
+    assert.deepStrictEqual(rows, [
+      ['1', QUOTED_EMPTY_CELL, ''],
+      [QUOTED_EMPTY_CELL, '']
+    ]);
+  });
+
+  test('HTML Paste with preserveQuotedEmpty: Round-trips QUOTED_EMPTY_CELL via data-empty-str="1" only when preserveQuotedEmpty=true', () => {
+    const serializer = new CsvSerializer({ preserveQuotedEmpty: true });
+    const matrix = [
+      ['col1', QUOTED_EMPTY_CELL, ''],
+      ['', QUOTED_EMPTY_CELL, 'val']
+    ];
+    const htmlWithHeader = serializer.serializeHtml(matrix, { hasHeader: true });
+    const htmlNoHeader = serializer.serializeHtml(matrix, { hasHeader: false });
+
+    assert.ok(!htmlWithHeader.includes('\0'), 'Serialized HTML must never contain raw \\0 byte');
+    assert.ok(htmlWithHeader.includes('data-empty-str="1"'), 'Quoted empty cell should carry data-empty-str="1"');
+
+    // When preserveQuotedEmpty is true on parseHtmlTable, QUOTED_EMPTY_CELL is restored
+    assert.deepStrictEqual(
+      CsvParser.parseHtmlTable(htmlWithHeader, { preserveQuotedEmpty: true }),
+      matrix
+    );
+    assert.deepStrictEqual(
+      CsvParser.parseHtmlTable(htmlNoHeader, { preserveQuotedEmpty: true }),
+      matrix
+    );
+
+    // When preserveQuotedEmpty is false (default), data-empty-str="1" is parsed as plain ''
+    assert.deepStrictEqual(
+      CsvParser.parseHtmlTable(htmlWithHeader, { preserveQuotedEmpty: false }),
+      [
+        ['col1', '', ''],
+        ['', '', 'val']
+      ]
+    );
   });
 
   return { passed, failed };

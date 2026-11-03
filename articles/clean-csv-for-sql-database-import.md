@@ -37,11 +37,13 @@ NanoCell's **Format Currency Values** rule detects 40+ currency symbols and ISO 
 
 SQL `DATE` columns expect ISO-8601 `YYYY-MM-DD`. NanoCell's **Format Dates** rule analyzes the column to detect unambiguous regional date formats and converts every cell to `YYYY-MM-DD`. Similarly, **Format Booleans** standardizes `Yes/No`, `Y/N`, `1/0`, and `On/Off` into `true` and `false`.
 
-### 5. Placeholder `NULL` Tokens & Broken Spreadsheet Formula Errors
+### 5. Placeholder `NULL` Tokens, Quoted Empty Strings (`""`) & Broken Formula Errors
 
 Exports from legacy systems and spreadsheets often litter empty fields with literal strings like `NULL`, `N/A`, `#N/A`, `NaN`, `None`, `undefined`, `#REF!`, or `#VALUE!`, plus cells containing only invisible whitespace or zero-width characters.
 
 Use **Standardize Null Values** and **Clean Empty Cells** in `Ctrl+Shift+P` to clear placeholder tokens to true empty CSV fields (`,,`), and **Remove Duplicate Rows** to strip exact duplicate records before ingestion.
+
+Need to preserve the difference between an unquoted empty field (`,,` &rarr; SQL `NULL`) and a quoted empty string (`,"",` &rarr; SQL `''`) for PostgreSQL `COPY ... WITH (FORMAT csv)`? Enable **Preserve quoted empty strings ("")** under **Settings &rarr; Csv Open** (`Ctrl+,`). NanoCell displays quoted empty fields with an `empty string` badge, keeps them untouched during validation rules and macros, saves them back as `""`, and lets you set any selection to `""` from the right-click context menu or Command Palette.
 
 ### 6. Embedded Newlines, Unescaped Quotes & Strict RFC 4180 Compliance
 

@@ -4,12 +4,13 @@
  * (Currency Column validation, extractCurrency, parseCurrencyNumber, headers, dates, and cell rules).
  */
 import assert from 'node:assert';
-import { Dataframe } from '../app/core/Dataframe.js';
+import { Dataframe, QUOTED_EMPTY_CELL } from '../app/core/Dataframe.js';
 import {
   DataValidator,
   VALIDATION_RULES,
   extractCurrency,
-  parseCurrencyNumber
+  parseCurrencyNumber,
+  setPreserveQuotedEmpty
 } from '../app/core/DataValidator.js';
 
 export function runDataValidatorTests(): { passed: number; failed: number } {
@@ -444,6 +445,99 @@ export function runDataValidatorTests(): { passed: number; failed: number } {
     assert.strictEqual(df.get(0, 3), '1250.00');
     assert.strictEqual(df.get(1, 3), 'CHF');
     assert.ok(elapsedMs < 500, `Expected < 500ms for 100k rows, took ${Math.round(elapsedMs)}ms`);
+  });
+
+  test('preserveQuotedEmpty mode: Skips QUOTED_EMPTY_CELL across validation rules and macros only when preserveQuotedEmpty is true', () => {
+    try {
+      // 1. When preserveQuotedEmpty is true:
+      setPreserveQuotedEmpty(true);
+
+      // clean_empty skips QUOTED_EMPTY_CELL, while clearing whitespace-only / invisible-char cells to ''
+      const dfEmpty = new Dataframe([
+        ['col1', 'col2'],
+        [QUOTED_EMPTY_CELL, '   '],
+        ['\u200B', 'val']
+      ]);
+      const emptyRes = DataValidator.runRule(dfEmpty, 'clean_empty');
+      assert.strictEqual(emptyRes.proposals.length, 2, 'Should only propose cleaning whitespace/invisible cells, skipping QUOTED_EMPTY_CELL');
+      DataValidator.applyProposals(dfEmpty, 'clean_empty', emptyRes.proposals, emptyRes.proposals);
+      assert.strictEqual(dfEmpty.get(0, 1), QUOTED_EMPTY_CELL, 'QUOTED_EMPTY_CELL must be preserved after clean_empty');
+      assert.strictEqual(dfEmpty.get(1, 1), '', 'Whitespace-only cell should become unquoted empty');
+
+      // null_literals clears 'NULL' / 'N/A' to '' while preserving QUOTED_EMPTY_CELL
+      const dfNulls = new Dataframe([
+        ['col1', 'col2'],
+        [QUOTED_EMPTY_CELL, 'NULL'],
+        ['N/A', 'val']
+      ]);
+      const nullRes = DataValidator.runRule(dfNulls, 'null_literals');
+      assert.strictEqual(nullRes.proposals.length, 2);
+      DataValidator.applyProposals(dfNulls, 'null_literals', nullRes.proposals, nullRes.proposals);
+      assert.strictEqual(dfNulls.get(0, 1), QUOTED_EMPTY_CELL);
+      assert.strictEqual(dfNulls.get(1, 1), '');
+
+      // booleans rule treats QUOTED_EMPTY_CELL as empty/nullable in a boolean column without blocking column detection
+      const dfBool = new Dataframe([
+        ['is_active'],
+        ['yes'],
+        [QUOTED_EMPTY_CELL],
+        ['no']
+      ]);
+      const boolRes = DataValidator.runRule(dfBool, 'booleans');
+      assert.strictEqual(boolRes.proposals.length, 2);
+      DataValidator.applyProposals(dfBool, 'booleans', boolRes.proposals, boolRes.proposals);
+      assert.strictEqual(dfBool.get(0, 1), 'true');
+      assert.strictEqual(dfBool.get(0, 2), QUOTED_EMPTY_CELL, 'QUOTED_EMPTY_CELL preserved in boolean column');
+      assert.strictEqual(dfBool.get(0, 3), 'false');
+
+      // duplicate_rows treats a row containing QUOTED_EMPTY_CELL as non-empty (so duplicate QUOTED_EMPTY_CELL rows are detected, unlike blank ['', ''] rows)
+      const dfDup = new Dataframe([
+        ['a', 'b'],
+        ['', ''],
+        ['', ''],
+        [QUOTED_EMPTY_CELL, QUOTED_EMPTY_CELL],
+        [QUOTED_EMPTY_CELL, QUOTED_EMPTY_CELL]
+      ]);
+      const dupRes = DataValidator.runRule(dfDup, 'duplicate_rows');
+      assert.deepStrictEqual(dupRes.proposals.map(p => p.y), [4], 'Duplicate QUOTED_EMPTY_CELL row (row 4) is detected while blank rows (1, 2) are ignored');
+
+      // currency rule and validateCurrencyColumn treat QUOTED_EMPTY_CELL as empty/nullable without aborting column currency validation
+      const dfCurr = new Dataframe([
+        ['price'],
+        ['$10.5'],
+        [QUOTED_EMPTY_CELL],
+        ['$20.00']
+      ]);
+      const currProposals = DataValidator.runRule(dfCurr, 'currency').proposals;
+      assert.strictEqual(currProposals.length, 2);
+      const currRes = DataValidator.validateCurrencyColumn(dfCurr, 0);
+      assert.strictEqual(currRes.insertedCol, true);
+      assert.strictEqual(dfCurr.get(0, 2), QUOTED_EMPTY_CELL, 'QUOTED_EMPTY_CELL preserved in currency column');
+
+      // sql_ready macro preserves QUOTED_EMPTY_CELL while cleaning headers, booleans, dates, and NULL literals
+      const dfMacro = new Dataframe([
+        ['User Name', 'ActiveFlag'],
+        [QUOTED_EMPTY_CELL, 'yes'],
+        ['NULL', 'no']
+      ]);
+      DataValidator.executeMacro(dfMacro, ['headers', 'clean_empty', 'null_literals', 'dates', 'comma_decimals', 'booleans']);
+      assert.strictEqual(dfMacro.get(0, 0), 'user_name');
+      assert.strictEqual(dfMacro.get(0, 1), QUOTED_EMPTY_CELL, 'sql_ready macro must preserve QUOTED_EMPTY_CELL');
+      assert.strictEqual(dfMacro.get(0, 2), '');
+      assert.strictEqual(dfMacro.get(1, 1), 'true');
+
+      // 2. When preserveQuotedEmpty is false (default):
+      setPreserveQuotedEmpty(false);
+      const dfCleanWhenDisabled = new Dataframe([
+        ['col'],
+        [QUOTED_EMPTY_CELL]
+      ]);
+      const disabledProposals = DataValidator.runRule(dfCleanWhenDisabled, 'clean_empty').proposals;
+      assert.strictEqual(disabledProposals.length, 1, 'When preserveQuotedEmpty is false, clean_empty strips \\0 to ""');
+      assert.strictEqual(disabledProposals[0].newValue, '');
+    } finally {
+      setPreserveQuotedEmpty(false);
+    }
   });
 
   return { passed, failed };

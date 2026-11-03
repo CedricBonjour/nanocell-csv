@@ -142,6 +142,14 @@
               "@type": "Answer",
               "text": "NanoCell automatically detects comma (,), semicolon (;), TAB, and pipe (|) delimiters alongside UTF-8, UTF-16LE/BE, Shift-JIS, GB18030, and Windows-1251/1252 encodings when opening a file."
             }
+          },
+          {
+            "@type": "Question",
+            "name": "How do I preserve NULL vs \"\" (empty strings) in CSV files for PostgreSQL and SQL imports?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "By default, NanoCell follows strict RFC 4180 and treats both ,, and ,\"\", as empty cells. To keep them distinct during round-trips, enable Preserve quoted empty strings (\"\") under Settings -> Csv Open. Quoted empty strings are displayed with an empty string badge, saved back as \"\", and can be inserted anytime via the right-click context menu or Command Palette."
+            }
           }
         ]
       }
@@ -447,6 +455,15 @@
             <div class="faq-body">
               <div class="faq-body-inner">
                 <p>NanoCell automatically detects comma (<code>,</code>), semicolon (<code>;</code>), <code>TAB</code>, and pipe (<code>|</code>) delimiters alongside <code>UTF-8</code>, <code>UTF-16LE/BE</code>, <code>Shift-JIS</code>, <code>GB18030</code>, and <code>Windows-1251/1252</code> encodings when opening a file.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-question">How do I preserve <code>NULL</code> vs <code>""</code> (empty strings) in CSV files for PostgreSQL and SQL imports?</div>
+            <div class="faq-body">
+              <div class="faq-body-inner">
+                <p>By default, NanoCell follows strict RFC 4180 and treats both <code>,,</code> and <code>,"",</code> as empty cells. To keep them distinct during round-trips, enable <strong>Preserve quoted empty strings ("")</strong> under <strong>Settings &rarr; Csv Open</strong>. Quoted empty strings are displayed with an <code>empty string</code> badge, saved back as <code>""</code>, and can be inserted anytime via the right-click context menu or Command Palette.</p>
               </div>
             </div>
           </div>

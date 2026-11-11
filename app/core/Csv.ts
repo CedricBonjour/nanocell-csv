@@ -334,6 +334,30 @@ export class EncodingDetector {
 
     return 'windows-1252';
   }
+
+  static detectFallback(bytes: Uint8Array): string {
+    let pos = 0;
+    const len = bytes.length;
+    while (pos < len) {
+      while (pos < len && bytes[pos] < 0x80) pos++;
+      if (pos >= len) break;
+      const detected = EncodingDetector.detect(bytes.subarray(pos));
+      if (detected !== 'utf-8') return detected;
+      pos += EncodingDetector.SAMPLE_BYTE_LIMIT;
+    }
+    return 'windows-1252';
+  }
+
+  static getIncompleteUtf8Tail(bytes: Uint8Array): Uint8Array | null {
+    const len = bytes.length;
+    if (len === 0 || bytes[len - 1] < 0x80) return null;
+    let i = len - 1;
+    while (i >= 0 && len - i <= 3 && (bytes[i] & 0xC0) === 0x80) i--;
+    if (i < 0) return null;
+    const lead = bytes[i];
+    const expectedLen = lead < 0xE0 ? 2 : lead < 0xF0 ? 3 : 4;
+    return (len - i) < expectedLen ? bytes.slice(i) : null;
+  }
 }
 
 export class SeparatorDetector {
@@ -372,6 +396,8 @@ export class CsvParser {
   private dialect: CsvDialect;
   private buffer = '';
   private textDecoder: TextDecoder | null = null;
+  private activeEncoding = '';
+  private utf8Tail: Uint8Array | null = null;
 
   constructor(dialect?: Partial<CsvDialect>) {
     this.dialect = resolveDialect(DEFAULT_CSV_DIALECT, dialect);
@@ -380,6 +406,8 @@ export class CsvParser {
   reset(): void {
     this.buffer = '';
     this.textDecoder = null;
+    this.activeEncoding = '';
+    this.utf8Tail = null;
   }
 
   parseChunk(chunk: string | Uint8Array, isLastChunk: boolean): string[][] {
@@ -389,10 +417,26 @@ export class CsvParser {
         ? chunk
         : new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength);
       if (!this.textDecoder) {
-        const encoding = this.dialect.encoding || EncodingDetector.detect(bytes);
-        this.textDecoder = new TextDecoder(encoding, { fatal: false });
+        this.activeEncoding = this.dialect.encoding || EncodingDetector.detect(bytes);
+        this.textDecoder = new TextDecoder(this.activeEncoding, { fatal: this.activeEncoding === 'utf-8' });
       }
-      textChunk = this.textDecoder.decode(bytes, { stream: !isLastChunk });
+      try {
+        textChunk = this.textDecoder.decode(bytes, { stream: !isLastChunk });
+        this.utf8Tail = (this.activeEncoding === 'utf-8' && !isLastChunk)
+          ? EncodingDetector.getIncompleteUtf8Tail(bytes)
+          : null;
+      } catch {
+        let fullBytes = bytes;
+        if (this.utf8Tail) {
+          fullBytes = new Uint8Array(this.utf8Tail.length + bytes.length);
+          fullBytes.set(this.utf8Tail, 0);
+          fullBytes.set(bytes, this.utf8Tail.length);
+          this.utf8Tail = null;
+        }
+        this.activeEncoding = EncodingDetector.detectFallback(fullBytes);
+        this.textDecoder = new TextDecoder(this.activeEncoding, { fatal: false });
+        textChunk = this.textDecoder.decode(fullBytes, { stream: !isLastChunk });
+      }
     } else if (typeof chunk === 'string') {
       textChunk = chunk;
     }

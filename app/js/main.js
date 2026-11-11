@@ -1,5 +1,5 @@
 import { Dataframe } from '../core/Dataframe.js';
-import { getSheet, setCsvHandle, Setting, env } from './state.js';
+import { getSheet, setCsvHandle, Setting, env, cleanupLegacyServiceWorkers } from './state.js';
 import { AppLayout } from './AppLayout.js';
 import { commands, buildKeys } from './Commands.js';
 import { Sheet } from './Sheet.js';
@@ -23,7 +23,7 @@ function initApp() {
   AppLayout.init(commands);
   Setting.runAll();
   buildKeys();
-  new Sheet(new Dataframe([['Hello World']]));
+  new Sheet(new Dataframe());
   csvHandle.initListeners();
   if (!env.supportsFileSystemAccess) {
     showBrowserCompatibilityNotice();
@@ -55,6 +55,8 @@ function promptServiceWorkerUpdate() {
     }
   }).show();
 }
+
+cleanupLegacyServiceWorkers();
 
 const updateSW = registerSW({
   immediate: true,

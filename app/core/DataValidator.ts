@@ -385,11 +385,11 @@ function formatNumberCell(val: string): string {
 
 const NON_ASCII_RE = /[^\u0000-\u007f]/;
 const COMBINING_MARKS_RE = /[\u0300-\u036f]/g;
-const LATIN_LIGATURE_RE = /[ßẞæÆœŒøØłŁđĐðÐþÞ]/g;
+const LATIN_LIGATURE_RE = /[ßẞæÆœŒøØłŁđĐðÐþÞı]/g;
 const LATIN_LIGATURE_MAP: Record<string, string> = {
   'ß': 'ss', 'ẞ': 'SS', 'æ': 'ae', 'Æ': 'AE', 'œ': 'oe', 'Œ': 'OE',
   'ø': 'o', 'Ø': 'O', 'ł': 'l', 'Ł': 'L', 'đ': 'd', 'Đ': 'D',
-  'ð': 'd', 'Ð': 'D', 'þ': 'th', 'Þ': 'TH',
+  'ð': 'd', 'Ð': 'D', 'þ': 'th', 'Þ': 'TH', 'ı': 'i',
 };
 
 export function stripAccents(val: string): string {

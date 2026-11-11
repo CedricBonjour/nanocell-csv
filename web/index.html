@@ -209,8 +209,8 @@
           <a class="btn btn-primary btn-lg" href="/app/home.html" target="_blank" rel="noopener">
             Launch Editor in Browser &rarr;
           </a>
-          <a class="btn btn-secondary btn-lg" href="#why-nanocell">
-            See Why Spreadsheets Break CSVs
+          <a class="btn btn-secondary btn-lg" href="/app/home.html?sample=base-sample.csv" target="_blank" rel="noopener">
+            Test NanoCell with Sample Data
           </a>
         </div>
 
@@ -701,9 +701,10 @@
   </main>
 
   <script type="module">
-    import { env, pwa, getNewIssueUrl } from '../app/js/state.js';
+    import { env, pwa, getNewIssueUrl, cleanupLegacyServiceWorkers } from '../app/js/state.js';
     import { registerSW } from 'virtual:pwa-register';
 
+    cleanupLegacyServiceWorkers();
     registerSW({ immediate: true });
 
     const installContainer = document.getElementById('install');

@@ -349,66 +349,29 @@ export async function runFileOpenTests(): Promise<{ passed: number; failed: numb
   });
 
   // =========================================================================
-  // WAY 2: Ctrl+O (`csvHandle.open()`) -> New Window (`postMessage` + `nanocell:ready`)
+  // WAY 2: Ctrl+O (`csvHandle.open()`) -> Loads directly in current tab
   // =========================================================================
-  await test('Way 2 (Ctrl+O New Window): showOpenFilePicker opens new window and transfers handle on onload', async () => {
-    const parent = createMockTestHarness();
+  await test('Way 2 (Ctrl+O): showOpenFilePicker loads selected file directly in current tab', async () => {
+    const { csvHandle, mockWindow, mockDocument } = createMockTestHarness();
     const pickedHandle = createMockFileHandle('col1,col2\nval1,val2', 'picked.csv');
 
-    let childHarness: ReturnType<typeof createMockTestHarness> | null = null;
-    parent.mockWindow.showOpenFilePicker = async () => [pickedHandle];
-    parent.mockWindow.open = (_url: string, _target: string, _features: string) => {
-      childHarness = createMockTestHarness({ opener: parent.mockWindow });
-      childHarness.csvHandle.initListeners();
-      return childHarness.mockWindow;
+    let openCalled = false;
+    mockWindow.showOpenFilePicker = async () => [pickedHandle];
+    mockWindow.open = () => {
+      openCalled = true;
+      return null;
     };
 
-    await parent.csvHandle.open();
-    assert.ok(childHarness, 'New child window should be created');
+    await csvHandle.open();
+    await waitForReadComplete(csvHandle);
 
-    // Trigger onload on the new window
-    childHarness!.mockWindow.onload?.();
-    await waitForReadComplete(childHarness!.csvHandle);
-
-    assert.strictEqual(childHarness!.csvHandle.handle, pickedHandle);
-    assert.strictEqual(childHarness!.mockDocument.title, 'picked.csv');
+    assert.strictEqual(openCalled, false, 'window.open should not be called by csvHandle.open()');
+    assert.strictEqual(csvHandle.handle, pickedHandle);
+    assert.strictEqual(mockDocument.title, 'picked.csv');
     assert.deepStrictEqual(getSheet().df.data, [
       ['col1', 'col2'],
       ['val1', 'val2']
     ]);
-  });
-
-  await test('Way 2 Edge Case (Handshake Recovery): Child window still receives fileHandle via nanocell:ready if onload fired before initListeners', async () => {
-    const parent = createMockTestHarness();
-    const pickedHandle = createMockFileHandle('city,pop\nZurich,400000', 'zurich.csv');
-
-    let childHarness: ReturnType<typeof createMockTestHarness> | null = null;
-    parent.mockWindow.showOpenFilePicker = async () => [pickedHandle];
-    parent.mockWindow.open = () => {
-      // Child window is created, but its module script hasn't called initListeners() yet!
-      childHarness = createMockTestHarness({ opener: parent.mockWindow });
-      return childHarness.mockWindow;
-    };
-
-    await parent.csvHandle.open();
-    // 1. onload fires prematurely BEFORE child calls initListeners() — message is lost!
-    childHarness!.mockWindow.onload?.();
-    assert.strictEqual(childHarness!.csvHandle.handle, null);
-
-    // 2. Now child finishes booting and calls initListeners(), which sends { type: 'nanocell:ready' } to opener
-    childHarness!.csvHandle.initListeners();
-    await waitForReadComplete(childHarness!.csvHandle);
-
-    assert.strictEqual(childHarness!.csvHandle.handle, pickedHandle);
-    assert.strictEqual(childHarness!.mockDocument.title, 'zurich.csv');
-    assert.deepStrictEqual(getSheet().df.data, [
-      ['city', 'pop'],
-      ['Zurich', '400000']
-    ]);
-
-    // 3. Even if onload fires again later, deduplication prevents reloading the same handle twice
-    childHarness!.mockWindow.onload?.();
-    assert.strictEqual(pickedHandle.getCallCount(), 1);
   });
 
   // =========================================================================

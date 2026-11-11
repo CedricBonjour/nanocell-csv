@@ -61,6 +61,20 @@ export class CsvHandle {
     }, force);
   }
 
+  async loadSample(sampleName) {
+    if (!sampleName || !/^[a-zA-Z0-9._-]+\.(csv|tsv)$/i.test(sampleName)) return;
+    try {
+      const res = await globalThis.fetch(`/csv-files/${encodeURIComponent(sampleName)}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const file = new File([blob], sampleName, { type: 'text/csv', lastModified: Date.now() });
+      this.loadFile(file, null, true);
+    } catch (err) {
+      console.error('Failed to load sample CSV:', err);
+      Notification.error(`Could not load sample file "${sampleName}".`);
+    }
+  }
+
   initListeners(win = this.win) {
     if (!win) return;
 
@@ -101,6 +115,11 @@ export class CsvHandle {
         }
         if (file) this.loadFile(file, null);
       });
+    }
+
+    if (win.location?.search) {
+      const sample = new URLSearchParams(win.location.search).get('sample');
+      if (sample) this.loadSample(sample);
     }
 
     try { win.opener?.postMessage?.({ type: 'nanocell:ready' }, '*'); } catch {}
@@ -212,34 +231,28 @@ export class CsvHandle {
       showBrowserCompatibilityNotice();
       return onFallback();
     }
+    let picked;
     try {
-      return await onPicked(await win[method](CsvHandle.pickerOptions));
+      picked = await win[method](CsvHandle.pickerOptions);
     } catch (err) {
       if (err?.name === 'AbortError') return;
-      if (err instanceof TypeError || typeof win?.[method] !== 'function') {
-        showBrowserCompatibilityNotice();
-        return onFallback();
-      }
+      showBrowserCompatibilityNotice();
+      return onFallback();
+    }
+    try {
+      return await onPicked(picked);
+    } catch (err) {
       console.error('An unexpected error occurred:', err);
+      Notification.error(err?.message || 'An unexpected file operation error occurred.');
     }
   }
 
   async open() {
-    return this._withPicker('showOpenFilePicker', async ([fileHandle]) => {
-      const win = this.win;
-      const newWindow = typeof win?.open === 'function' ? win.open('./home.html', '_blank', 'width=800,height=600') : null;
-      if (!newWindow) return await this.launchFile(fileHandle);
-
-      const sendHandle = () => { try { newWindow.postMessage({ fileHandle }, '*'); } catch {} };
-      const onReady = (event) => {
-        if (event?.data?.type === 'nanocell:ready' && (!event.source || event.source === newWindow)) {
-          win.removeEventListener?.('message', onReady);
-          sendHandle();
-        }
-      };
-      win.addEventListener?.('message', onReady);
-      newWindow.onload = sendHandle;
-    }, () => this.openFallback());
+    return this._withPicker(
+      'showOpenFilePicker',
+      ([fileHandle]) => this.launchFile(fileHandle),
+      () => this.openFallback()
+    );
   }
 
   reloadFile(force = false) {

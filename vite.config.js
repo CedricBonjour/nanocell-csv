@@ -73,7 +73,7 @@ export default defineConfig(({ command }) => ({
     __APP_META_IMAGE__: JSON.stringify(appMetaImage)
   },
   build: {
-    target: 'chrome120',
+    target: ['es2022', 'chrome120', 'firefox115', 'safari16'],
     outDir: p('dist'),
     emptyOutDir: true,
     rollupOptions: {
@@ -97,8 +97,8 @@ export default defineConfig(({ command }) => ({
         cacheId: appVersion,
         cleanupOutdatedCaches: true,
         navigateFallback: null,
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,ttf}'],
-        globIgnores: ['**/registerSW.js', '**/dev-dist/**', '**/article/**', '**/article-assets/**']
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,ttf,csv}'],
+        globIgnores: ['**/registerSW.js', '**/dev-dist/**', '**/article/**', '**/article-assets/**', '**/sw_pwa_admin.js']
       },
 
       // ENABLE PWA IN DEV MODE

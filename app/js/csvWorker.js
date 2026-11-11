@@ -33,7 +33,7 @@ async function loadCsv(data, postFn = postWorkerMessage) {
   }
 
   let offset = 0, iteration = 0, sep = ',', sepDetected = false;
-  let encoding = 'utf-8', decoder = null;
+  let encoding = 'utf-8', decoder = null, utf8Tail = null;
   let totalRowsEmitted = 0, firstChunkEmitted = false, completionEmitted = false;
   let pendingRows = [], pendingOffset = 0, parser = null;
 
@@ -58,9 +58,27 @@ async function loadCsv(data, postFn = postWorkerMessage) {
     if (currentAbort) return;
     if (!decoder && bytes.length > 0) {
       encoding = EncodingDetector.detect(bytes);
-      decoder = new TextDecoder(encoding, { fatal: false });
+      decoder = new TextDecoder(encoding, { fatal: encoding === 'utf-8' });
     }
-    const rawText = (decoder || new TextDecoder('utf-8', { fatal: false })).decode(bytes, { stream: !isFileReadComplete });
+    let rawText;
+    try {
+      rawText = (decoder || new TextDecoder('utf-8', { fatal: true })).decode(bytes, { stream: !isFileReadComplete });
+      utf8Tail = (encoding === 'utf-8' && !isFileReadComplete)
+        ? EncodingDetector.getIncompleteUtf8Tail(bytes)
+        : null;
+    } catch {
+      let fullBytes = bytes;
+      if (utf8Tail) {
+        fullBytes = new Uint8Array(utf8Tail.length + bytes.length);
+        fullBytes.set(utf8Tail, 0);
+        fullBytes.set(bytes, utf8Tail.length);
+        utf8Tail = null;
+      }
+      encoding = EncodingDetector.detectFallback(fullBytes);
+      decoder = new TextDecoder(encoding, { fatal: false });
+      if (parser) parser.dialect = { ...parser.dialect, encoding };
+      rawText = decoder.decode(fullBytes, { stream: !isFileReadComplete });
+    }
 
     if (!sepDetected && rawText.length > 0) {
       sep = SeparatorDetector.detect(rawText);
@@ -144,7 +162,19 @@ async function loadCsvViewOnly(data, postFn = postWorkerMessage) {
     if (iteration === 1 && bytes.length > 0) {
       encoding = EncodingDetector.detect(bytes);
     }
-    let result = new TextDecoder(encoding, { fatal: false }).decode(bytes);
+    let sliceBytes = bytes;
+    if (iteration > 1 && startOffset > 0 && encoding === 'utf-8') {
+      let skip = 0;
+      while (skip < sliceBytes.length && skip < 3 && (sliceBytes[skip] & 0xC0) === 0x80) skip++;
+      if (skip > 0) sliceBytes = sliceBytes.subarray(skip);
+    }
+    let result;
+    try {
+      result = new TextDecoder(encoding, { fatal: encoding === 'utf-8' }).decode(sliceBytes, { stream: endOffset < fileSize });
+    } catch {
+      encoding = EncodingDetector.detectFallback(sliceBytes);
+      result = new TextDecoder(encoding, { fatal: false }).decode(sliceBytes);
+    }
 
     if (iteration === 1) {
       sep = SeparatorDetector.detect(result);

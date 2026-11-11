@@ -431,3 +431,24 @@ export function createPwaManager(options = {}) {
 }
 
 export const pwa = createPwaManager({ env });
+
+export async function cleanupLegacyServiceWorkers(win = globalThis.window, nav = globalThis.navigator) {
+  try {
+    if (typeof nav?.serviceWorker?.getRegistrations === 'function') {
+      const regs = await nav.serviceWorker.getRegistrations();
+      for (const reg of regs) {
+        const url = reg?.active?.scriptURL || reg?.waiting?.scriptURL || reg?.installing?.scriptURL || '';
+        if (url.includes('sw_pwa_admin.js')) {
+          await reg.unregister();
+        }
+      }
+    }
+  } catch {}
+  try {
+    const cacheStorage = win?.caches ?? globalThis.caches;
+    if (typeof cacheStorage?.keys === 'function') {
+      const keys = await cacheStorage.keys();
+      await Promise.all(keys.filter(k => String(k).startsWith('Beta_')).map(k => cacheStorage.delete(k)));
+    }
+  } catch {}
+}

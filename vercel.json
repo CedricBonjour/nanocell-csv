@@ -16,6 +16,11 @@
       "source": "/article/lets-fix-csv-files.html",
       "destination": "/article/free-offline-csv-editor-and-validator.html",
       "permanent": true
+    },
+    {
+      "source": "/open-large-csv-files-fast-with-nanocell-csv.html",
+      "destination": "/article/open-large-csv-files.html",
+      "permanent": true
     }
   ]
 }

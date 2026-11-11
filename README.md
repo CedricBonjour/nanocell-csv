@@ -73,7 +73,7 @@ Need to know what is inside a **5 GB+ CSV or TSV dump** before spinning up `pand
 NanoCell samples the **header**, **evenly spaced interval chunks**, and the **footer** inside a background Web Worker in milliseconds—without loading the entire file into RAM—while engaging a safe **View-Only lock** so massive files never freeze your machine.
 
 <div align="center">
-  <img src="public/nanocell-large-file-sampling-screenshot.webp" alt="Instant O(1) Large CSV File Sampling in NanoCell" width="92%" />
+  <img src="public/nanocell-large-file-sampling-screenshot.webp" alt="Instant O(1) Large CSV File Sampling in NanoCell" width="100%" />
 </div>
 
 ---
@@ -89,7 +89,7 @@ Turn messy vendor exports into clean, database-ready tables in seconds. Open the
 - **Strict RFC 4180 Save Guard**: Visually highlights unescaped quotes and delimiters in purple and guarantees strict RFC 4180 compliance on save.
 
 <div align="center">
-  <img src="public/nanocell-filter-validation-screenshot.webp" alt="Column Filtering and RFC 4180 Data Validation in NanoCell CSV" width="92%" />
+  <img src="public/nanocell-filter-validation-screenshot.webp" alt="Column Filtering and RFC 4180 Data Validation in NanoCell CSV" width="100%" />
 </div>
 
 ---
@@ -99,7 +99,7 @@ Turn messy vendor exports into clean, database-ready tables in seconds. Open the
 Everything in NanoCell is accessible without lifting your hands from the keyboard. Trigger the **Fuzzy Command Palette** to run transforms, jump to coordinates, switch encodings (`UTF-8`, `UTF-16LE/BE`, `Shift-JIS`, `GB18030`, `Windows-1251/1252`), auto-detect delimiters (`,`, `;`, `TAB`, `|`), transpose matrices, or export directly to **JSON**, **GitHub Markdown tables**, or **TSV**.
 
 <div align="center">
-  <img src="public/nanocell-fuzzy-command-screenshot.webp" alt="Fuzzy Command Palette in NanoCell CSV" width="92%" />
+  <img src="public/nanocell-fuzzy-command-screenshot.webp" alt="Fuzzy Command Palette in NanoCell CSV" width="100%" />
 </div>
 
 ---
@@ -109,7 +109,7 @@ Everything in NanoCell is accessible without lifting your hands from the keyboar
 Have a recurring vendor CSV that needs the same 5 cleanup steps every Monday? Chain sanitizers, header transforms, and replacements into a **reusable Cleanup Macro** and execute your entire pipeline in a single keystroke.
 
 <div align="center">
-  <img src="public/nanocell-macro-finder-screenshot.webp" alt="Cleanup Macros and Find & Replace in NanoCell CSV" width="92%" />
+  <img src="public/nanocell-macro-finder-screenshot.webp" alt="Cleanup Macros and Find & Replace in NanoCell CSV" width="100%" />
 </div>
 
 ---

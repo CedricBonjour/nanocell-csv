@@ -38,12 +38,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
+          node-version: 22
 
       - name: Install dependencies & build production bundle
         run: |
-          npm ci
+          npm ci --legacy-peer-deps || npm install --legacy-peer-deps
           npm run build
 
       - name: Package Offline Static Bundle & Sample CSV Pack
@@ -54,7 +53,8 @@ jobs:
           # 1. Self-contained offline static web app bundle (for air-gapped / local hosting)
           (cd dist && zip -r "../release-assets/nanocell-csv-${TAG}-offline-static.zip" .)
 
-          # 2. Sample & stress-test CSV pack
+          # 2. Generate deterministic stress-test CSV and bundle sample pack
+          npx vite-node test/generate_test_file.ts --size 2 --country FR --bom --stress 0.05 --seed 42
           zip -j "release-assets/nanocell-csv-sample-pack.zip" \
             public/csv-files/base-sample.csv \
             test/files/*.csv

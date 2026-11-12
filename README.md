@@ -17,7 +17,7 @@
 [![100% Offline & Local](https://img.shields.io/badge/Privacy-100%25_Offline_%26_Zero_Telemetry-10b981?style=flat-square)](https://nanocell-csv.com)
 [![RFC 4180 Compliant](https://img.shields.io/badge/Spec-Strict_RFC_4180-6366f1?style=flat-square)](https://nanocell-csv.com)
 [![Desktop PWA](https://img.shields.io/badge/Install-PWA_(Zero_Admin_Rights)-0ea5e9?style=flat-square)](#quick-start)
-[![Version](https://img.shields.io/badge/Version-1.2.2-64748b?style=flat-square)](package.json)
+[![Version](https://img.shields.io/badge/Release-v1.2.2-64748b?style=flat-square&logo=github)](https://github.com/CedricBonjour/nanocell-csv/releases)
 
 <p>
   <a href="https://nanocell-csv.com/app/home.html"><b>🚀 Launch Editor</b></a> •

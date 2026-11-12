@@ -1,0 +1,96 @@
+name: Publish GitHub Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to publish (e.g. v1.2.2)'
+        required: true
+        default: 'v1.2.2'
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Publish Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine release tag
+        id: meta
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ inputs.tag }}"
+          else
+            TAG="${GITHUB_REF_NAME}"
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies & build production bundle
+        run: |
+          npm ci
+          npm run build
+
+      - name: Package Offline Static Bundle & Sample CSV Pack
+        run: |
+          TAG="${{ steps.meta.outputs.tag }}"
+          mkdir -p release-assets
+
+          # 1. Self-contained offline static web app bundle (for air-gapped / local hosting)
+          (cd dist && zip -r "../release-assets/nanocell-csv-${TAG}-offline-static.zip" .)
+
+          # 2. Sample & stress-test CSV pack
+          zip -j "release-assets/nanocell-csv-sample-pack.zip" \
+            public/csv-files/base-sample.csv \
+            test/files/*.csv
+
+      - name: Prepare Release Notes
+        id: notes
+        run: |
+          TAG="${{ steps.meta.outputs.tag }}"
+          CURATED_FILE=".github/releases/${TAG}.md"
+          if [ -f "$CURATED_FILE" ]; then
+            cp "$CURATED_FILE" release-body.md
+            echo "generate_notes=false" >> "$GITHUB_OUTPUT"
+          else
+            cat << 'EOF' > release-body.md
+          > 🚀 **Launch Live in Your Browser:** **[nanocell-csv.com/app/home.html](https://nanocell-csv.com/app/home.html)** · 🧪 **[Try Interactive Sample Data](https://nanocell-csv.com/app/home.html?sample=base-sample.csv)**
+          > *(100% client-side, zero telemetry, works offline as an installable Desktop PWA).*
+
+          ### 📦 Attached Release Artifacts
+          - **`nanocell-csv-${TAG}-offline-static.zip`** — Pre-built static bundle for air-gapped environments, intranet servers, or local hosting (`npx serve` / `python3 -m http.server`).
+          - **`nanocell-csv-sample-pack.zip`** — Sample & stress-test CSV dataset (leading zeros, international phones, RFC 4180 quotes, multi-MB benchmarks).
+
+          ---
+          EOF
+            sed -i "s/\${TAG}/${TAG}/g" release-body.md
+            echo "generate_notes=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: "${{ steps.meta.outputs.tag }} — NanoCell CSV Editor"
+          body_path: release-body.md
+          generate_release_notes: ${{ steps.notes.outputs.generate_notes == 'true' }}
+          files: |
+            release-assets/nanocell-csv-${{ steps.meta.outputs.tag }}-offline-static.zip
+            release-assets/nanocell-csv-sample-pack.zip
+          draft: false
+          prerelease: false

@@ -17,6 +17,8 @@ const commands = {
   new: { label: 'New Sheet', key: 'N', ctrl: true, run: () => getCsvHandle().new(), description: 'New sheet' },
   deleteRow: { label: 'Delete Row', key: 'BACKSPACE', ctrl: true, run: () => getSheet().deleteRows(), description: 'Delete Row' },
   deleteCol: { label: 'Delete Col', key: 'BACKSPACE', ctrl: true, shift: true, run: () => getSheet().deleteCols(), description: 'Delete Col' },
+  duplicateRow: { label: 'Duplicate Row', run: () => { const s = getSheet(); s.df.duplicateRow(s.getRowIndex(s.y)); s.refresh(); }, description: 'Duplicate current row' },
+  duplicateCol: { label: 'Duplicate Col', run: () => { const s = getSheet(); s.df.duplicateCol(s.x); s.refresh(); s.refreshScrollbars?.(); }, description: 'Duplicate current column' },
   delete: { label: 'Delete Selection', key: 'BACKSPACE', run: () => getSheet().deleteSelection(), description: 'Delete Selection' },
   settings: { label: 'Settings', key: ',', ctrl: true, run: () => SettingDialog.show(), description: 'Display Settings' },
   shortcuts: { label: 'Command Palette', key: 'P', ctrl: true, run: () => dom.palette.toggle(), description: 'Command Palette' },

@@ -368,6 +368,19 @@ export class Dataframe {
     );
   }
 
+  duplicateRow(index: number): void {
+    if (this.lock || index < 0 || index >= this.height) return;
+    this.insertRow(index + 1, this._data[index].slice());
+  }
+
+  duplicateCol(index: number): void {
+    if (this.lock || index < 0 || index >= this.width) return;
+    this.record(
+      () => { for (const row of this._data) row.splice(index + 1, 0, row[index] ?? ''); },
+      () => { for (const row of this._data) row.splice(index + 1, 1); }
+    );
+  }
+
   insertRow(index: number, rowData?: CellValue[]): void {
     if (this.lock || index < 0 || index > this.height) return;
     const w = Math.max(1, this.width);

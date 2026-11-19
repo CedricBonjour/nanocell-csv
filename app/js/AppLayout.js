@@ -169,7 +169,7 @@ export function updateFooter(sheet = getSheet()) {
 function buildMenu(commands) {
   const menuItems = [
     'new', 'open', 'save', 'reloadFile', 'fileInfo', 'undo', 'redo', '',
-    'fixTop', ' ', 'sortAscending', 'sortDescending', ' ', 'transpose', 'trim', 'date', ' ', 'integer', 'decimal', ' ', 'validateData', 'macros', ' ',
+    'fixTop', 'displayAllCols', ' ', 'sortAscending', 'sortDescending', ' ', 'transpose', 'trim', 'date', ' ', 'integer', 'decimal', ' ', 'validateData', 'macros', ' ',
     'filter', 'find', '', 'about', 'settings', 'shortcuts'
   ];
 
@@ -414,6 +414,13 @@ const CMENU_ROW_DEFS = [
     ],
   },
   {
+    id: 'displayAllCols',
+    label: 'Display all columns',
+    actions: [
+      { id: 'displayAllCols', icon: 'fit_width', title: 'Display All Columns (Ctrl+Alt+F)', commandId: 'displayAllCols' },
+    ],
+  },
+  {
     id: 'filter',
     label: 'Filter',
     actions: [
@@ -432,7 +439,7 @@ const CMENU_ROW_DEFS = [
     id: 'round',
     label: 'Round',
     actions: [
-      { id: 'roundInt', icon: 'integer', title: 'Round to Integer (Ctrl+I)', commandId: 'integer' },
+      { id: 'roundInt', icon: 'integer', title: 'Round to Integer', commandId: 'integer' },
       { id: 'roundDec', icon: 'decimal', title: 'Round to Decimal (Ctrl+$)', commandId: 'decimal' },
     ],
   },
@@ -466,6 +473,15 @@ const CMENU_ROW_DEFS = [
       { id: 'insertDown', icon: 'arrow_down', title: 'Insert Row Below (Shift+Alt+Down)', commandId: 'insertDown' },
       { id: 'insertLeft', icon: 'arrow_left', title: 'Insert Col Left (Shift+Alt+Left)', commandId: 'insertLeft' },
       { id: 'insertRight', icon: 'arrow_right', title: 'Insert Col Right (Shift+Alt+Right)', commandId: 'insertRight' },
+    ],
+  },
+  {
+    id: 'duplicate',
+    label: 'Duplicate',
+    structural: true,
+    actions: [
+      { id: 'duplicateRow', icon: 'row', title: 'Duplicate Row', commandId: 'duplicateRow' },
+      { id: 'duplicateCol', icon: 'col', title: 'Duplicate Col', commandId: 'duplicateCol' },
     ],
   },
   {
@@ -699,7 +715,7 @@ export class ContextMenu extends HTMLElement {
       if (!locked) visibleActions.push('trim');
       visibleActions.push('toggleActionBar');
       if (!locked) visibleActions.push('transpose');
-      visibleActions.push('fixTop');
+      visibleActions.push('fixTop', 'displayAllCols');
       const actionBarEntry = this.actionMap.get('toggleActionBar');
       if (actionBarEntry) actionBarEntry.glyph.icon = settings.actionBar !== false ? 'checkbox_on' : 'checkbox_off';
     }
@@ -739,6 +755,15 @@ export class ContextMenu extends HTMLElement {
           if (r.xmin > 0) visibleActions.push('shiftLeft');
           if (r.xmax < sheet.df.width - 1) visibleActions.push('shiftRight');
         }
+      }
+
+      const canDuplicateRow = r.ymin < sheet.df.height;
+      const canDuplicateCol = r.xmin < sheet.df.width;
+      if ((isRowHeader || isCell) && canDuplicateRow) {
+        visibleActions.push('duplicateRow');
+      }
+      if ((isColHeader || isCell) && canDuplicateCol) {
+        visibleActions.push('duplicateCol');
       }
 
       const canDeleteRow = r.ymin < sheet.df.height && sheet.df.height > 1 && rowSpan < sheet.df.height;

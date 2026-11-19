@@ -4,7 +4,7 @@
  */
 
 import { getSheet, getCsvHandle, Setting, settings, pwa, getNewIssueUrl } from './state.js';
-import { defineEl, bindOverlayKeys, copyToClipboard } from './utils.js';
+import { defineEl, bindOverlayKeys, getFocusableElements, copyToClipboard } from './utils.js';
 import { Glyph } from './Glyph.js';
 import { BoolInput, ListInput, NumInput, TagInput } from './Control.js';
 import { Notification } from './Notification.js';
@@ -57,10 +57,7 @@ export class DialogManager {
   static get isBusy() { return this.container.children.length > 0; }
 
   static getFocusableElements() {
-    const selector = 'ui-list, ui-num, ui-bool, ui-tags, a[href]:not([tabindex="-1"]), button:not([tabindex="-1"]), input:not([tabindex="-1"]), select:not([tabindex="-1"]), textarea:not([tabindex="-1"]), [tabindex="0"]';
-    return Array.from(this.container.querySelectorAll(selector))
-      .filter(el => !el.disabled && !el.hidden && !el.closest('.hidden'))
-      .filter((el, _, arr) => !arr.some(p => p !== el && p.contains(el)));
+    return getFocusableElements(this.container);
   }
 
 }
@@ -114,6 +111,13 @@ export class SettingDialog {
     };
 
     let currentSection = null;
+    const conditionalRows = [];
+    const syncVisibility = () => {
+      for (const { row, visibleWhen } of conditionalRows) {
+        row.classList.toggle('hidden', !visibleWhen());
+      }
+    };
+
     for (const def of Setting.list) {
       if (def.hidden) continue;
       if (def.title) {
@@ -122,9 +126,16 @@ export class SettingDialog {
         currentSection.innerHTML = `<h3 class="settings-section-header">${def.title}</h3>`;
         body.appendChild(currentSection);
       } else if (currentSection) {
-        currentSection.appendChild(SettingDialog.buildRow(def));
+        const row = SettingDialog.buildRow(def);
+        if (typeof def.visibleWhen === 'function') {
+          conditionalRows.push({ row, visibleWhen: def.visibleWhen });
+        }
+        currentSection.appendChild(row);
       }
     }
+
+    body.addEventListener('change', syncVisibility);
+    syncVisibility();
 
     DialogManager.open(content);
   }

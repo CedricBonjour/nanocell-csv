@@ -6,7 +6,7 @@
 
 import { Dataframe, orderRange, isUrl, isIsoDate, QUOTED_EMPTY_CELL, displayCellValue } from '../core/Dataframe.js';
 import { CsvParser, CsvSerializer, SeparatorDetector } from '../core/Csv.js';
-import { dom, getSheet, setSheet, Setting, settings } from './state.js';
+import { dom, getSheet, setSheet, getCsvHandle, Setting, settings } from './state.js';
 import { defineEl, formatCellHtml, getTodayIsoDate, clamp, isInputElement } from './utils.js';
 import { updateFooter } from './AppLayout.js';
 import { FinderDialog, FilterDialog } from './SheetOverlays.js';
@@ -91,6 +91,24 @@ const LOCK_MESSAGES = {
   'read-only': 'File is in Read-Only mode. Click the lock icon to unlock.',
   filter: 'File is locked while a filter is active.',
 };
+
+function maxCellLineChars(raw) {
+  if (!raw || raw === QUOTED_EMPTY_CELL) return 0;
+  const len = Math.min(raw.length, 300);
+  const nlIdx = raw.indexOf('\n');
+  if (nlIdx === -1 || nlIdx >= len) return len;
+  let max = 0, lineLen = 0;
+  for (let i = 0; i < len; i++) {
+    const code = raw.charCodeAt(i);
+    if (code === 10 || code === 13) {
+      if (lineLen > max) max = lineLen;
+      lineLen = 0;
+    } else {
+      lineLen++;
+    }
+  }
+  return lineLen > max ? lineLen : max;
+}
 
 function startOutOfBoundsScroll() {
   if (scrollIntervalId !== null) clearInterval(scrollIntervalId);
@@ -220,14 +238,14 @@ function bindGlobalMouse() {
       startOutOfBoundsScroll();
     } else if (cell.colOffset < 0) {
       const row = cell.rowOffset + sheet.baseY;
-      if (sheet.df.lock && (cell.colOffset >= 0 && col >= sheet.df.width || row >= sheet.rowCount)) return;
+      if (sheet.df.lock && row >= sheet.rowCount) return;
       dragTarget = 'rowHeader';
       sheet.selectRow(event.shiftKey ? sheet.y : row, row);
       startOutOfBoundsScroll();
     } else {
       const col = cell.colOffset + sheet.baseX;
       const row = cell.rowOffset + sheet.baseY;
-      if (sheet.df.lock && (cell.colOffset >= 0 && col >= sheet.df.width || row >= sheet.rowCount)) return;
+      if (sheet.df.lock && (col >= sheet.df.width || row >= sheet.rowCount)) return;
       dragTarget = 'cell';
       mousedownCell = cell;
       const existing = (isCtrlDrag && sheet.rangeEnd) ? sheet.getOrderedRange() : null;
@@ -296,6 +314,10 @@ export class Sheet extends HTMLElement {
     this.isSelectingRange = false;
     this.rangeEnd = undefined;
     this.expandedCol = null;
+    this._syncingGridSettings = false;
+    this._rowHeaderColEl = null;
+    this._colEls = [];
+    this._lastObservedSize = '';
     this._x = 0;
     this._y = 0;
     this._baseX = 0;
@@ -312,12 +334,27 @@ export class Sheet extends HTMLElement {
     container.querySelectorAll('ui-sheet').forEach(el => el.remove());
     container.append(this, this.scrollerY, this.scrollerX);
     if (typeof ResizeObserver !== 'undefined') {
-      this._resizeObserver = new ResizeObserver(() => this.refreshScrollbars());
+      this._resizeObserver = new ResizeObserver(() => {
+        cancelAnimationFrame(this._resizeRafId);
+        this._resizeRafId = requestAnimationFrame(() => {
+          this._resizeRafId = null;
+          const rect = this.getBoundingClientRect();
+          const sizeKey = `${Math.round(rect.width)}x${Math.round(rect.height)}`;
+          const sizeChanged = sizeKey !== this._lastObservedSize;
+          this._lastObservedSize = sizeKey;
+          if (sizeChanged && settings.gridMode === 'auto') {
+            this.updateViewportLayout();
+          } else {
+            this.applyColumnWidths();
+            this.refreshScrollbars();
+          }
+        });
+      });
       this._resizeObserver.observe(this);
     }
 
     dom.validationPane.reset();
-    this.reload();
+    this.updateViewportLayout(true);
   }
 
   get rows() { return this.table.rows; }
@@ -358,10 +395,209 @@ export class Sheet extends HTMLElement {
     if (next !== this._baseY) { this._baseY = next; this.refresh(); }
   }
 
-  // --- Virtualized Table Rendering ---
+  // --- Virtualized Table Rendering & Layout Sizing ---
+
+  getRowHeaderWidth() {
+    const fontSize = settings.font || 13;
+    const maxRowNum = Math.max(this.df.height, this.baseY + (this.viewRows || 25), 1);
+    const digits = String(maxRowNum).length;
+    return Math.max(36, Math.ceil(digits * fontSize * 0.6) + 12);
+  }
+
+  sampleColChars(colIdx, includeVisible = false) {
+    if (this.df.lock && colIdx >= this.df.width) return { maxChars: 0, hasContent: false };
+    const headerVal = this.fixTop ? displayCellValue(this.df.get(colIdx, 0)) : '';
+    let hasContent = headerVal.length > 0;
+    let maxChars = maxCellLineChars(headerVal || String(colIdx + 1));
+
+    const h = this.df.height;
+    const startRow = this.fixTop ? 1 : 0;
+    const dataRows = h - startRow;
+    if (dataRows > 0 && colIdx < this.df.width) {
+      const samples = Math.min(dataRows, 64);
+      const step = dataRows / samples;
+      for (let s = 0; s < samples; s++) {
+        const r = startRow + Math.floor(s * step);
+        const c = maxCellLineChars(this.df.get(colIdx, r));
+        if (c > 0) hasContent = true;
+        if (c > maxChars) maxChars = c;
+      }
+    }
+
+    if (includeVisible && colIdx < this.df.width) {
+      for (let vy = 0; vy < this.height; vy++) {
+        const actualY = this.getRowIndex(this.baseY + vy);
+        if (actualY >= 0 && actualY < h) {
+          const c = maxCellLineChars(this.df.get(colIdx, actualY));
+          if (c > 0) hasContent = true;
+          if (c > maxChars) maxChars = c;
+        }
+      }
+    }
+
+    return { maxChars, hasContent };
+  }
+
+  applyColumnWidths() {
+    const rowHeaderPx = this.getRowHeaderWidth();
+    const headerRow = this.rows[0];
+    const rowHeaderWidthStr = `${rowHeaderPx}px`;
+    if (this._rowHeaderColEl) this._rowHeaderColEl.style.width = rowHeaderWidthStr;
+    if (headerRow?.cells[0]) headerRow.cells[0].style.width = rowHeaderWidthStr;
+
+    const n = this._colEls.length;
+    if (n === 0) return;
+
+    const isSmart = settings.colSizing === 'smart';
+    const hasSpotlight = this.expandedCol !== null;
+    if (!isSmart && !hasSpotlight) {
+      for (let i = 0; i < n; i++) {
+        this._colEls[i].style.width = '';
+        if (headerRow?.cells[i + 1]) headerRow.cells[i + 1].style.width = '';
+      }
+      return;
+    }
+
+    const fontSize = settings.font || 13;
+    const minColPx = Math.max(44, Math.round(fontSize * 3.5));
+    const maxColPx = Math.round(fontSize * 28);
+    const sheetWidth = this.clientWidth || 800;
+    const availPx = Math.max(n * 40, sheetWidth - rowHeaderPx - (n + 2));
+    const equalPx = availPx / n;
+    const weights = new Array(n);
+
+    for (let i = 0; i < n; i++) {
+      const colIdx = this.baseX + i;
+      if (this.df.lock && colIdx >= this.df.width) {
+        weights[i] = Math.max(36, Math.round(minColPx * 0.8));
+      } else if (isSmart) {
+        const { maxChars, hasContent } = this.sampleColChars(colIdx, false);
+        weights[i] = hasContent
+          ? clamp(Math.ceil(maxChars * fontSize * 0.62) + 12, minColPx, maxColPx)
+          : minColPx;
+      } else {
+        weights[i] = equalPx;
+      }
+    }
+
+    if (hasSpotlight && n > 1) {
+      const spotViewIdx = this.expandedCol - this.baseX;
+      if (spotViewIdx >= 0 && spotViewIdx < n) {
+        const { maxChars, hasContent } = this.sampleColChars(this.expandedCol, true);
+        let weightSum = 0;
+        for (let i = 0; i < n; i++) weightSum += weights[i];
+        const normalColPx = weightSum > 0 ? (weights[spotViewIdx] / weightSum) * availPx : equalPx;
+
+        const maxSpotPx = Math.max(minColPx, Math.min(Math.round(availPx * 0.5), availPx - (n - 1) * 40));
+        const contentPx = hasContent ? Math.ceil(maxChars * fontSize * 0.62) + 20 : 0;
+        const spotPx = contentPx > normalColPx * 1.15
+          ? clamp(contentPx, minColPx, maxSpotPx)
+          : maxSpotPx;
+
+        const remainingAvail = Math.max((n - 1) * 40, availPx - spotPx);
+        let siblingSum = 0;
+        for (let i = 0; i < n; i++) {
+          if (i !== spotViewIdx) siblingSum += weights[i];
+        }
+        weights[spotViewIdx] = spotPx;
+        const scale = siblingSum > 0 ? remainingAvail / siblingSum : 1;
+        for (let i = 0; i < n; i++) {
+          if (i !== spotViewIdx) weights[i] = Math.max(40, weights[i] * scale);
+        }
+      }
+    }
+
+    let totalWeight = 0;
+    for (let i = 0; i < n; i++) totalWeight += weights[i];
+    if (totalWeight <= 0) totalWeight = 1;
+
+    let assignedPx = 0;
+    for (let i = 0; i < n; i++) {
+      const colPx = (i === n - 1)
+        ? Math.max(36, availPx - assignedPx)
+        : Math.max(36, Math.round((availPx * weights[i]) / totalWeight));
+      assignedPx += colPx;
+      const widthStr = `${colPx}px`;
+      this._colEls[i].style.width = widthStr;
+      if (headerRow?.cells[i + 1]) headerRow.cells[i + 1].style.width = widthStr;
+    }
+  }
+
+  updateViewportLayout(forceReload = false) {
+    if (this._syncingGridSettings) return;
+    let nextRows = settings.rows;
+    let nextCols = settings.cols;
+
+    if (settings.gridMode === 'auto') {
+      const rect = this.getBoundingClientRect?.() || { width: 0, height: 0 };
+      if (rect.width > 0 && rect.height > 0) {
+        const { min: minRows, max: maxRows } = Setting.getDef('rows');
+        const { min: minCols, max: maxCols } = Setting.getDef('cols');
+        this._lastObservedSize = `${Math.round(rect.width)}x${Math.round(rect.height)}`;
+        const fontSize = settings.font || 13;
+        const targetRowPx = Math.max(22, Math.round(fontSize * 1.95));
+        nextRows = clamp(Math.floor((rect.height - 25) / targetRowPx), minRows, maxRows);
+
+        const rowHeaderPx = this.getRowHeaderWidth();
+        const availW = Math.max(120, rect.width - rowHeaderPx);
+        let targetColPx = Math.max(110, Math.round(fontSize * 9.5));
+
+        if (settings.colSizing === 'smart' && this.df.width > 0) {
+          const sampleCols = Math.min(this.df.width, 20);
+          const minColPx = Math.max(44, Math.round(fontSize * 3.5));
+          const maxColPx = Math.round(fontSize * 28);
+          let sumPx = 0;
+          for (let c = 0; c < sampleCols; c++) {
+            const { maxChars, hasContent } = this.sampleColChars(c, false);
+            sumPx += hasContent
+              ? clamp(Math.ceil(maxChars * fontSize * 0.62) + 12, minColPx, maxColPx)
+              : minColPx;
+          }
+          targetColPx = clamp(Math.round(sumPx / sampleCols), 95, 220);
+        }
+
+        nextCols = clamp(Math.floor(availW / targetColPx), minCols, maxCols);
+      }
+    }
+
+    if (forceReload || nextRows !== this.viewRows || nextCols !== this.viewCols || !this.rows[0]) {
+      this.viewRows = nextRows;
+      this.viewCols = nextCols;
+      this.reload();
+    } else {
+      this.applyColumnWidths();
+      this.refresh();
+    }
+  }
+
+  toggleCornerLayout() {
+    const shouldApplySmart = settings.colSizing === 'equal' && this.expandedCol === null;
+    this.expandedCol = null;
+    this.rangeEnd = undefined;
+
+    const nextColSizing = shouldApplySmart ? 'smart' : 'equal';
+    if (settings.colSizing !== nextColSizing) {
+      settings.colSizing = nextColSizing;
+    } else {
+      this.updateViewportLayout(true);
+    }
+    this.refreshSelection(false);
+  }
 
   reload() {
-    while (this.table.rows[0]) this.table.rows[0].remove();
+    this.table.innerHTML = '';
+    const colgroup = document.createElement('colgroup');
+    this._rowHeaderColEl = document.createElement('col');
+    this._rowHeaderColEl.className = 'col-row-header';
+    colgroup.appendChild(this._rowHeaderColEl);
+    this._colEls = [];
+    for (let x = 0; x < this.viewCols; x++) {
+      const colEl = document.createElement('col');
+      colgroup.appendChild(colEl);
+      this._colEls.push(colEl);
+    }
+    this.table.appendChild(colgroup);
+
     for (let y = 0; y < this.viewRows + 1; y++) {
       const tr = document.createElement('tr');
       this.table.appendChild(tr);
@@ -373,10 +609,17 @@ export class Sheet extends HTMLElement {
         if (x === 0 || y === 0) cell.classList.add('cell-header');
         if (y === 0) cell.classList.add('col-header');
         if (x === 0) cell.classList.add('row-header');
+        if (x === 0 && y === 0) cell.title = 'Click to select all • Double-click to toggle Smart/Equal column widths';
         if (y > 0 && x > 0) cell.appendChild(document.createElement('div'));
         tr.appendChild(cell);
       }
     }
+
+    if (this.df.lock) {
+      this._baseX = Math.min(this._baseX, this.maxBaseX);
+      this._baseY = Math.min(this._baseY, this.maxBaseY);
+    }
+    this.applyColumnWidths();
     this.refresh();
     this.refreshSelection(false);
   }
@@ -385,6 +628,7 @@ export class Sheet extends HTMLElement {
     cancelAnimationFrame(this._refreshRafId);
     this._refreshRafId = requestAnimationFrame(() => {
       this._refreshRafId = null;
+      this.applyColumnWidths();
       for (let x = 0; x < this.width; x++) this.renderColHeader(x);
       for (let y = 0; y < this.height; y++) {
         const actualY = this.getRowIndex(this.baseY + y);
@@ -430,7 +674,8 @@ export class Sheet extends HTMLElement {
     if (!isNaN(value)) cls += ' num';
     if (isIsoDate(value)) cls += ' date';
     if (isUrl(value)) cls += ' url';
-    if (settings.highlightNonCompliant && (value.includes(',') || value.includes('"') || value.includes('\n'))) {
+    const activeSep = getCsvHandle()?.getEffectiveDialect?.()?.delimiter || ',';
+    if (settings.highlightNonCompliant && (value.includes(activeSep) || value.includes('"') || value.includes('\n'))) {
       cls += ' non-compliant';
     }
 
@@ -448,16 +693,12 @@ export class Sheet extends HTMLElement {
     const colIndex = this.baseX + viewX;
     if (this.df.lock && colIndex >= this.df.width) {
       cell.textContent = '';
-      cell.classList.remove('col-expanded', 'col-collapsed');
+      cell.classList.remove('col-spotlight');
       return;
     }
     const headerText = this.fixTop ? displayCellValue(this.df.get(colIndex, 0)) : '';
     cell.textContent = headerText.length > 0 ? headerText : colIndex + 1;
-
-    const isExpanded = this.expandedCol != null && colIndex === this.expandedCol;
-    const isCollapsed = this.expandedCol != null && colIndex !== this.expandedCol;
-    cell.classList.toggle('col-expanded', isExpanded);
-    cell.classList.toggle('col-collapsed', isCollapsed);
+    cell.classList.toggle('col-spotlight', this.expandedCol != null && colIndex === this.expandedCol);
   }
 
   renderRowHeader(viewY, actualY) {
@@ -542,12 +783,14 @@ export class Sheet extends HTMLElement {
         if (this.df.lock && colIdx >= this.df.width) return;
         this.expandedCol = this.expandedCol === colIdx ? null : colIdx;
         this.refresh();
+      } else if (td.rowOffset < 0 && td.colOffset < 0) {
+        this.toggleCornerLayout();
       }
     });
   }
 
   handleKeyDown(event, key, ctrlDown, shift, alt) {
-    const pageSize = settings.rows;
+    const pageSize = this.height || settings.rows;
     const maxX = Math.max(0, this.df.width - 1);
     const maxY = Math.max(0, this.rowCount - 1);
 
@@ -794,16 +1037,30 @@ export class Sheet extends HTMLElement {
     dom.contextMenu?.hide();
     if (event.ctrlKey) {
       event.preventDefault();
-      const minRows = Setting.getDef('rows').min;
-      const minCols = Setting.getDef('cols').min;
-      if (event.shiftKey) {
-        if (event.deltaY > 0) this.viewRows++;
-        else if (event.deltaY < 0 && this.viewRows > minRows) this.viewRows--;
-      } else {
-        if (event.deltaY > 0) this.viewCols++;
-        else if (event.deltaY < 0 && this.viewCols > minCols) this.viewCols--;
+      if (event.deltaY === 0) return;
+      const { min: minRows, max: maxRows } = Setting.getDef('rows');
+      const { min: minCols, max: maxCols } = Setting.getDef('cols');
+      const step = event.deltaY > 0 ? 1 : -1;
+      const nextRows = event.shiftKey
+        ? clamp(this.viewRows + step, minRows, maxRows)
+        : clamp(this.viewRows, minRows, maxRows);
+      const nextCols = event.shiftKey
+        ? clamp(this.viewCols, minCols, maxCols)
+        : clamp(this.viewCols + step, minCols, maxCols);
+
+      if (nextRows === this.viewRows && nextCols === this.viewCols && settings.gridMode === 'manual') {
+        return;
       }
-      this.reload();
+
+      this._syncingGridSettings = true;
+      try {
+        settings.rows = nextRows;
+        settings.cols = nextCols;
+        if (settings.gridMode !== 'manual') settings.gridMode = 'manual';
+      } finally {
+        this._syncingGridSettings = false;
+      }
+      this.updateViewportLayout(true);
       return;
     }
     const calcStep = (d) => d > 0 ? Math.floor(d / 16) : Math.ceil(d / 16);
@@ -914,12 +1171,46 @@ export class Sheet extends HTMLElement {
     }
   }
 
-  editSelection(value) { this.df.editRange(this.getOrderedRange(), value); }
+  editSelection(value) {
+    const prevLen = this.df.undoStack.length;
+    this.df.editRange(this.getOrderedRange(), value);
+    this.df.setLastRepeat(() => { this.editSelection(value); this.refresh(); }, prevLen);
+  }
   deleteSelection() { this.editSelection(''); this.refresh(); }
   setEmptyString() { this.editSelection(QUOTED_EMPTY_CELL); this.refresh(); }
 
+  _duplicateAxis(isRow) {
+    const r = this.getOrderedRange();
+    const prevLen = this.df.undoStack.length;
+    if (isRow) {
+      const count = Math.min(r.ymax, this.df.height - 1) - r.ymin + 1;
+      if (count <= 0) return;
+      this.df.duplicateRows(r.ymin, count);
+      if (this.df.undoStack.length > prevLen) {
+        this._y += count;
+        if (this.rangeEnd) this.rangeEnd = { x: this.rangeEnd.x, y: this.rangeEnd.y + count };
+        this.df.setLastRepeat(() => this._duplicateAxis(true), prevLen);
+      }
+    } else {
+      const count = Math.min(r.xmax, this.df.width - 1) - r.xmin + 1;
+      if (count <= 0) return;
+      this.df.duplicateCols(r.xmin, count);
+      if (this.df.undoStack.length > prevLen) {
+        this._x += count;
+        if (this.rangeEnd) this.rangeEnd = { x: this.rangeEnd.x + count, y: this.rangeEnd.y };
+        this.df.setLastRepeat(() => this._duplicateAxis(false), prevLen);
+      }
+    }
+    this.refresh();
+    this.refreshSelection();
+  }
+
+  duplicateRows() { this._duplicateAxis(true); }
+  duplicateCols() { this._duplicateAxis(false); }
+
   _deleteAxis(isRow) {
     const r = this.getOrderedRange();
+    const prevLen = this.df.undoStack.length;
     if (isRow) {
       this.df.deleteRows(r.ymin, r.ymax - r.ymin + 1);
       this._y = r.ymin;
@@ -929,6 +1220,7 @@ export class Sheet extends HTMLElement {
       this._x = r.xmin;
       if (this.rangeEnd) this.rangeEnd = this.rangeEnd.y === this.y ? undefined : { x: r.xmin, y: this.rangeEnd.y };
     }
+    this.df.setLastRepeat(() => this._deleteAxis(isRow), prevLen);
     this.refresh();
     this.refreshSelection(false);
   }
@@ -939,6 +1231,41 @@ export class Sheet extends HTMLElement {
   undo() { this.df.undo(); this.refresh(); dom.validationPane.syncWithSheet(); }
   redo() { this.df.redo(); this.refresh(); dom.validationPane.syncWithSheet(); }
   toggleFixTop() { this.fixTop = !this.fixTop; this.refresh(); }
+
+  displayAllCols() {
+    const { min: minRows, max: maxRows } = Setting.getDef('rows');
+    const { min: minCols, max: maxCols } = Setting.getDef('cols');
+    const rawCols = this.df.width;
+    const targetCols = clamp(rawCols + 1, minCols, maxCols);
+
+    const isAlreadyFitted =
+      settings.gridMode === 'manual' &&
+      this.viewCols === targetCols &&
+      this.baseX === 0 &&
+      this.expandedCol === null;
+
+    this.expandedCol = null;
+    if (isAlreadyFitted) {
+      settings.gridMode = 'auto';
+      return;
+    }
+
+    this._baseX = 0;
+    const nextRows = clamp(this.viewRows, minRows, maxRows);
+    this._syncingGridSettings = true;
+    try {
+      settings.rows = nextRows;
+      settings.cols = targetCols;
+      if (settings.gridMode !== 'manual') settings.gridMode = 'manual';
+    } finally {
+      this._syncingGridSettings = false;
+    }
+
+    this.updateViewportLayout(true);
+    if (rawCols > maxCols) {
+      Notification.quick(`Showing ${maxCols} of ${rawCols} columns (max)`, 1800);
+    }
+  }
   trim() { this.df.trimAll(); this.refresh(); }
 
   expand() {
@@ -951,6 +1278,7 @@ export class Sheet extends HTMLElement {
   shift(direction) {
     const range = this.getOrderedRange();
     const rows = range.ymax - range.ymin + 1, cols = range.xmax - range.xmin + 1;
+    const prevLen = this.df.undoStack.length;
     let dx = 0, dy = 0, moved = false;
 
     if (direction === 0 && this.df.shiftRows(range.ymin, rows, 'up')) { dy = -1; moved = true; }
@@ -963,6 +1291,7 @@ export class Sheet extends HTMLElement {
       this._x = Math.max(0, this._x + dx);
       this._y = Math.max(0, this._y + dy);
       this.rangeEnd = end;
+      this.df.setLastRepeat(() => this.shift(direction), prevLen);
     }
     this.refresh();
     this.refreshSelection();
@@ -970,10 +1299,12 @@ export class Sheet extends HTMLElement {
 
   insert(direction) {
     const range = this.getOrderedRange();
+    const prevLen = this.df.undoStack.length;
     if (direction === 0) { this.df.insertRow(range.ymin); this._y++; if (this.rangeEnd) this.rangeEnd.y++; }
     else if (direction === 1) { this.df.insertCol(range.xmax + 1); }
     else if (direction === 2) { this.df.insertRow(range.ymax + 1); }
     else if (direction === 3) { this.df.insertCol(range.xmin); this._x++; if (this.rangeEnd) this.rangeEnd.x++; }
+    this.df.setLastRepeat(() => this.insert(direction), prevLen);
     this.refresh();
     this.refreshSelection();
   }
@@ -998,13 +1329,17 @@ export class Sheet extends HTMLElement {
   }
 
   round(integer = true) {
+    const prevLen = this.df.undoStack.length;
     this.df.roundRange(this.getOrderedRange(), integer);
+    this.df.setLastRepeat(() => this.round(integer), prevLen);
     this.refresh();
   }
 
   paste(matrix) {
     const range = this.getOrderedRange();
+    const prevLen = this.df.undoStack.length;
     this.df.pasteMatrix(range.xmin, range.ymin, matrix);
+    this.df.setLastRepeat(() => this.paste(matrix), prevLen);
     this.refresh();
   }
 
@@ -1043,9 +1378,10 @@ export class Sheet extends HTMLElement {
 
   disconnectedCallback() {
     this._resizeObserver?.disconnect();
+    cancelAnimationFrame(this._resizeRafId);
     cancelAnimationFrame(this._refreshRafId);
     cancelAnimationFrame(this._selectionRafId);
-    this._refreshRafId = this._selectionRafId = null;
+    this._resizeRafId = this._refreshRafId = this._selectionRafId = null;
   }
 }
 

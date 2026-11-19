@@ -19,8 +19,13 @@ export class BoolInput extends HTMLElement {
     this.innerHTML = '<div class="toggle-track"><div class="toggle-thumb"></div></div>';
     this.render();
 
-    this.addEventListener('click', () => { this.focus(); this.setValueInternal(!this._value, true); });
+    this.addEventListener('click', (e) => {
+      if (this.disabled) { e.preventDefault(); e.stopPropagation(); return; }
+      this.focus();
+      this.setValueInternal(!this._value, true);
+    });
     this.addEventListener('keydown', (e) => {
+      if (this.disabled) return;
       const k = e.key.toUpperCase();
       if (k === ' ' || k === 'ENTER' || k === 'ARROWLEFT' || k === 'ARROWRIGHT') {
         e.preventDefault();
@@ -32,6 +37,19 @@ export class BoolInput extends HTMLElement {
   render() {
     this.setAttribute('aria-checked', String(this._value));
     this.classList.toggle('checked', this._value);
+  }
+
+  get disabled() { return this.hasAttribute('disabled'); }
+  set disabled(val) {
+    const isDisabled = Boolean(val);
+    this.toggleAttribute('disabled', isDisabled);
+    if (isDisabled) {
+      this.setAttribute('aria-disabled', 'true');
+      this.removeAttribute('tabindex');
+    } else {
+      this.removeAttribute('aria-disabled');
+      this.setAttribute('tabindex', '0');
+    }
   }
 
   get value() { return this._value; }
@@ -53,33 +71,71 @@ class StepperInput extends HTMLElement {
     this.centerEl.className = 'truncate';
     this.rightBtn = new Glyph(rightIcon, { title: rightLabel, tabIndex: -1, size });
     this.append(this.leftBtn, this.centerEl, this.rightBtn);
-    this.leftBtn.addEventListener('click', (e) => { e.stopPropagation(); this.focus(); onPrev(); });
-    this.rightBtn.addEventListener('click', (e) => { e.stopPropagation(); this.focus(); onNext(); });
+    this.leftBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (this.disabled) return;
+      this.focus();
+      onPrev();
+    });
+    this.rightBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (this.disabled) return;
+      this.focus();
+      onNext();
+    });
     this.addEventListener('keydown', (e) => {
+      if (this.disabled) return;
       const k = e.key.toUpperCase();
       if (k === 'ARROWLEFT' || k === 'ARROWDOWN') { e.preventDefault(); onPrev(); }
       else if (k === 'ARROWRIGHT' || k === 'ARROWUP') { e.preventDefault(); onNext(); }
     });
+  }
+
+  get disabled() { return this.hasAttribute('disabled'); }
+  set disabled(val) {
+    const isDisabled = Boolean(val);
+    this.toggleAttribute('disabled', isDisabled);
+    if (this.leftBtn) this.leftBtn.disabled = isDisabled;
+    if (this.rightBtn) this.rightBtn.disabled = isDisabled;
+    if (isDisabled) {
+      this.setAttribute('aria-disabled', 'true');
+      this.removeAttribute('tabindex');
+    } else {
+      this.removeAttribute('aria-disabled');
+      this.setAttribute('tabindex', '0');
+    }
   }
 }
 
 export class ListInput extends StepperInput {
   constructor(optionsList = [], size) {
     super();
-    this.options = optionsList.map(String);
     this.selectedIndex = 0;
     this.setAttribute('role', 'listbox');
+    this.setOptions(optionsList);
     this.initStepper(
       'arrow_left', 'Previous option', 'arrow_right', 'Next option', size,
       () => this.setSelectedIndex(this.selectedIndex - 1, true),
       () => this.setSelectedIndex(this.selectedIndex + 1, true)
     );
-    this.setSelectedIndex(0, false);
+    this.setSelectedIndex(this.selectedIndex, false);
   }
 
-  get value() { return this.options[this.selectedIndex]; }
+  setOptions(optionsList = []) {
+    const prevVal = this.options?.[this.selectedIndex]?.value;
+    this.options = optionsList.map(opt =>
+      typeof opt === 'object' && opt !== null
+        ? { value: String(opt.value), label: String(opt.label ?? opt.value) }
+        : { value: String(opt), label: String(opt) }
+    );
+    const nextIdx = prevVal !== undefined ? this.options.findIndex(o => o.value === prevVal) : 0;
+    this.setSelectedIndex(nextIdx !== -1 ? nextIdx : 0, false);
+  }
+
+  get value() { return this.options[this.selectedIndex]?.value; }
   set value(val) {
-    const idx = this.options.indexOf(String(val));
+    const strVal = String(val);
+    const idx = this.options.findIndex(o => o.value === strVal || o.value.toLowerCase() === strVal.toLowerCase());
     if (idx !== -1) this.setSelectedIndex(idx, false);
   }
 
@@ -87,7 +143,7 @@ export class ListInput extends StepperInput {
     const length = this.options.length;
     if (length === 0) return;
     this.selectedIndex = ((index % length) + length) % length;
-    if (this.centerEl) this.centerEl.textContent = this.options[this.selectedIndex] ?? '';
+    if (this.centerEl) this.centerEl.textContent = this.options[this.selectedIndex]?.label ?? '';
     emitChange(this, isUserAction);
   }
 }

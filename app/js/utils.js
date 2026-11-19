@@ -18,6 +18,15 @@ export function emitChange(el, isUserAction = true) {
   if (isUserAction) el.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
+const FOCUSABLE_SELECTOR = 'ui-list, ui-num, ui-bool, ui-tags, a[href]:not([tabindex="-1"]), button:not([tabindex="-1"]), input:not([tabindex="-1"]), select:not([tabindex="-1"]), textarea:not([tabindex="-1"]), [tabindex="0"]';
+
+export function getFocusableElements(root) {
+  if (!root) return [];
+  return Array.from(root.querySelectorAll(FOCUSABLE_SELECTOR))
+    .filter(el => !el.disabled && !el.hidden && !el.closest('.hidden'))
+    .filter((el, _, arr) => !arr.some(p => p !== el && p.contains(el)));
+}
+
 export function cycleFocus(event, focusableElements, fallbackElement = null) {
   if (!focusableElements.length) return;
   event.preventDefault();
@@ -31,7 +40,7 @@ export function cycleFocus(event, focusableElements, fallbackElement = null) {
     : (index === -1 || index >= focusableElements.length - 1 ? 0 : index + 1);
   const nextEl = focusableElements[nextIndex];
   nextEl.focus();
-  (nextEl.closest('.setting-row') || nextEl).scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  (nextEl.closest('.setting-row, .file-info-row') || nextEl).scrollIntoView({ block: 'nearest', inline: 'nearest' });
 }
 
 /**

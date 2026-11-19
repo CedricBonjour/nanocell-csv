@@ -28,6 +28,7 @@ export interface SortOptions {
 export interface UndoEntry {
   apply(): void;
   revert(): void;
+  repeat?: () => void;
 }
 
 export interface CellChange {
@@ -236,19 +237,26 @@ export class Dataframe {
     return normalizeCellValue(this._data[y]?.[x]);
   }
 
-  record(apply: () => void, revert: () => void): void {
+  record(apply: () => void, revert: () => void, repeat?: () => void): void {
     if (this.lock) return;
     apply();
     this.markDirty();
     const entry: UndoEntry = {
       apply: () => { apply(); this.markDirty(); },
-      revert: () => { revert(); this.markDirty(); }
+      revert: () => { revert(); this.markDirty(); },
+      repeat
     };
     if (this._tx) {
       this._tx.push(entry);
     } else {
       this.undoStack.push(entry);
       this.redoStack = [];
+    }
+  }
+
+  setLastRepeat(repeat: () => void, prevUndoLen?: number): void {
+    if (this.undoStack.length > 0 && (prevUndoLen === undefined || this.undoStack.length > prevUndoLen)) {
+      this.undoStack[this.undoStack.length - 1].repeat = repeat;
     }
   }
 
@@ -285,11 +293,19 @@ export class Dataframe {
     this.redoStack.push(entry);
   }
 
-  redo(): void {
+  redo(): boolean {
     const entry = this.redoStack.pop();
-    if (!entry) return;
-    entry.apply();
-    this.undoStack.push(entry);
+    if (entry) {
+      entry.apply();
+      this.undoStack.push(entry);
+      return true;
+    }
+    const last = this.undoStack[this.undoStack.length - 1];
+    if (last?.repeat) {
+      last.repeat();
+      return true;
+    }
+    return false;
   }
 
   applyChanges(changes: CellChange[]): void {
@@ -374,7 +390,8 @@ export class Dataframe {
     const row = Array.from({ length: w }, (_, i) => (rowData && i < rowData.length) ? normalizeCellValue(rowData[i]) : '');
     this.record(
       () => { this._data.splice(index, 0, [...row]); },
-      () => { if (this.height > 1 && index < this.height) this._data.splice(index, 1); }
+      () => { if (this.height > 1 && index < this.height) this._data.splice(index, 1); },
+      () => this.insertRow(index, rowData)
     );
   }
 
@@ -389,7 +406,40 @@ export class Dataframe {
         if (this.width > 1 && index < this.width) {
           for (let y = 0; y < this.height; y++) this._data[y].splice(index, 1);
         }
-      }
+      },
+      () => this.insertCol(index, colData)
+    );
+  }
+
+  duplicateRows(startIndex: number, count = 1): void {
+    if (this.lock || startIndex < 0 || startIndex >= this.height || count <= 0) return;
+    const actualCount = Math.min(count, this.height - startIndex);
+    const insertAt = startIndex + actualCount;
+    const rowsData = this._data.slice(startIndex, insertAt).map(r => [...r]);
+    this.record(
+      () => { this._data.splice(insertAt, 0, ...rowsData.map(r => [...r])); },
+      () => { this._data.splice(insertAt, rowsData.length); },
+      () => this.duplicateRows(startIndex, actualCount)
+    );
+  }
+
+  duplicateCols(startIndex: number, count = 1): void {
+    if (this.lock || startIndex < 0 || startIndex >= this.width || count <= 0) return;
+    const actualCount = Math.min(count, this.width - startIndex);
+    const insertAt = startIndex + actualCount;
+    const colsData = Array.from({ length: actualCount }, (_, c) => this._data.map(row => row[startIndex + c] ?? ''));
+    this.record(
+      () => {
+        for (let y = 0; y < this.height; y++) {
+          this._data[y].splice(insertAt, 0, ...colsData.map(col => col[y] ?? ''));
+        }
+      },
+      () => {
+        for (let y = 0; y < this.height; y++) {
+          this._data[y].splice(insertAt, actualCount);
+        }
+      },
+      () => this.duplicateCols(startIndex, actualCount)
     );
   }
 
@@ -400,7 +450,8 @@ export class Dataframe {
     const rowsData = this._data.slice(startIndex, startIndex + actualCount).map(r => [...r]);
     this.record(
       () => { this._data.splice(startIndex, rowsData.length); },
-      () => { this._data.splice(startIndex, 0, ...rowsData.map(r => [...r])); }
+      () => { this._data.splice(startIndex, 0, ...rowsData.map(r => [...r])); },
+      () => this.deleteRows(startIndex, count)
     );
     return rowsData;
   }
@@ -416,7 +467,8 @@ export class Dataframe {
         for (let y = 0; y < this.height; y++) {
           this._data[y].splice(startIndex, 0, ...colsData.map(col => col[y] ?? ''));
         }
-      }
+      },
+      () => this.deleteCols(startIndex, count)
     );
     return colsData;
   }
@@ -435,11 +487,12 @@ export class Dataframe {
     const res = this._resolveShift(startIndex, count, this.height, direction === 'up', () => this.insertRow(startIndex));
     if (typeof res === 'boolean') return res;
     const [from, to] = res;
+    const nextStart = direction === 'up' ? startIndex - 1 : startIndex + 1;
     const move = (src: number, dst: number) => {
       const [row] = this._data.splice(src, 1);
       if (row) this._data.splice(dst, 0, row);
     };
-    this.record(() => move(from, to), () => move(to, from));
+    this.record(() => move(from, to), () => move(to, from), () => this.shiftRows(nextStart, count, direction));
     return true;
   }
 
@@ -447,13 +500,14 @@ export class Dataframe {
     const res = this._resolveShift(startIndex, count, this.width, direction === 'left', () => this.insertCol(startIndex));
     if (typeof res === 'boolean') return res;
     const [from, to] = res;
+    const nextStart = direction === 'left' ? startIndex - 1 : startIndex + 1;
     const move = (src: number, dst: number) => {
       for (let y = 0; y < this.height; y++) {
         const [col] = this._data[y].splice(src, 1);
         this._data[y].splice(dst, 0, col ?? '');
       }
     };
-    this.record(() => move(from, to), () => move(to, from));
+    this.record(() => move(from, to), () => move(to, from), () => this.shiftCols(nextStart, count, direction));
     return true;
   }
 

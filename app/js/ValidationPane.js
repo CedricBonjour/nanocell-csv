@@ -5,9 +5,19 @@
  */
 
 import { dom, getSheet, getCsvHandle, settings } from './state.js';
-import { defineEl, bindOverlayKeys, escapeHtml, clamp } from './utils.js';
+import { defineEl, bindOverlayKeys, getFocusableElements, escapeHtml, clamp } from './utils.js';
 import './Glyph.js';
+import { BoolInput, ListInput, NumInput } from './Control.js';
 import { Notification } from './Notification.js';
+import {
+  ENCODING_OPTIONS,
+  DELIMITER_OPTIONS,
+  EOL_OPTIONS,
+  formatDelimiterOption,
+  formatLineTerminatorOption,
+  formatEncodingLabel,
+  supportsBom,
+} from '../core/Csv.js';
 import {
   DataValidator,
   VALIDATION_RULES,
@@ -71,8 +81,32 @@ class SideDrawerPane extends HTMLElement {
     this.closeBtn = this.querySelector('.close-btn');
     this.backBtn.addEventListener('click', () => this.handleBack());
     this.closeBtn.addEventListener('click', () => this.close());
-    // Drawers are not modal: they own Escape (step back) but leave Tab and shortcuts alone.
-    bindOverlayKeys(this, { onEscape: () => this.handleBack() });
+    // Drawers trap Escape (step back) and Tab (cycle visible controls) while focused, leaving global shortcuts intact.
+    bindOverlayKeys(this, {
+      onEscape: () => this.handleBack(),
+      getFocusables: () => this.getFocusableElements(),
+    });
+    this.addEventListener('focusin', (event) => {
+      if (event.target === this.getFocusableElements()[0]) {
+        this.contentContainer.scrollTop = 0;
+      }
+    });
+    this.addEventListener('mousedown', (event) => {
+      if (event.target.closest('.file-info-value')) return;
+      if (!event.target.closest('input, select, textarea, button, a, ui-glyph, ui-num, ui-list, ui-bool, ui-tags, [tabindex]')) {
+        event.preventDefault();
+        if (!this.contains(document.activeElement)) {
+          const resume = this.lastFocused && !this.lastFocused.disabled && !this.lastFocused.hidden && !this.lastFocused.closest('.hidden')
+            ? this.lastFocused
+            : this.getFocusableElements()[0];
+          resume?.focus();
+        }
+      }
+    });
+  }
+
+  getFocusableElements() {
+    return getFocusableElements(this);
   }
 
   updateHeader({ title, showBack = false, badgeCount = null, showBadge = false }) {
@@ -912,18 +946,6 @@ function formatBytes(bytes) {
   return `${val.toFixed(2)} ${units[unitIdx]} (${bytes.toLocaleString('en-US')} B)`;
 }
 
-function formatSeparator(sep) {
-  if (!sep) return '—';
-  const names = {
-    ',': ', (Comma)',
-    ';': '; (Semicolon)',
-    '\t': '\\t (Tab)',
-    '|': '| (Pipe)',
-    ' ': '␣ (Space)',
-  };
-  return names[sep] || `'${sep}'`;
-}
-
 function formatTimestamp(ts) {
   if (!ts) return '—';
   const d = new Date(ts);
@@ -932,7 +954,54 @@ function formatTimestamp(ts) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
+function formatDelimiterDisplay(sep) {
+  if (!sep) return ', (Comma)';
+  const names = {
+    ',': ', (Comma)',
+    ';': '; (Semicolon)',
+    '\t': 'TAB (\\t)',
+    TAB: 'TAB (\\t)',
+    '|': '| (Pipe)',
+  };
+  return names[sep] || `'${sep}'`;
+}
+
+function buildToggleableInfoRow(labelText, controlEl, isEditableFn) {
+  const row = document.createElement('div');
+  row.className = 'file-info-row';
+
+  const label = document.createElement('span');
+  label.className = 'file-info-label';
+  label.textContent = labelText;
+
+  const valueEl = document.createElement('span');
+  valueEl.className = 'file-info-value mono';
+
+  controlEl.classList.add('hidden');
+  row.append(label, valueEl, controlEl);
+
+  row.addEventListener('focusin', () => {
+    if (isEditableFn()) row.classList.add('active');
+  });
+  row.addEventListener('focusout', (e) => {
+    if (!row.contains(e.relatedTarget)) row.classList.remove('active');
+  });
+  row.addEventListener('click', (e) => {
+    if (isEditableFn() && !controlEl.disabled && controlEl.focus && !controlEl.contains(e.target)) {
+      controlEl.focus();
+    }
+  });
+
+  return { row, valueEl, controlEl };
+}
+
 export class FileInfoPane extends SideDrawerPane {
+  constructor() {
+    super();
+    this._editingSettings = false;
+    this._settingRows = [];
+  }
+
   init() {
     if (this._initialized) return;
     this._initialized = true;
@@ -945,14 +1014,174 @@ export class FileInfoPane extends SideDrawerPane {
 
     this.infoView = this.querySelector('.file-info-view');
     this.updateHeader({ title: 'File Info', showBack: false, showBadge: false });
+    this._buildDom();
+  }
+
+  _buildDom() {
+    this.infoView.innerHTML = `
+      <div class="file-info-section">
+        <div class="file-info-section-header">
+          <span class="macro-label">Metadata</span>
+        </div>
+        <div class="file-info-card">
+          <div class="file-info-row">
+            <span class="file-info-label">File Name</span>
+            <span class="file-info-value mono" data-field="name"></span>
+          </div>
+          <div class="file-info-row">
+            <span class="file-info-label">File Size</span>
+            <span class="file-info-value mono" data-field="size"></span>
+          </div>
+          <div class="file-info-row">
+            <span class="file-info-label">Dimensions</span>
+            <span class="file-info-value mono" data-field="dims"></span>
+          </div>
+          <div class="file-info-row">
+            <span class="file-info-label">Last Modified</span>
+            <span class="file-info-value mono" data-field="modified"></span>
+          </div>
+        </div>
+      </div>
+      <div class="file-info-section">
+        <div class="file-info-section-header">
+          <span class="macro-label">Read &amp; Write Settings</span>
+          <ui-glyph icon="edit" size="xs" toggle class="file-info-edit-btn" title="Edit Read &amp; Write Settings"></ui-glyph>
+        </div>
+        <div class="file-info-card file-info-controls-card"></div>
+        <div class="file-info-note hidden"></div>
+      </div>
+      <div class="file-info-actions hidden">
+        <button type="button" class="file-info-btn" data-action="reparse" title="Reload and re-parse file using current Encoding and Delimiter">
+          <ui-glyph icon="reload_file" variant="static" size="xs"></ui-glyph>
+          <span>Reload</span>
+        </button>
+        <div class="file-info-btn-row">
+          <button type="button" class="file-info-btn" data-action="set-defaults" title="Set Read &amp; Write Settings to global defaults (does not save)">
+            <ui-glyph icon="reset_settings" variant="static" size="xs"></ui-glyph>
+            <span>Set defaults</span>
+          </button>
+          <button type="button" class="file-info-btn" data-action="save">
+            <ui-glyph icon="save" variant="static" size="xs"></ui-glyph>
+            <span>Save</span>
+          </button>
+        </div>
+      </div>
+    `;
+
+    this.nameEl = this.infoView.querySelector('[data-field="name"]');
+    this.sizeEl = this.infoView.querySelector('[data-field="size"]');
+    this.dimsEl = this.infoView.querySelector('[data-field="dims"]');
+    this.modifiedEl = this.infoView.querySelector('[data-field="modified"]');
+    this.editBtn = this.infoView.querySelector('.file-info-edit-btn');
+    this.noteEl = this.infoView.querySelector('.file-info-note');
+    this.actionsEl = this.infoView.querySelector('.file-info-actions');
+    this.reparseBtn = this.infoView.querySelector('[data-action="reparse"]');
+    this.setDefaultsBtn = this.infoView.querySelector('[data-action="set-defaults"]');
+    this.saveBtn = this.infoView.querySelector('[data-action="save"]');
+
+    const controlsCard = this.infoView.querySelector('.file-info-controls-card');
+    const isEditable = () => Boolean(this._editingSettings);
+
+    this.encodingInput = new ListInput([...ENCODING_OPTIONS]);
+    this.delimiterInput = new ListInput([...DELIMITER_OPTIONS]);
+    this.eolInput = new ListInput([...EOL_OPTIONS]);
+    this.bomInput = new BoolInput(false);
+    this.fixedWidthInput = new NumInput(0, 0, 100);
+    this.strictInput = new BoolInput(false);
+
+    this.encodingRow = buildToggleableInfoRow('Encoding', this.encodingInput, isEditable);
+    this.delimiterRow = buildToggleableInfoRow('Delimiter', this.delimiterInput, isEditable);
+    this.eolRow = buildToggleableInfoRow('Line Ending (EOL)', this.eolInput, isEditable);
+    this.bomRow = buildToggleableInfoRow('Byte Order Mark (BOM)', this.bomInput, isEditable);
+    this.fixedWidthRow = buildToggleableInfoRow('Min Column Size', this.fixedWidthInput, isEditable);
+    this.strictRow = buildToggleableInfoRow('Save-Strict', this.strictInput, isEditable);
+
+    this._settingRows = [
+      this.encodingRow,
+      this.delimiterRow,
+      this.eolRow,
+      this.bomRow,
+      this.fixedWidthRow,
+      this.strictRow,
+    ];
+
+    controlsCard.append(...this._settingRows.map(r => r.row));
+
+    this.editBtn.onToggle = (active) => {
+      this._editingSettings = Boolean(active);
+      this._syncEditMode();
+    };
+
+    this.encodingInput.addEventListener('change', () => {
+      getCsvHandle()?.updateDialect({ encoding: this.encodingInput.value });
+    });
+    this.delimiterInput.addEventListener('change', () => {
+      getCsvHandle()?.updateDialect({ delimiter: this.delimiterInput.value });
+    });
+    this.eolInput.addEventListener('change', () => {
+      getCsvHandle()?.updateDialect({ lineTerminator: this.eolInput.value });
+    });
+    this.bomInput.addEventListener('change', () => {
+      getCsvHandle()?.updateDialect({ hasBom: this.bomInput.value });
+    });
+    this.fixedWidthInput.addEventListener('change', () => {
+      getCsvHandle()?.updateDialect({ fixedWidth: this.fixedWidthInput.value });
+    });
+    this.strictInput.addEventListener('change', () => {
+      getCsvHandle()?.updateDialect({ isStrict: this.strictInput.value });
+    });
+
+    this.reparseBtn.addEventListener('click', () => {
+      getCsvHandle()?.reparse();
+    });
+    this.setDefaultsBtn.addEventListener('click', () => {
+      getCsvHandle()?.resetDialectToDefaults();
+    });
+    this.saveBtn.addEventListener('click', () => {
+      getCsvHandle()?.save({ ignoreForceDefault: true });
+    });
+
+    this._syncEditMode();
+  }
+
+  _syncEditMode() {
+    const editing = Boolean(this._editingSettings);
+    if (this.editBtn && this.editBtn.active !== editing) {
+      this.editBtn.active = editing;
+    }
+    const active = typeof document !== 'undefined' ? document.activeElement : null;
+    const focusWasInControl = !editing && active && this._settingRows.some(
+      r => r.controlEl === active || r.controlEl.contains(active)
+    );
+    for (const entry of this._settingRows) {
+      entry.row.classList.toggle('interactive', editing);
+      if (!editing) entry.row.classList.remove('active');
+      entry.valueEl.classList.toggle('hidden', editing);
+      entry.controlEl.classList.toggle('hidden', !editing);
+    }
+    if (focusWasInControl) this.editBtn?.focus();
+  }
+
+  close() {
+    super.close();
+    if (this._initialized && this._editingSettings) {
+      this._editingSettings = false;
+      this._syncEditMode();
+    }
   }
 
   toggle() {
     if (this.isOpen) {
       this.close();
     } else {
+      document.activeElement?.blur?.();
       this.show();
       this.renderInfo();
+      setTimeout(() => {
+        if (this.saveBtn && !this.saveBtn.disabled && !this.actionsEl.classList.contains('hidden')) {
+          this.saveBtn.focus();
+        }
+      }, 0);
     }
   }
 
@@ -966,36 +1195,80 @@ export class FileInfoPane extends SideDrawerPane {
     this.init();
     this.updateHeader({ title: 'File Info', showBack: false, showBadge: false });
     const csvHandle = getCsvHandle();
+    const sheet = getSheet();
     const file = csvHandle?.file || null;
     const handle = csvHandle?.handle || null;
     const hasFile = Boolean(file || handle);
+    const viewOnly = Boolean(csvHandle?.viewOnly);
 
     const fileName = file?.name || handle?.name || 'Untitled (unsaved)';
     const fileSize = file && typeof file.size === 'number' ? formatBytes(file.size) : '—';
+    const dims = sheet?.df ? `${sheet.df.width} × ${sheet.df.height}` : '—';
     const lastModified = formatTimestamp(file?.lastModified);
-    const encoding = hasFile ? String(csvHandle?.detectedEncoding || 'utf-8').toUpperCase() : '—';
-    const separator = hasFile ? formatSeparator(csvHandle?.detectedSeparator || ',') : '—';
 
-    const items = [
-      ['File Name', fileName, true],
-      ['File Size', fileSize, true],
-      ['Encoding', encoding, true],
-      ['Separator', separator, true],
-      ['Last Modified', lastModified, true],
-    ];
+    const setField = (el, val) => {
+      const str = String(val);
+      if (el.textContent !== str) {
+        el.textContent = str;
+        el.title = str;
+      }
+    };
+    setField(this.nameEl, fileName);
+    setField(this.sizeEl, fileSize);
+    setField(this.dimsEl, dims);
+    setField(this.modifiedEl, lastModified);
 
-    this.infoView.innerHTML = `
-      <div class="file-info-section">
-        <div class="file-info-card">
-          ${items.map(([label, value, mono = false]) => `
-            <div class="file-info-row">
-              <span class="file-info-label">${escapeHtml(label)}</span>
-              <span class="file-info-value${mono ? ' mono' : ''}" title="${escapeHtml(String(value))}">${escapeHtml(String(value))}</span>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-    `;
+    const dialect = csvHandle?.getEditableDialect?.() || {
+      encoding: 'utf-8',
+      delimiter: ',',
+      lineTerminator: '\r\n',
+      hasBom: false,
+      fixedWidth: 0,
+      isStrict: false,
+    };
+
+    const eolOpt = formatLineTerminatorOption(dialect.lineTerminator);
+    const desiredEolList = eolOpt === 'CR' ? [...EOL_OPTIONS, 'CR'] : [...EOL_OPTIONS];
+    if (this.eolInput.options.length !== desiredEolList.length) {
+      this.eolInput.setOptions(desiredEolList);
+    }
+
+    const bomSupported = supportsBom(dialect.encoding);
+    const bomValue = bomSupported && Boolean(dialect.hasBom);
+    const fixedWidthVal = Number(dialect.fixedWidth) || 0;
+    const strictVal = Boolean(dialect.isStrict);
+
+    // Update static read-only spans
+    setField(this.encodingRow.valueEl, formatEncodingLabel(dialect.encoding));
+    setField(this.delimiterRow.valueEl, formatDelimiterDisplay(dialect.delimiter));
+    setField(this.eolRow.valueEl, eolOpt);
+    setField(this.bomRow.valueEl, bomSupported ? (bomValue ? 'On' : 'Off') : '—');
+    setField(this.fixedWidthRow.valueEl, String(fixedWidthVal));
+    setField(this.strictRow.valueEl, strictVal ? 'On' : 'Off');
+
+    // Update interactive controls
+    this.encodingInput.value = dialect.encoding;
+    this.delimiterInput.value = formatDelimiterOption(dialect.delimiter);
+    this.eolInput.value = eolOpt;
+    this.bomInput.disabled = !bomSupported;
+    this.bomInput.value = bomValue;
+    this.bomRow.row.title = bomSupported ? '' : 'BOM is only supported for UTF-8 and UTF-16 encodings';
+    this.fixedWidthInput.value = fixedWidthVal;
+    this.strictInput.value = strictVal;
+
+    const forceDefault = Boolean(settings.forceDefaultSave);
+    this.noteEl.textContent = forceDefault
+      ? '"Always force save with defaults" is enabled in Settings (applies to Ctrl+S).'
+      : '';
+    this.noteEl.classList.toggle('hidden', !forceDefault);
+
+    this.actionsEl.classList.toggle('hidden', !hasFile);
+    if (hasFile) {
+      this.saveBtn.disabled = viewOnly;
+      this.saveBtn.title = viewOnly
+        ? 'Saving is disabled in View-Only mode'
+        : 'Save file using current Read & Write Settings';
+    }
   }
 }
 

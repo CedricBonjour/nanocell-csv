@@ -153,9 +153,9 @@ Open NanoCell directly in your browser—no account, no backend server, and zero
 
 ### 2. Install as an Offline Desktop App (PWA — Zero Admin Rights)
 Working on a locked-down corporate laptop where `.exe` or `.dmg` installers are blocked by IT?
-1. Open **[nanocell-csv.com](https://nanocell-csv.com)** in **Chrome**, **Edge**, or **Brave**.
-2. Click **Install** in the top navigation bar (or the install icon in your browser's address bar).
-3. NanoCell installs as a **standalone offline desktop application** with native OS file associations—double-click any local `.csv` or `.tsv` file to open it directly in NanoCell, even in airplane mode.
+1. Open **[nanocell-csv.com](https://nanocell-csv.com)** in **Chrome**, **Edge**, **Brave**, **Firefox 143+** (Windows), or **Safari 17+** (macOS).
+2. Click **Install** in the top navigation bar (or use *Add tab to taskbar* in Firefox on Windows / *File → Add to Dock* in Safari on macOS).
+3. NanoCell runs as a **standalone offline desktop application**—with native OS `.csv`/`.tsv` file associations and in-place `Ctrl+S` saving on Chromium browsers (Chrome, Edge, Brave).
 
 ### 3. Run & Build Locally from Source
 NanoCell CSV is built with vanilla TypeScript/JavaScript, Web Workers, and Vite—with **zero runtime dependencies** so you can audit and verify its 100% local execution yourself.

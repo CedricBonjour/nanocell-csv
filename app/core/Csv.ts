@@ -19,6 +19,7 @@ export interface CsvDialect {
   readonly quoteAlways?: boolean;
   readonly commentChar?: string;
   readonly encoding?: string;
+  readonly hasBom?: boolean;
   readonly preserveQuotedEmpty?: boolean;
 }
 
@@ -33,13 +34,64 @@ export const DEFAULT_CSV_DIALECT: CsvDialect = {
   trimUnquotedWhitespace: false,
   quoteAlways: false,
   commentChar: '',
+  hasBom: false,
   preserveQuotedEmpty: false
 };
+
+export const ENCODING_OPTIONS: readonly { readonly value: string; readonly label: string }[] = [
+  { value: 'utf-8', label: 'UTF-8' },
+  { value: 'utf-16le', label: 'UTF-16LE' },
+  { value: 'utf-16be', label: 'UTF-16BE' },
+  { value: 'windows-1252', label: 'Windows-1252' },
+  { value: 'iso-8859-15', label: 'ISO-8859-15' },
+  { value: 'windows-1251', label: 'Windows-1251' },
+  { value: 'shift_jis', label: 'Shift-JIS' },
+  { value: 'gb18030', label: 'GB18030' },
+];
+
+export const DELIMITER_OPTIONS = [',', ';', 'TAB', '|'] as const;
+export const EOL_OPTIONS = ['CRLF', 'LF'] as const;
+
+export function normalizeDelimiter(sep?: string | null): string {
+  if (!sep) return ',';
+  return sep === 'TAB' ? '\t' : sep;
+}
+
+export function formatDelimiterOption(sep?: string | null): string {
+  if (!sep) return ',';
+  return sep === '\t' ? 'TAB' : sep;
+}
+
+export function normalizeLineTerminator(eol?: string | null): '\r\n' | '\n' | '\r' {
+  if (eol === 'LF' || eol === '\n') return '\n';
+  if (eol === 'CR' || eol === '\r') return '\r';
+  return '\r\n';
+}
+
+export function formatLineTerminatorOption(eol?: string | null): 'CRLF' | 'LF' | 'CR' {
+  if (eol === '\n' || eol === 'LF') return 'LF';
+  if (eol === '\r' || eol === 'CR') return 'CR';
+  return 'CRLF';
+}
+
+export function supportsBom(encoding?: string | null): boolean {
+  const enc = String(encoding || 'utf-8').toLowerCase();
+  return enc === 'utf-8' || enc === 'utf-16le' || enc === 'utf-16be';
+}
+
+export function formatEncodingLabel(encoding?: string | null): string {
+  const enc = String(encoding || 'utf-8').toLowerCase();
+  return ENCODING_OPTIONS.find(o => o.value === enc)?.label || enc.toUpperCase();
+}
 
 function resolveDialect(base: CsvDialect, override?: Partial<CsvDialect>): CsvDialect {
   if (!override) return base;
   const merged = { ...base, ...override };
-  return merged.delimiter === 'TAB' ? { ...merged, delimiter: '\t' } : merged;
+  return {
+    ...merged,
+    delimiter: normalizeDelimiter(merged.delimiter),
+    lineTerminator: normalizeLineTerminator(merged.lineTerminator),
+  };
 }
 
 const unescapeChar = (ch: string) =>
@@ -389,6 +441,219 @@ export class SeparatorDetector {
       }
     }
     return maxCount > 0 ? candidates[dominantIndex] : ',';
+  }
+}
+
+export class LineTerminatorDetector {
+  private static readonly SAMPLE_LIMIT = 8192;
+
+  static detect(sample: string, quoteChar = '"'): '\r\n' | '\n' | '\r' | null {
+    if (!sample || typeof sample !== 'string') return null;
+    const len = Math.min(sample.length, LineTerminatorDetector.SAMPLE_LIMIT);
+    let inQuotes = false;
+    let crlf = 0, lf = 0, cr = 0;
+
+    for (let i = 0; i < len; i++) {
+      const ch = sample[i];
+      if (ch === quoteChar) {
+        if (inQuotes && i + 1 < len && sample[i + 1] === quoteChar) i++;
+        else inQuotes = !inQuotes;
+      } else if (!inQuotes) {
+        if (ch === '\r') {
+          if (i + 1 < len && sample[i + 1] === '\n') {
+            crlf++;
+            i++;
+          } else if (i + 1 < sample.length && sample[i + 1] === '\n') {
+            crlf++;
+            break;
+          } else {
+            cr++;
+          }
+        } else if (ch === '\n') {
+          lf++;
+        }
+      }
+    }
+
+    if (crlf === 0 && lf === 0 && cr === 0) return null;
+    if (crlf >= lf && crlf >= cr) return '\r\n';
+    if (lf >= cr) return '\n';
+    return '\r';
+  }
+}
+
+export interface EncodeResult {
+  readonly bytes: Uint8Array;
+  readonly textPayload: string | null;
+  readonly encoding: string;
+  readonly hasBom: boolean;
+  readonly fallbackUsed: boolean;
+  readonly unrepresentableSample?: string;
+}
+
+export class TextCodec {
+  private static readonly encoderCache = new Map<string, Map<number, number>>();
+
+  private static getLegacyMap(encoding: string): Map<number, number> {
+    const cached = TextCodec.encoderCache.get(encoding);
+    if (cached) return cached;
+
+    const map = new Map<number, number>();
+    for (let b = 0; b < 0x80; b++) map.set(b, b);
+
+    if (encoding === 'shift_jis' || encoding === 'gb18030') {
+      const dec = new TextDecoder(encoding, { fatal: false });
+      if (encoding === 'shift_jis') {
+        const singleBuf = new Uint8Array((0xDF - 0xA1 + 1) * 2);
+        let sp = 0;
+        for (let b = 0xA1; b <= 0xDF; b++) {
+          singleBuf[sp++] = b;
+          singleBuf[sp++] = 0x0A;
+        }
+        const singleLines = dec.decode(singleBuf).split('\n');
+        for (let i = 0; i <= 0xDF - 0xA1; i++) {
+          const s = singleLines[i];
+          if (s && s !== '\uFFFD' && s.length === 1) {
+            const cp = s.charCodeAt(0);
+            if (!map.has(cp)) map.set(cp, 0xA1 + i);
+          }
+        }
+      }
+
+      const leadRanges = encoding === 'shift_jis' ? [[0x81, 0x9F], [0xE0, 0xFC]] : [[0x81, 0xFE]];
+      const trailMax = encoding === 'shift_jis' ? 0xFC : 0xFE;
+      const pairs: number[] = [];
+      const buf = new Uint8Array(25000 * 3);
+      let p = 0;
+
+      for (const [l0, l1] of leadRanges) {
+        for (let l = l0; l <= l1; l++) {
+          for (let t = 0x40; t <= trailMax; t++) {
+            if (t === 0x7F) continue;
+            buf[p++] = l;
+            buf[p++] = t;
+            buf[p++] = 0x0A;
+            pairs.push((l << 8) | t);
+          }
+        }
+      }
+
+      const lines = dec.decode(buf.subarray(0, p)).split('\n');
+      for (let i = 0; i < pairs.length; i++) {
+        const s = lines[i];
+        if (!s || s === '\uFFFD') continue;
+        const cp = s.codePointAt(0)!;
+        if (s.length === (cp > 0xFFFF ? 2 : 1) && !map.has(cp)) {
+          map.set(cp, pairs[i]);
+        }
+      }
+    } else {
+      const upperBytes = new Uint8Array(128);
+      for (let i = 0; i < 128; i++) upperBytes[i] = i + 128;
+      const upperDecoded = new TextDecoder(encoding, { fatal: false }).decode(upperBytes);
+      for (let i = 0; i < 128; i++) {
+        const cp = upperDecoded.charCodeAt(i);
+        if (cp !== 0xFFFD && !map.has(cp)) map.set(cp, i + 128);
+      }
+    }
+
+    TextCodec.encoderCache.set(encoding, map);
+    return map;
+  }
+
+  static encode(text: string, rawEncoding = 'utf-8', rawHasBom = false): EncodeResult {
+    const encoding = String(rawEncoding || 'utf-8').toLowerCase();
+    const hasBom = Boolean(rawHasBom) && supportsBom(encoding);
+
+    if (encoding === 'utf-8') {
+      const fullText = hasBom ? `\uFEFF${text}` : text;
+      return {
+        bytes: new TextEncoder().encode(fullText),
+        textPayload: fullText,
+        encoding: 'utf-8',
+        hasBom,
+        fallbackUsed: false,
+      };
+    }
+
+    if (encoding === 'utf-16le' || encoding === 'utf-16be') {
+      const isLE = encoding === 'utf-16le';
+      const offset = hasBom ? 2 : 0;
+      const out = new Uint8Array(offset + text.length * 2);
+      if (hasBom) {
+        out[0] = isLE ? 0xFF : 0xFE;
+        out[1] = isLE ? 0xFE : 0xFF;
+      }
+      for (let i = 0, len = text.length; i < len; i++) {
+        const code = text.charCodeAt(i);
+        if (isLE) {
+          out[offset + i * 2] = code & 0xFF;
+          out[offset + i * 2 + 1] = (code >> 8) & 0xFF;
+        } else {
+          out[offset + i * 2] = (code >> 8) & 0xFF;
+          out[offset + i * 2 + 1] = code & 0xFF;
+        }
+      }
+      return {
+        bytes: out,
+        textPayload: null,
+        encoding,
+        hasBom,
+        fallbackUsed: false,
+      };
+    }
+
+    let map: Map<number, number>;
+    try {
+      map = TextCodec.getLegacyMap(encoding);
+    } catch {
+      return {
+        bytes: new TextEncoder().encode(text),
+        textPayload: text,
+        encoding: 'utf-8',
+        hasBom: false,
+        fallbackUsed: true,
+      };
+    }
+
+    const isMultiByte = encoding === 'shift_jis' || encoding === 'gb18030';
+    const out = new Uint8Array(isMultiByte ? text.length * 2 : text.length);
+    let pos = 0;
+
+    for (let i = 0, len = text.length; i < len; i++) {
+      const c0 = text.charCodeAt(i);
+      if (c0 < 0x80) {
+        out[pos++] = c0;
+        continue;
+      }
+      const cp = text.codePointAt(i)!;
+      if (cp > 0xFFFF) i++;
+      const encoded = map.get(cp);
+      if (encoded === undefined) {
+        return {
+          bytes: new TextEncoder().encode(text),
+          textPayload: text,
+          encoding: 'utf-8',
+          hasBom: false,
+          fallbackUsed: true,
+          unrepresentableSample: String.fromCodePoint(cp),
+        };
+      }
+      if (encoded > 0xFF) {
+        out[pos++] = (encoded >> 8) & 0xFF;
+        out[pos++] = encoded & 0xFF;
+      } else {
+        out[pos++] = encoded;
+      }
+    }
+
+    return {
+      bytes: pos === out.length ? out : out.subarray(0, pos),
+      textPayload: null,
+      encoding,
+      hasBom: false,
+      fallbackUsed: false,
+    };
   }
 }
 

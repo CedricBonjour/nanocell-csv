@@ -9,6 +9,7 @@ import { AboutDialog, SettingDialog, DialogManager } from './Dialogs.js';
 import { Notification, triggerAppInstall } from './Notification.js';
 import { startCoordEdit } from './AppLayout.js';
 import { VALIDATION_RULES } from '../core/DataValidator.js';
+import { ENCODING_OPTIONS, supportsBom } from '../core/Csv.js';
 import { getShortcutKey, isInputElement } from './utils.js';
 
 const commands = {
@@ -17,16 +18,19 @@ const commands = {
   new: { label: 'New Sheet', key: 'N', ctrl: true, run: () => getCsvHandle().new(), description: 'New sheet' },
   deleteRow: { label: 'Delete Row', key: 'BACKSPACE', ctrl: true, run: () => getSheet().deleteRows(), description: 'Delete Row' },
   deleteCol: { label: 'Delete Col', key: 'BACKSPACE', ctrl: true, shift: true, run: () => getSheet().deleteCols(), description: 'Delete Col' },
+  duplicateRow: { label: 'Duplicate Row', run: () => getSheet().duplicateRows(), description: 'Duplicate Row' },
+  duplicateCol: { label: 'Duplicate Col', run: () => getSheet().duplicateCols(), description: 'Duplicate Col' },
   delete: { label: 'Delete Selection', key: 'BACKSPACE', run: () => getSheet().deleteSelection(), description: 'Delete Selection' },
   settings: { label: 'Settings', key: ',', ctrl: true, run: () => SettingDialog.show(), description: 'Display Settings' },
   shortcuts: { label: 'Command Palette', key: 'P', ctrl: true, run: () => dom.palette.toggle(), description: 'Command Palette' },
   selectAll: { label: 'Select All', key: 'A', ctrl: true, run: () => getSheet().selectAll(), description: 'Select All' },
   transpose: { label: 'Transpose', key: 'T', ctrl: true, shift: true, run: () => getSheet().transposeSelection(), description: 'Transpose rows and columns (selection or whole sheet)' },
   trim: { label: 'Trim Empty Rows/Cols', key: 'T', ctrl: true, alt: true, run: () => getSheet().trim(), description: 'Trim : remove all empty rows/cols' },
-  integer: { label: 'Round to Integer', key: 'I', ctrl: true, run: () => getSheet().round(true), description: 'Round selection to integer' },
+  integer: { label: 'Round to Integer', run: () => getSheet().round(true), description: 'Round selection to integer' },
   decimal: { label: 'Round to Decimal', key: '$', ctrl: true, run: () => getSheet().round(false), description: 'Round selection to decimal' },
   emptyString: { label: 'Empty String', run: () => getSheet().setEmptyString(), description: 'Set selection to empty string ("")' },
   fixTop: { label: 'Freeze Header Row', icon: 'fix_top', key: 'B', ctrl: true, run: () => getSheet().toggleFixTop(), description: 'Freeze Header Row' },
+  displayAllCols: { label: 'Display All Columns', icon: 'fit_width', key: 'F', ctrl: true, alt: true, run: () => getSheet().displayAllCols(), description: 'Display all table columns (toggle back to Auto on repeat)' },
   undo: { label: 'Undo', key: 'Z', ctrl: true, run: () => getSheet().undo(), description: 'Undo' },
   redo: { label: 'Redo', key: 'Z', ctrl: true, shift: true, run: () => getSheet().redo(), description: 'Redo' },
   date: { label: "Insert Today's Date", key: ';', ctrl: true, run: () => getSheet().insertDate(), description: "Insert today's date" },
@@ -36,9 +40,13 @@ const commands = {
   toggleActionBar: { label: 'Toggle Menu Bar', key: 'M', ctrl: true, run: () => Setting.toggleActionBar(), description: 'Toggle action bar display' },
   open: { label: 'Open File', key: 'O', ctrl: true, whileEditing: true, run: () => getCsvHandle().open(), description: 'Open a CSV file from the file finder' },
   save: { label: 'Save', key: 'S', ctrl: true, whileEditing: true, run: () => getCsvHandle().save(), description: 'Save' },
+  saveWithDefaults: { label: 'Save with Defaults', whileEditing: true, run: () => getCsvHandle().saveWithDefaults(), description: 'Save file using global Save (defaults) settings' },
+  setDialectDefaults: { label: 'Set File Settings to Defaults', run: () => { getCsvHandle().resetDialectToDefaults(); Notification.quick('Read & Write Settings reset to defaults'); }, description: 'Reset file Read & Write Settings to global defaults without saving' },
   saveAs: { label: 'Save As', key: 'S', ctrl: true, shift: true, whileEditing: true, run: () => getCsvHandle().saveAs(), description: 'Save As' },
   reloadFile: { label: 'Reload File', icon: 'reload_file', key: 'R', ctrl: true, whileEditing: true, run: () => getCsvHandle().reloadFile(), description: 'Reload file from last save' },
-  fileInfo: { label: 'File Info', icon: 'info', run: () => dom.fileInfoPane.toggle(), description: 'Show file details, encoding, separator, and sheet dimensions' },
+  reparseFile: { label: 'Re-parse File', icon: 'reload_file', run: () => getCsvHandle().reparse(), description: 'Re-parse open file using File Info encoding and delimiter' },
+  reparseAuto: { label: 'Auto-Detect Dialect (Re-parse)', run: () => getCsvHandle().reparse({ autoDetect: true }), description: 'Re-parse open file with automatic encoding and delimiter detection' },
+  fileInfo: { label: 'File Info', icon: 'info', key: 'I', ctrl: true, whileEditing: true, run: () => dom.fileInfoPane.toggle(), description: 'Show and edit file dialect, encoding, delimiter, EOL, BOM, and dimensions' },
   expand: { label: 'Expand Row', key: 'E', ctrl: true, run: () => getSheet().expand(), description: 'Expand first row to selection' },
   validateData: { label: 'Validate Data: Open Pane', icon: 'task', key: 'P', ctrl: true, shift: true, run: () => dom.validationPane.toggle(), description: 'Open data validation pane with all validation rules' },
   macros: { label: 'Macros: Open Pane', icon: 'macro', key: 'M', ctrl: true, shift: true, run: () => dom.macroPane.toggle(), description: 'Open macros pane to run or edit validation macros' },
@@ -75,6 +83,79 @@ for (const r of VALIDATION_RULES) {
     get description() { return r.description; }
   };
 }
+
+for (const { value, label } of ENCODING_OPTIONS) {
+  const safeId = value.replace(/[^a-z0-9]/gi, '_');
+  commands[`reopenEncoding_${safeId}`] = {
+    label: `Encoding: ${label}`,
+    description: `Reopen / Decode or Set Save Encoding: ${label}`,
+    run: () => {
+      const h = getCsvHandle();
+      if (h.hasFile) {
+        h.reparse({ encoding: value, delimiter: null });
+      } else {
+        h.updateDialect({ encoding: value });
+        Notification.quick(`Save encoding set to ${label}`);
+      }
+    },
+  };
+}
+
+const DELIMITER_CMD_DEFS = [
+  ['Comma', ',', 'Comma (,)'],
+  ['Semicolon', ';', 'Semicolon (;)'],
+  ['Tab', 'TAB', 'Tab (\\t)'],
+  ['Pipe', '|', 'Pipe (|)'],
+];
+
+for (const [suffix, sep, sepLabel] of DELIMITER_CMD_DEFS) {
+  commands[`reopenDelimiter${suffix}`] = {
+    label: `Re-parse with Delimiter: ${sepLabel}`,
+    description: `Re-parse open file with delimiter ${sepLabel}`,
+    run: () => getCsvHandle().reparse({ delimiter: sep }),
+  };
+  commands[`setDelimiter${suffix}`] = {
+    label: `Set Save Delimiter: ${sepLabel}`,
+    description: `Set file save delimiter to ${sepLabel}`,
+    run: () => {
+      getCsvHandle().updateDialect({ delimiter: sep });
+      Notification.quick(`Save delimiter set to ${sepLabel}`);
+    },
+  };
+}
+
+commands.setEolCrlf = {
+  label: 'Set Line Endings: CRLF',
+  description: 'Set file save line endings to CRLF (Windows / RFC 4180)',
+  run: () => {
+    getCsvHandle().updateDialect({ lineTerminator: 'CRLF' });
+    Notification.quick('Line endings set to CRLF');
+  },
+};
+
+commands.setEolLf = {
+  label: 'Set Line Endings: LF',
+  description: 'Set file save line endings to LF (Unix)',
+  run: () => {
+    getCsvHandle().updateDialect({ lineTerminator: 'LF' });
+    Notification.quick('Line endings set to LF');
+  },
+};
+
+commands.toggleBom = {
+  label: 'Toggle Byte Order Mark (BOM)',
+  description: 'Toggle UTF-8 / UTF-16 Byte Order Mark (BOM) for file save',
+  run: () => {
+    const h = getCsvHandle();
+    const cur = h.getEditableDialect();
+    if (!supportsBom(cur.encoding)) {
+      return Notification.warning(`BOM is only supported for UTF-8 and UTF-16 (current: ${cur.encoding.toUpperCase()}).`, 'BOM Not Supported');
+    }
+    const next = !cur.hasBom;
+    h.updateDialect({ hasBom: next });
+    Notification.quick(`Byte Order Mark (BOM): ${next ? 'On' : 'Off'}`);
+  },
+};
 
 // --- Document-level keyboard & clipboard routing ---
 //
@@ -146,6 +227,9 @@ function onKeyDown(event) {
     return;
   }
   if (inInput) return;
+  if (!ctrlDown && !alt && activeEl?.closest('ui-list, ui-num, ui-bool, ui-tags, ui-glyph, button, select, a[href]')) {
+    return;
+  }
 
   sheet.isSelectingRange = shift && !alt && !event.metaKey && (key.startsWith('ARROW') || NAVIGATION_KEYS.has(key));
 

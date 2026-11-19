@@ -132,7 +132,7 @@
             "name": "How do I install NanoCell on a corporate laptop without admin rights?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Open NanoCell in Chrome, Edge, or Brave and click Install in the top navigation bar. It installs as a standalone desktop application with native OS file associations for .csv and .tsv files—no .exe or .dmg administrator permissions needed."
+              "text": "Open NanoCell in Chrome, Edge, or Brave and click Install in the top navigation bar for a standalone desktop application with native OS file associations for .csv and .tsv files—or pin it via Add tab to taskbar in Firefox (Windows) or File -> Add to Dock in Safari (macOS) with no .exe or .dmg administrator permissions needed."
             }
           },
           {
@@ -220,7 +220,7 @@
       </div>
 
       <div id="screenshots">
-        <a class="hero-window-frame" href="/app/home.html" target="_blank" rel="noopener" aria-label="Launch NanoCell CSV Editor in Browser">
+        <a class="hero-window-frame" href="/app/home.html?sample=base-sample.csv" target="_blank" rel="noopener" aria-label="Launch NanoCell CSV Editor with Sample Data">
           <div class="hero-window-bar">
             <div class="window-dots" aria-hidden="true">
               <span></span><span></span><span></span>
@@ -445,7 +445,7 @@
             <div class="faq-question">How do I install NanoCell on a corporate laptop without admin rights?</div>
             <div class="faq-body">
               <div class="faq-body-inner">
-                <p>Open NanoCell in Chrome, Edge, or Brave and click <strong>Install</strong> in the top navigation bar. It installs as a standalone desktop application with native OS file associations for <code>.csv</code> and <code>.tsv</code> files—no <code>.exe</code> or <code>.dmg</code> administrator permissions needed.</p>
+                <p>Open NanoCell in Chrome, Edge, or Brave and click <strong>Install</strong> in the top navigation bar for a standalone desktop application with native OS file associations for <code>.csv</code> and <code>.tsv</code> files—or pin it via <strong>Add tab to taskbar</strong> in Firefox (Windows) or <strong>File &rarr; Add to Dock</strong> in Safari (macOS)—no <code>.exe</code> or <code>.dmg</code> administrator permissions needed.</p>
               </div>
             </div>
           </div>
@@ -701,7 +701,7 @@
   </main>
 
   <script type="module">
-    import { env, pwa, getNewIssueUrl, cleanupLegacyServiceWorkers } from '../app/js/state.js';
+    import { env, pwa, getNewIssueUrl, getManualInstallHint, cleanupLegacyServiceWorkers } from '../app/js/state.js';
     import { registerSW } from 'virtual:pwa-register';
 
     cleanupLegacyServiceWorkers();
@@ -720,9 +720,9 @@
         hint.id = 'web-install-hint';
         hint.className = 'web-install-hint';
         hint.setAttribute('role', 'status');
-        hint.textContent = 'To install NanoCell, click the install icon in your browser address bar or menu.';
         installContainer.appendChild(hint);
       }
+      hint.textContent = getManualInstallHint(env);
       hint.classList.add('visible');
       clearTimeout(hintTimer);
       hintTimer = setTimeout(() => hint.classList.remove('visible'), 5000);
@@ -761,7 +761,11 @@
         installButton.setAttribute('aria-disabled', 'true');
         installButton.removeAttribute('href');
         installButton.classList.remove('isMobileDnld');
-        installButton.textContent = 'Install available on Chrome & Edge';
+        installButton.textContent = env.os === 'macos'
+          ? 'Install on Chrome, Edge or Safari'
+          : env.os === 'windows'
+            ? 'Install on Chrome, Edge or Firefox'
+            : 'Install available on Chrome & Edge';
         return;
       }
 

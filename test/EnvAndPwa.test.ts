@@ -177,7 +177,7 @@ export async function runEnvAndPwaTests(): Promise<{ passed: number; failed: num
     assert.strictEqual(res.supportsPwaInstall, false);
   });
 
-  await test('Detects macOS Safari and Firefox on Linux as unsupported for PWA install', () => {
+  await test('Detects macOS Safari 17+ as manual PWA-capable, and older Safari / Linux Firefox as unsupported', () => {
     const macSafari = detectEnvironment({
       userAgent:
         'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15',
@@ -190,7 +190,15 @@ export async function runEnvAndPwaTests(): Promise<{ passed: number; failed: num
     assert.strictEqual(macSafari.browser, 'safari');
     assert.strictEqual(macSafari.browserVersion, '17.5');
     assert.strictEqual(macSafari.isChromium, false);
-    assert.strictEqual(macSafari.supportsPwaInstall, false);
+    assert.strictEqual(macSafari.supportsPwaInstall, true);
+
+    const oldSafari = detectEnvironment({
+      userAgent:
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 13_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Safari/605.1.15',
+      platform: 'MacIntel',
+      maxTouchPoints: 0
+    });
+    assert.strictEqual(oldSafari.supportsPwaInstall, false);
 
     const linuxFirefox = detectEnvironment({
       userAgent: 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:127.0) Gecko/20100101 Firefox/127.0',

@@ -1,6 +1,6 @@
 import { defineEl, bindOverlayKeys } from './utils.js';
 import { Glyph } from './Glyph.js';
-import { dom, env, pwa } from './state.js';
+import { dom, env, pwa, settings, getManualInstallHint } from './state.js';
 
 export class Notification extends HTMLElement {
   constructor(message, options = {}) {
@@ -18,6 +18,32 @@ export class Notification extends HTMLElement {
     else if (options.allowHtml && typeof message === 'string') this.content.innerHTML = message;
     else this.content.innerText = message ?? '';
 
+    if (typeof options.onDontShowAgain === 'function') {
+      let checked = Boolean(options.dontShowAgain);
+      const labelText = options.dontShowAgainLabel || 'Do not show again';
+      this.dontShowRow = document.createElement('div');
+      this.dontShowRow.className = `ui-toast-check-row${checked ? ' checked' : ''}`;
+      this.dontShowGlyph = new Glyph(checked ? 'checkbox_on' : 'checkbox_off', {
+        size: 'xs',
+        cls: 'ui-toast-check-glyph',
+        title: labelText,
+      });
+      this.dontShowGlyph.setAttribute('role', 'checkbox');
+      this.dontShowGlyph.setAttribute('aria-checked', String(checked));
+      const labelSpan = document.createElement('span');
+      labelSpan.className = 'ui-toast-check-label';
+      labelSpan.textContent = labelText;
+      this.dontShowRow.append(this.dontShowGlyph, labelSpan);
+      this.dontShowRow.addEventListener('click', (e) => {
+        e.stopPropagation();
+        checked = !checked;
+        this.dontShowRow.classList.toggle('checked', checked);
+        this.dontShowGlyph.icon = checked ? 'checkbox_on' : 'checkbox_off';
+        this.dontShowGlyph.setAttribute('aria-checked', String(checked));
+        options.onDontShowAgain(checked);
+      });
+    }
+
     this.closeBtn = new Glyph('off', {
       variant: 'close',
       title: this.hasButtons ? (options.cancelText || 'Cancel') : 'Dismiss notification',
@@ -32,7 +58,10 @@ export class Notification extends HTMLElement {
     }
     bindOverlayKeys(this, {
       onEscape: () => this.close(),
-      getFocusables: () => (this.hasButtons ? [this.closeBtn, this.okBtn] : [this.closeBtn]),
+      getFocusables: () => {
+        const btns = this.hasButtons ? [this.closeBtn, this.okBtn] : [this.closeBtn];
+        return this.dontShowGlyph ? [this.dontShowGlyph, ...btns] : btns;
+      },
       ownsKeyboard: true,
     });
   }
@@ -60,6 +89,7 @@ export class Notification extends HTMLElement {
       bodyDiv.appendChild(titleEl);
     }
     bodyDiv.appendChild(this.content);
+    if (this.dontShowRow) bodyDiv.appendChild(this.dontShowRow);
     this.appendChild(bodyDiv);
 
     const actionsDiv = document.createElement('div');
@@ -133,12 +163,12 @@ export async function triggerAppInstall() {
     return Notification.info('NanoCell is already installed as a desktop app.', 'App Installed', 3500);
   }
   if (!state.canInstall) {
-    return Notification.warning('Desktop app installation requires a desktop Chromium browser (Chrome, Edge, or Brave).', 'Not Supported on This Browser', 5000);
+    return Notification.warning('Desktop app installation requires Chrome, Edge, Brave, Firefox 143+ (Windows), or Safari 17+ (macOS).', 'Not Supported on This Browser', 5000);
   }
   const outcome = await pwa.promptInstall();
   if (outcome === 'accepted') return Notification.success('NanoCell Desktop App installed!', 'App Installed', 3500);
   if (outcome === 'manual') {
-    return Notification.info('To install NanoCell: click the Install icon in your browser address bar (or Browser Menu -> Save and share -> Install page as app).', 'Install Desktop App', 6000);
+    return Notification.info(getManualInstallHint(env), 'Install Desktop App', 6000);
   }
   return null;
 }
@@ -146,10 +176,19 @@ export async function triggerAppInstall() {
 let compatibilityNoticeShown = false;
 
 export function showBrowserCompatibilityNotice() {
-  if (compatibilityNoticeShown || env.supportsFileSystemAccess) return;
+  if (compatibilityNoticeShown || env.supportsFileSystemAccess || settings.hideCompatNotice) return;
   compatibilityNoticeShown = true;
   const text = env.isMobile
     ? `Direct file saving and desktop app installation are not available on ${env.osLabel || 'mobile devices'}. You can still open, edit, and download CSV files normally.`
-    : `Your browser (${env.browserName}) does not support direct in-place file saving or PWA installation. You can still open and download CSV files, or use Chrome, Edge, or Brave for full desktop integration.`;
-  return Notification.info(text, 'Limited Browser Capabilities', 0);
+    : (pwa.getState().isStandalone || env.supportsPwaInstall)
+      ? `Your browser (${env.browserName}) does not support direct in-place file saving or OS file associations. Saves will download a copy, or use Chrome, Edge, or Brave for full file-system integration.`
+      : `Your browser (${env.browserName}) does not support direct in-place file saving or desktop PWA installation. You can still open and download CSV files, or use Chrome, Edge, or Brave for full desktop integration.`;
+  return new Notification(text, {
+    mode: 'toast',
+    duration: 0,
+    type: 'info',
+    title: 'Limited Browser Capabilities',
+    dontShowAgain: Boolean(settings.hideCompatNotice),
+    onDontShowAgain: (checked) => { settings.hideCompatNotice = checked; },
+  }).show();
 }

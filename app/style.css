@@ -252,11 +252,11 @@ footer {
   line-height: normal;
 }
 
-@media (max-width: 800px) {
+@media (max-width: 840px) {
   .header-mid { display: none; }
 }
 
-@media (max-width: 880px) {
+@media (max-width: 920px) {
   header:has(#menu-install-btn:not(.hidden)) .header-mid { display: none; }
 }
 
@@ -334,7 +334,6 @@ button {
 button:hover {
   background-color: var(--bg2);
   border-color: var(--active);
-  color: var(--active);
 }
 
 button:active { background-color: var(--bg1); }
@@ -661,7 +660,6 @@ ui-sheet,
   overflow: hidden;
   white-space: nowrap;
   position: relative;
-  max-width: 0;
   background-color: var(--bg2);
   padding: 0;
 }
@@ -669,11 +667,16 @@ ui-sheet,
 .sheet .cell-header {
   color: var(--th-txt);
   background-color: var(--th-bg);
+  cursor: pointer;
 }
 
 
 .sheet .col-header.selected {
   box-shadow: inset 0 -1px 0 0 color-mix(in srgb, var(--active) 50%, transparent);
+}
+
+.sheet .col-header.col-spotlight {
+  box-shadow: inset 0 -2px 0 0 var(--active);
 }
 
 .sheet .row-header.selected {
@@ -683,20 +686,10 @@ ui-sheet,
 .sheet .col-header {
   height: 24px;
   text-align: center;
-  min-width: 36px;
-}
-
-.sheet .col-expanded { width: 100%; }
-
-.sheet .col-collapsed {
-  width: 0;
-  min-width: 0;
-  padding: 0;
 }
 
 .sheet .row-header {
   text-align: end;
-  width: 36px;
   padding: 0 6px;
   line-height: 0;
 }
@@ -1069,6 +1062,24 @@ ui-filter {
 .ui-toast-body { flex: 1; min-width: 0; }
 .ui-toast-title { font-weight: 600; margin-bottom: 2px; color: var(--txt-soft); }
 .ui-msg-text { word-break: break-word; }
+.ui-toast-check-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  cursor: pointer;
+  user-select: none;
+  color: var(--txt-soft);
+  font-size: 0.92em;
+}
+.ui-toast-check-row:hover,
+.ui-toast-check-row.checked {
+  color: var(--txt);
+}
+.ui-toast-check-row:hover .ui-toast-check-glyph::before,
+.ui-toast-check-row.checked .ui-toast-check-glyph::before {
+  background-color: var(--active);
+}
 .ui-toast-actions {
   display: flex;
   flex-direction: column;
@@ -1199,6 +1210,14 @@ ui-bool .toggle-thumb {
 }
 
 ui-bool.checked .toggle-thumb { transform: translateX(20px); }
+
+ui-bool[disabled],
+ui-list[disabled],
+ui-num[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
 
 .stg-footer {
   margin-top: 24px;
@@ -1501,14 +1520,22 @@ ui-file-info-pane {
 .file-info-view {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding-top: 2px;
+  gap: 20px;
+  padding: 6px 4px 12px;
 }
 
 .file-info-section {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+}
+
+.file-info-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 22px;
+  padding: 0 2px;
 }
 
 .file-info-card {
@@ -1523,9 +1550,30 @@ ui-file-info-pane {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 8px 10px;
+  min-height: 38px;
+  padding: 9px 12px;
   border-bottom: 1px solid var(--border);
   font-size: 12px;
+}
+
+.file-info-row.interactive {
+  padding: 5px 12px 5px 9px;
+  border-left: 3px solid transparent;
+  cursor: pointer;
+}
+
+.file-info-row.interactive:hover,
+.file-info-row.interactive:focus-within,
+.file-info-row.interactive.active {
+  background-color: color-mix(in srgb, var(--bg1) 45%, var(--bg2));
+  border-left-color: var(--active);
+}
+
+.file-info-row ui-list,
+.file-info-row ui-num {
+  width: 152px;
+  height: 28px;
+  flex-shrink: 0;
 }
 
 .file-info-row:last-child {
@@ -1550,6 +1598,42 @@ ui-file-info-pane {
 
 .file-info-value.mono {
   font-family: var(--font-family-mono);
+}
+
+.file-info-note {
+  font-size: 11px;
+  color: var(--txt-soft);
+  line-height: 1.35;
+  white-space: normal;
+  padding: 2px 2px 0;
+}
+
+.file-info-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.file-info-btn-row {
+  display: flex;
+  gap: 8px;
+}
+
+.file-info-btn {
+  height: 32px;
+  min-height: 32px;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.file-info-actions > .file-info-btn {
+  width: 100%;
+  flex: 0 0 auto;
+}
+
+.file-info-btn-row > .file-info-btn {
+  flex: 1 1 0%;
 }
 
 /* 13. About Pane (<ui-about>) & Print Media */

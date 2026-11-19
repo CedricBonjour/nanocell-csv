@@ -1,6 +1,13 @@
 import { Dataframe } from '../core/Dataframe.js';
-import { CsvSerializer } from '../core/Csv.js';
-import { getSheet, settings } from './state.js';
+import {
+  CsvSerializer,
+  TextCodec,
+  normalizeDelimiter,
+  normalizeLineTerminator,
+  supportsBom,
+  formatEncodingLabel,
+} from '../core/Csv.js';
+import { dom, getSheet, settings } from './state.js';
 import { downloadBlob, copyToClipboard } from './utils.js';
 import { Notification, showBrowserCompatibilityNotice } from './Notification.js';
 import CsvWorker from './csvWorker.js?worker';
@@ -9,6 +16,18 @@ export class CsvHandle {
   static pickerOptions = {
     types: [{ description: 'csv (Comma Separated Value) ', accept: { 'text/csv': ['.csv', '.tsv'] } }]
   };
+
+  static getDefaultDialect() {
+    const encoding = String(settings.encoding || 'utf-8').toLowerCase();
+    return {
+      encoding,
+      delimiter: normalizeDelimiter(settings.delimiter || ','),
+      lineTerminator: normalizeLineTerminator(settings.lineTerminator || 'CRLF'),
+      hasBom: Boolean(settings.hasBom) && supportsBom(encoding),
+      fixedWidth: Math.max(0, Number(settings.fixedWidthSize) || 0),
+      isStrict: Boolean(settings.strictSave),
+    };
+  }
 
   constructor(options = {}) {
     this.win = options.window !== undefined ? options.window : (globalThis.window ?? null);
@@ -21,6 +40,10 @@ export class CsvHandle {
     this.viewOnly = false;
     this.detectedEncoding = 'utf-8';
     this.detectedSeparator = ',';
+    this.dialect = CsvHandle.getDefaultDialect();
+    this._dialectModified = false;
+    this._pendingDialectKeep = null;
+    this._eolSeen = false;
     this.readId = 0;
     this._launchingHandle = null;
     this._receivedMessageHandle = null;
@@ -28,6 +51,54 @@ export class CsvHandle {
     this.worker?.addEventListener('message', (event) => {
       if (event?.data?.cmd === 'chunk_loaded') this.onChunkLoaded(event.data);
     });
+  }
+
+  get hasFile() {
+    return Boolean(this.file || this.handle);
+  }
+
+  _applyDialect(next, markModified = false) {
+    const encoding = String(next.encoding || 'utf-8').toLowerCase();
+    const delimiter = normalizeDelimiter(next.delimiter || ',');
+    const lineTerminator = normalizeLineTerminator(next.lineTerminator || 'CRLF');
+    const hasBom = Boolean(next.hasBom) && supportsBom(encoding);
+    const fixedWidth = Math.max(0, Number(next.fixedWidth ?? 0) || 0);
+    const isStrict = Boolean(next.isStrict);
+    const prevSep = this.dialect?.delimiter;
+
+    this.dialect = { encoding, delimiter, lineTerminator, hasBom, fixedWidth, isStrict };
+    this.detectedEncoding = encoding;
+    this.detectedSeparator = delimiter;
+    if (markModified) this._dialectModified = true;
+    if (prevSep !== undefined && prevSep !== delimiter) getSheet()?.refresh?.();
+    dom.fileInfoPane?.refresh?.();
+  }
+
+  getEditableDialect() {
+    if (this.hasFile || this._dialectModified) return { ...this.dialect };
+    return CsvHandle.getDefaultDialect();
+  }
+
+  getEffectiveDialect({ useDefaults = false, ignoreForceDefault = false } = {}) {
+    if (useDefaults || (Boolean(settings.forceDefaultSave) && !ignoreForceDefault)) {
+      return CsvHandle.getDefaultDialect();
+    }
+    return this.getEditableDialect();
+  }
+
+  updateDialect(patch) {
+    if (!patch || typeof patch !== 'object') return this.getEditableDialect();
+    const merged = { ...this.getEditableDialect(), ...patch };
+    if (patch.encoding !== undefined && !supportsBom(merged.encoding)) {
+      merged.hasBom = false;
+    }
+    this._applyDialect(merged, true);
+    return this.dialect;
+  }
+
+  resetDialectToDefaults() {
+    this._applyDialect(CsvHandle.getDefaultDialect(), true);
+    return this.dialect;
   }
 
   confirmIfUnsaved(action, force = false) {
@@ -136,8 +207,19 @@ export class CsvHandle {
 
     if (isFirst) {
       this.isFirstChunkLoaded = true;
-      if (data.encoding) this.detectedEncoding = data.encoding;
-      if (data.sep) this.detectedSeparator = data.sep;
+      const defaults = CsvHandle.getDefaultDialect();
+      const kept = this._pendingDialectKeep;
+      this._pendingDialectKeep = null;
+      this._eolSeen = Boolean(data.eol);
+      const encoding = data.encoding || defaults.encoding;
+      this._applyDialect({
+        encoding,
+        delimiter: data.sep || defaults.delimiter,
+        lineTerminator: kept?.lineTerminator ?? data.eol ?? defaults.lineTerminator,
+        hasBom: data.hasBom !== undefined ? Boolean(data.hasBom) : false,
+        fixedWidth: kept?.fixedWidth ?? defaults.fixedWidth,
+        isStrict: kept?.isStrict ?? defaults.isStrict,
+      }, Boolean(kept));
       const initialRows = data.chunk?.length > 0 ? data.chunk : [['']];
       const df = new Dataframe(initialRows);
       df.lock = this.viewOnly;
@@ -151,6 +233,15 @@ export class CsvHandle {
         sheet.fixTop = settings.freezeHeaderOnOpen;
       }
     } else {
+      if ((data.encoding && data.encoding !== this.dialect.encoding) || (data.eol && !this._eolSeen)) {
+        if (data.eol) this._eolSeen = true;
+        this._applyDialect({
+          ...this.dialect,
+          encoding: data.encoding || this.dialect.encoding,
+          hasBom: data.hasBom !== undefined ? Boolean(data.hasBom) : this.dialect.hasBom,
+          lineTerminator: (!this._dialectModified && data.eol) ? data.eol : this.dialect.lineTerminator,
+        }, this._dialectModified);
+      }
       sheet = getSheet();
       if (sheet?.df && data.chunk?.length > 0) {
         sheet.df.appendRows(data.chunk, true);
@@ -173,11 +264,12 @@ export class CsvHandle {
     if (settings.trim && !this.viewOnly) sheet.df.trimAll();
     sheet.fixTop = settings.freezeHeaderOnOpen;
     sheet.df.isSaved = true;
+    sheet.updateViewportLayout?.();
     sheet.refreshScrollbars();
     sheet.refresh();
   }
 
-  read(file) {
+  read(file, overrides = {}) {
     if (this.worker && this.readId > 0 && !this.isReadComplete) {
       this.postToWorker('abort', {});
     }
@@ -185,22 +277,33 @@ export class CsvHandle {
     this.file = file;
     this.isFirstChunkLoaded = false;
     this.isReadComplete = false;
-    this.detectedEncoding = 'utf-8';
-    this.detectedSeparator = ',';
+    this._dialectModified = false;
+    this._eolSeen = false;
+    const defaults = CsvHandle.getDefaultDialect();
+    const initialEncoding = overrides.encoding ? String(overrides.encoding).toLowerCase() : 'utf-8';
+    const initialSep = overrides.delimiter ? normalizeDelimiter(overrides.delimiter) : ',';
+    this._applyDialect({
+      ...defaults,
+      encoding: initialEncoding,
+      delimiter: initialSep,
+      hasBom: false,
+    }, false);
     this.viewOnly = (file?.size ? file.size / 1000000 : 0) > Number(settings.editMaxFileSize);
 
     if (!file || file.size == 0) {
       this.onChunkLoaded({
         cmd: 'chunk_loaded', readId: currentReadId, status: 1.0, chunk: [[]],
         chunkId: 1, isFirstChunk: true, isComplete: true, viewOnly: this.viewOnly,
-        sep: ',', encoding: 'utf-8'
+        sep: initialSep, encoding: initialEncoding, hasBom: false, eol: null
       });
     } else {
       this.postToWorker('read', {
         readId: currentReadId, file, viewOnly: this.viewOnly,
         previewChunks: settings.previewChunks, previewRows: settings.previewRows,
         trimUnquoted: Boolean(settings.trimUnquoted),
-        preserveQuotedEmpty: Boolean(settings.preserveQuotedEmpty)
+        preserveQuotedEmpty: Boolean(settings.preserveQuotedEmpty),
+        encodingOverride: overrides.encoding ?? null,
+        delimiterOverride: overrides.delimiter ?? null,
       });
     }
   }
@@ -265,33 +368,87 @@ export class CsvHandle {
     );
   }
 
+  reparse(overrides = {}, force = false) {
+    if (this.handle === null && this.file === null) {
+      return Notification.quick('No file to re-parse.');
+    }
+    const current = this.getEditableDialect();
+    const useAuto = Boolean(overrides.autoDetect);
+    const nextEncoding = useAuto ? null : (overrides.encoding !== undefined ? overrides.encoding : current.encoding);
+    const nextDelimiter = useAuto ? null : (overrides.delimiter !== undefined ? overrides.delimiter : current.delimiter);
+    const keepExtra = !useAuto && this._dialectModified
+      ? { lineTerminator: current.lineTerminator, fixedWidth: current.fixedWidth, isStrict: current.isStrict }
+      : null;
+
+    return this.confirmIfUnsaved(async () => {
+      try {
+        const file = this.handle !== null ? await this.handle.getFile() : this.file;
+        if (!file) return;
+        this._pendingDialectKeep = keepExtra;
+        this.read(file, { encoding: nextEncoding, delimiter: nextDelimiter });
+      } catch (err) {
+        this._pendingDialectKeep = null;
+        console.error('Failed to re-parse file:', err);
+        Notification.error(err?.message || 'Could not re-parse file.');
+      }
+    }, force);
+  }
+
   new() {
     this.win?.open?.('./home.html', '_blank', 'width=600,height=400');
   }
 
-  async saveAs() {
+  _encodeForSave(matrix, saveOptions = {}) {
+    const dialect = this.getEffectiveDialect(saveOptions);
+    const serialized = CsvHandle.serializeMatrix(matrix, dialect);
+    const encoded = TextCodec.encode(serialized, dialect.encoding, dialect.hasBom);
+    if (encoded.fallbackUsed) {
+      const charHint = encoded.unrepresentableSample ? ` ("${encoded.unrepresentableSample}")` : '';
+      Notification.warning(
+        `Some characters${charHint} cannot be represented in ${formatEncodingLabel(dialect.encoding)}. Saved as UTF-8 instead.`,
+        'Encoding Fallback',
+        4500
+      );
+    }
+    const appliedDialect = {
+      ...dialect,
+      encoding: encoded.encoding,
+      hasBom: encoded.hasBom,
+    };
+    return {
+      payload: encoded.textPayload !== null ? encoded.textPayload : encoded.bytes,
+      encoded,
+      appliedDialect,
+    };
+  }
+
+  async saveAs(options = {}) {
     if (this.viewOnly) return;
     return this._withPicker('showSaveFilePicker', async (handle) => {
       this.handle = handle;
-      await this.save();
-    }, () => this.exportDownload());
+      await this.save(options);
+    }, () => this.exportDownload(undefined, undefined, options));
   }
 
-  async save() {
+  async saveWithDefaults() {
+    return await this.save({ useDefaults: true });
+  }
+
+  async save(options = {}) {
     if (this.viewOnly) return;
-    if (this.handle === null) return await this.saveAs();
+    if (this.handle === null) return await this.saveAs(options);
     if (typeof this.handle?.createWritable !== 'function') {
       showBrowserCompatibilityNotice();
-      return this.exportDownload();
+      return this.exportDownload(undefined, undefined, options);
     }
     try {
       const sheet = getSheet();
       if (!sheet) return;
+      const { payload, appliedDialect } = this._encodeForSave(sheet.df.data, options);
       const writableStream = await this.handle.createWritable();
-      await writableStream.write(CsvHandle.serializeMatrix(sheet.df.data));
+      await writableStream.write(payload);
       await writableStream.close();
-      this.detectedEncoding = 'utf-8';
-      this.detectedSeparator = settings.delimiter || ',';
+      this._applyDialect(appliedDialect, false);
       this.file = await this.handle.getFile();
       if (this.doc) this.doc.title = this.file.name;
       sheet.df.isSaved = true;
@@ -302,14 +459,20 @@ export class CsvHandle {
     }
   }
 
-  exportDownload(blob, filename) {
+  exportDownload(blob, filename, saveOptions = {}) {
     const sheet = getSheet();
     const doc = this.doc;
     if (!sheet || !doc) return;
     try {
-      blob ||= new Blob([CsvHandle.serializeMatrix(sheet.df.data)], { type: 'text/csv;charset=utf-8;' });
+      let appliedDialect = null;
+      if (!blob) {
+        const res = this._encodeForSave(sheet.df.data, saveOptions);
+        appliedDialect = res.appliedDialect;
+        blob = new Blob([res.payload], { type: `text/csv;charset=${appliedDialect.encoding};` });
+      }
       filename ||= this.file?.name || 'export.csv';
       downloadBlob(blob, filename, doc);
+      if (appliedDialect) this._applyDialect(appliedDialect, false);
       sheet.df.isSaved = true;
       sheet.refresh();
       Notification.quick(`File saved as ${filename}`);
@@ -319,7 +482,7 @@ export class CsvHandle {
     }
   }
 
-  static formatData(format, rows, pretty = true, hasHeader = Boolean(settings.freezeHeaderOnOpen)) {
+  static formatData(format, rows, pretty = true, hasHeader = Boolean(getSheet()?.fixTop || settings.freezeHeaderOnOpen)) {
     if (format === 'csv') return CsvHandle.serializeMatrix(rows);
     const preserveQuotedEmpty = Boolean(settings.preserveQuotedEmpty);
     const s = new CsvSerializer(format === 'tsv' ? { delimiter: '\t', preserveQuotedEmpty } : { preserveQuotedEmpty });
@@ -361,11 +524,13 @@ export class CsvHandle {
   async copyMarkdown() { return this._copyFormatted('Copied selection as Markdown table', 'md'); }
   async copyJson() { return this._copyFormatted('Copied selection as JSON to clipboard', 'json'); }
 
-  static serializeMatrix(matrix) {
+  static serializeMatrix(matrix, dialectOverride) {
+    const d = dialectOverride || CsvHandle.getDefaultDialect();
     return new CsvSerializer({
-      delimiter: settings.delimiter,
-      isStrict: settings.strictSave,
-      fixedWidth: settings.fixedWidthSize,
+      delimiter: d.delimiter,
+      lineTerminator: d.lineTerminator,
+      isStrict: d.isStrict,
+      fixedWidth: d.fixedWidth,
       preserveQuotedEmpty: Boolean(settings.preserveQuotedEmpty)
     }).serialize(matrix);
   }

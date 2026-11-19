@@ -1,4 +1,4 @@
-import { CsvParser, SeparatorDetector, EncodingDetector } from '../core/Csv.js';
+import { CsvParser, SeparatorDetector, EncodingDetector, LineTerminatorDetector, normalizeDelimiter } from '../core/Csv.js';
 
 const CHUNK_SIZE = 500 * 1000;
 const FIRST_CHUNK_TARGET = 100;
@@ -21,19 +21,28 @@ async function readSliceBytes(slice) {
 
 async function loadCsv(data, postFn = postWorkerMessage) {
   if (data.viewOnly) return loadCsvViewOnly(data, postFn);
-  const { file, readId, trimUnquoted, preserveQuotedEmpty = false, commentChar = '', escapeChar = '"' } = data;
+  const {
+    file, readId, trimUnquoted, preserveQuotedEmpty = false, commentChar = '', escapeChar = '"',
+    encodingOverride = null, delimiterOverride = null
+  } = data;
   const fileSize = file?.size || 0;
+  const hasExplicitEncoding = Boolean(encodingOverride);
+  const hasExplicitDelimiter = Boolean(delimiterOverride);
 
   if (!file || fileSize === 0) {
     postFn({
       cmd: 'chunk_loaded', readId, status: 1.0, chunk: [[]], chunkId: 1,
-      isFirstChunk: true, isComplete: true, viewOnly: false, sep: ',', encoding: 'utf-8', rowCount: 0
+      isFirstChunk: true, isComplete: true, viewOnly: false,
+      sep: hasExplicitDelimiter ? normalizeDelimiter(delimiterOverride) : ',',
+      encoding: hasExplicitEncoding ? String(encodingOverride).toLowerCase() : 'utf-8',
+      hasBom: false, eol: null, rowCount: 0
     });
     return;
   }
 
-  let offset = 0, iteration = 0, sep = ',', sepDetected = false;
-  let encoding = 'utf-8', decoder = null, utf8Tail = null;
+  let offset = 0, iteration = 0, sep = hasExplicitDelimiter ? normalizeDelimiter(delimiterOverride) : ',', sepDetected = hasExplicitDelimiter;
+  let encoding = hasExplicitEncoding ? String(encodingOverride).toLowerCase() : 'utf-8', decoder = null, utf8Tail = null;
+  let hasBom = false, eol = null, eolDetected = false;
   let totalRowsEmitted = 0, firstChunkEmitted = false, completionEmitted = false;
   let pendingRows = [], pendingOffset = 0, parser = null;
 
@@ -44,7 +53,7 @@ async function loadCsv(data, postFn = postWorkerMessage) {
     postFn({
       cmd: 'chunk_loaded', readId, status: isComplete ? 1.0 : currentStatus,
       chunk: rows, chunkId: iteration, isFirstChunk: isFirst,
-      isComplete, viewOnly: false, sep, encoding, rowCount: totalRowsEmitted
+      isComplete, viewOnly: false, sep, encoding, hasBom, eol, rowCount: totalRowsEmitted
     });
   };
 
@@ -57,13 +66,21 @@ async function loadCsv(data, postFn = postWorkerMessage) {
     const bytes = await readSliceBytes(slice);
     if (currentAbort) return;
     if (!decoder && bytes.length > 0) {
-      encoding = EncodingDetector.detect(bytes);
-      decoder = new TextDecoder(encoding, { fatal: encoding === 'utf-8' });
+      const bomEnc = EncodingDetector.detectBOM(bytes);
+      if (hasExplicitEncoding) {
+        encoding = String(encodingOverride).toLowerCase();
+        hasBom = bomEnc === encoding;
+        decoder = new TextDecoder(encoding, { fatal: false });
+      } else {
+        encoding = EncodingDetector.detect(bytes);
+        hasBom = bomEnc !== null;
+        decoder = new TextDecoder(encoding, { fatal: encoding === 'utf-8' });
+      }
     }
     let rawText;
     try {
-      rawText = (decoder || new TextDecoder('utf-8', { fatal: true })).decode(bytes, { stream: !isFileReadComplete });
-      utf8Tail = (encoding === 'utf-8' && !isFileReadComplete)
+      rawText = (decoder || new TextDecoder(encoding, { fatal: !hasExplicitEncoding && encoding === 'utf-8' })).decode(bytes, { stream: !isFileReadComplete });
+      utf8Tail = (!hasExplicitEncoding && encoding === 'utf-8' && !isFileReadComplete)
         ? EncodingDetector.getIncompleteUtf8Tail(bytes)
         : null;
     } catch {
@@ -74,16 +91,26 @@ async function loadCsv(data, postFn = postWorkerMessage) {
         fullBytes.set(bytes, utf8Tail.length);
         utf8Tail = null;
       }
+      hasBom = false;
       encoding = EncodingDetector.detectFallback(fullBytes);
       decoder = new TextDecoder(encoding, { fatal: false });
       if (parser) parser.dialect = { ...parser.dialect, encoding };
       rawText = decoder.decode(fullBytes, { stream: !isFileReadComplete });
     }
 
-    if (!sepDetected && rawText.length > 0) {
-      sep = SeparatorDetector.detect(rawText);
-      sepDetected = true;
-      if (parser) parser = new CsvParser({ delimiter: sep, trimUnquotedWhitespace: Boolean(trimUnquoted), preserveQuotedEmpty: Boolean(preserveQuotedEmpty), commentChar, escapeChar, encoding });
+    if (rawText.length > 0) {
+      if (!sepDetected) {
+        sep = SeparatorDetector.detect(rawText);
+        sepDetected = true;
+        if (parser) parser = new CsvParser({ delimiter: sep, trimUnquotedWhitespace: Boolean(trimUnquoted), preserveQuotedEmpty: Boolean(preserveQuotedEmpty), commentChar, escapeChar, encoding });
+      }
+      if (!eolDetected) {
+        const detectedEol = LineTerminatorDetector.detect(rawText);
+        if (detectedEol) {
+          eol = detectedEol;
+          eolDetected = true;
+        }
+      }
     }
     parser ||= new CsvParser({ delimiter: sep, trimUnquotedWhitespace: Boolean(trimUnquoted), preserveQuotedEmpty: Boolean(preserveQuotedEmpty), commentChar, escapeChar, encoding });
 
@@ -128,14 +155,21 @@ async function loadCsv(data, postFn = postWorkerMessage) {
 }
 
 async function loadCsvViewOnly(data, postFn = postWorkerMessage) {
-  const { file, readId, previewChunks = 1, previewRows = 100, trimUnquoted, preserveQuotedEmpty = false, commentChar = '', escapeChar = '"' } = data;
+  const {
+    file, readId, previewChunks = 1, previewRows = 100, trimUnquoted, preserveQuotedEmpty = false, commentChar = '', escapeChar = '"',
+    encodingOverride = null, delimiterOverride = null
+  } = data;
   const fileSize = file?.size || 0;
-  let sep = ',', encoding = 'utf-8';
+  const hasExplicitEncoding = Boolean(encodingOverride);
+  const hasExplicitDelimiter = Boolean(delimiterOverride);
+  let sep = hasExplicitDelimiter ? normalizeDelimiter(delimiterOverride) : ',';
+  let encoding = hasExplicitEncoding ? String(encodingOverride).toLowerCase() : 'utf-8';
+  let hasBom = false, eol = null;
 
   if (!file || fileSize === 0) {
     postFn({
       cmd: 'chunk_loaded', readId, status: 1.0, chunk: [[]], chunkId: 1,
-      isFirstChunk: true, isComplete: true, viewOnly: true, sep, encoding, rowCount: 0
+      isFirstChunk: true, isComplete: true, viewOnly: true, sep, encoding, hasBom, eol, rowCount: 0
     });
     return;
   }
@@ -160,7 +194,14 @@ async function loadCsvViewOnly(data, postFn = postWorkerMessage) {
     if (currentAbort) return;
 
     if (iteration === 1 && bytes.length > 0) {
-      encoding = EncodingDetector.detect(bytes);
+      const bomEnc = EncodingDetector.detectBOM(bytes);
+      if (hasExplicitEncoding) {
+        encoding = String(encodingOverride).toLowerCase();
+        hasBom = bomEnc === encoding;
+      } else {
+        encoding = EncodingDetector.detect(bytes);
+        hasBom = bomEnc !== null;
+      }
     }
     let sliceBytes = bytes;
     if (iteration > 1 && startOffset > 0 && encoding === 'utf-8') {
@@ -170,14 +211,16 @@ async function loadCsvViewOnly(data, postFn = postWorkerMessage) {
     }
     let result;
     try {
-      result = new TextDecoder(encoding, { fatal: encoding === 'utf-8' }).decode(sliceBytes, { stream: endOffset < fileSize });
+      result = new TextDecoder(encoding, { fatal: !hasExplicitEncoding && encoding === 'utf-8' }).decode(sliceBytes, { stream: endOffset < fileSize });
     } catch {
+      hasBom = false;
       encoding = EncodingDetector.detectFallback(sliceBytes);
       result = new TextDecoder(encoding, { fatal: false }).decode(sliceBytes);
     }
 
     if (iteration === 1) {
-      sep = SeparatorDetector.detect(result);
+      sep = hasExplicitDelimiter ? normalizeDelimiter(delimiterOverride) : SeparatorDetector.detect(result);
+      eol = LineTerminatorDetector.detect(result);
     } else if (startOffset > 0) {
       const lfIdx = result.indexOf('\n');
       const crIdx = result.indexOf('\r');
@@ -206,7 +249,7 @@ async function loadCsvViewOnly(data, postFn = postWorkerMessage) {
     postFn({
       cmd: 'chunk_loaded', readId, status: iteration / totalChunks,
       chunk: matrix, chunkId: iteration, isFirstChunk: iteration === 1,
-      isComplete: iteration === totalChunks, viewOnly: true, sep, encoding, rowCount: 0
+      isComplete: iteration === totalChunks, viewOnly: true, sep, encoding, hasBom, eol, rowCount: 0
     });
   }
 }

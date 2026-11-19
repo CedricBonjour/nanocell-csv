@@ -5,6 +5,7 @@
  */
 
 import { VALIDATION_RULES, COMMA_REPLACEMENTS, DEFAULT_MACROS, setCommaReplacement, setPreserveQuotedEmpty } from '../core/DataValidator.js';
+import { ENCODING_OPTIONS, DELIMITER_OPTIONS, EOL_OPTIONS } from '../core/Csv.js';
 
 let activeSheet = null;
 let activeCsvHandle = null;
@@ -119,23 +120,41 @@ Setting.list = [
   { key: 'theme', defaultValue: 'nord', name: 'Theme', list: ['nord', 'light', 'slate', 'dark', 'solarized', 'night', 'dracula'], onChange: Setting.setTheme },
   { key: 'font', defaultValue: 13, name: 'Font Size', min: 7, max: 24, onChange: (fontSize) => {
     globalThis.document?.body?.style?.setProperty('--app-font-size', `${fontSize}px`);
+    getSheet()?.updateViewportLayout(true);
   } },
-  { key: 'rows', defaultValue: 25, name: 'Rows', min: 10, max: 60, onChange: () => getSheet()?.reload() },
-  { key: 'cols', defaultValue: 7, name: 'Cols', min: 3, max: 30, onChange: () => getSheet()?.reload() },
+  { key: 'gridMode', defaultValue: 'auto', name: 'Grid Sizing', list: ['auto', 'manual'], onChange: () => {
+    getSheet()?.updateViewportLayout(true);
+  } },
+  { key: 'rows', defaultValue: 25, name: 'Rows', min: 6, max: 80, visibleWhen: () => settings.gridMode === 'manual', onChange: () => {
+    getSheet()?.updateViewportLayout(true);
+  } },
+  { key: 'cols', defaultValue: 7, name: 'Cols', min: 3, max: 30, visibleWhen: () => settings.gridMode === 'manual', onChange: () => {
+    getSheet()?.updateViewportLayout(true);
+  } },
+  { key: 'colSizing', defaultValue: 'equal', name: 'Column Widths', list: ['equal', 'smart'], onChange: () => {
+    const s = getSheet();
+    if (s) {
+      s.expandedCol = null;
+      s.updateViewportLayout(true);
+    }
+  } },
   { key: 'actionBar', defaultValue: true, name: 'Action Bar', onChange: (isVisible) => {
     dom.header?.classList.toggle('hidden', !isVisible);
   } },
-  { key: 'highlightNonCompliant', defaultValue: true, name: 'Warning color on line return, comma and double quote values', onChange: () => getSheet()?.reload() },
+  { key: 'highlightNonCompliant', defaultValue: true, name: 'Warning color on line return, delimiter and double quote values', onChange: () => getSheet()?.reload() },
 
-  { title: 'Csv Save' },
-  { key: 'encoding', defaultValue: 'utf-8', name: 'Encoding' },
-  { key: 'delimiter', defaultValue: ',', name: 'Delimiter', list: [',', ';', 'TAB', '|'] },
-  { key: 'fixedWidthSize', defaultValue: 0, name: 'Minimum column size', min: 0, max: 100 },
-  { key: 'strictSave', defaultValue: false, name: 'Save-Strict (error on comma  or double quotes)' },
+  { title: 'Save (defaults)' },
+  { key: 'encoding', defaultValue: 'utf-8', name: 'Encoding', list: [...ENCODING_OPTIONS], onChange: () => dom.fileInfoPane?.refresh?.() },
+  { key: 'delimiter', defaultValue: ',', name: 'Delimiter', list: [...DELIMITER_OPTIONS], onChange: () => { getSheet()?.refresh(); dom.fileInfoPane?.refresh?.(); } },
+  { key: 'lineTerminator', defaultValue: 'CRLF', name: 'Line ending (EOL)', list: [...EOL_OPTIONS], onChange: () => dom.fileInfoPane?.refresh?.() },
+  { key: 'hasBom', defaultValue: false, name: 'Byte Order Mark (BOM)', onChange: () => dom.fileInfoPane?.refresh?.() },
+  { key: 'fixedWidthSize', defaultValue: 0, name: 'Minimum column size', min: 0, max: 100, onChange: () => dom.fileInfoPane?.refresh?.() },
+  { key: 'strictSave', defaultValue: false, name: 'Save-Strict (error on delimiter or double quotes)', onChange: () => dom.fileInfoPane?.refresh?.() },
+  { key: 'forceDefaultSave', defaultValue: false, name: 'Always force save with defaults', onChange: () => { getSheet()?.refresh(); dom.fileInfoPane?.refresh?.(); } },
 
   { title: 'Csv Open' },
   { key: 'readOnlyOnOpen', defaultValue: false, name: 'Open in read-only mode' },
-  { key: 'freezeHeaderOnOpen', defaultValue: true, name: 'Set headers' },
+  { key: 'freezeHeaderOnOpen', defaultValue: false, name: 'Set headers' },
   { key: 'trim', defaultValue: false, name: 'Remove empty rows and columns' },
   { key: 'trimUnquoted', defaultValue: true, name: 'Trim unquoted whitespace' },
   { key: 'preserveQuotedEmpty', defaultValue: false, name: 'Preserve quoted empty strings ("")', onChange: (val) => {
@@ -165,6 +184,7 @@ Setting.list = [
   } },
   { key: 'pinnedValidations', defaultValue: [], name: 'Pinned validation rules', tags: VALIDATION_RULES.map(r => ({ value: r.id, get label() { return r.label; } })), onChange: () => refreshValidationPanes() },
   { key: 'macros', defaultValue: DEFAULT_MACROS, hidden: true, onChange: () => dom.macroPane?.refreshFromSettings() },
+  { key: 'hideCompatNotice', defaultValue: false, hidden: true },
 ];
 
 function refreshValidationPanes() {
@@ -221,6 +241,7 @@ export function detectEnvironment(overrides = {}) {
   const isMac = os === 'macos' || os === 'ios';
 
   let browser = 'unknown', browserName = 'Unknown Browser', browserVersion = '', isChromium = false;
+  let hasSafariVersion = false;
   const chromeMatch = ua.match(/(?:Chrome|Chromium)\/([0-9.]+)/i);
 
   for (const [regex, id, name, chromiumFn] of BROWSER_MATCHERS) {
@@ -250,7 +271,9 @@ export function detectEnvironment(overrides = {}) {
       browserVersion = chromeMatch[1];
       isChromium = os !== 'ios';
     } else if (/Safari\/([0-9.]+)/i.test(ua) && !/Chrome|CriOS|FxiOS|Edg|OPR|Android/i.test(ua)) {
-      const verMatch = ua.match(/(?:Version|Safari)\/([0-9.]+)/i);
+      const safariVerMatch = ua.match(/Version\/([0-9.]+)/i);
+      const verMatch = safariVerMatch || ua.match(/Safari\/([0-9.]+)/i);
+      hasSafariVersion = Boolean(safariVerMatch);
       browser = 'safari'; browserName = 'Safari'; browserVersion = verMatch ? verMatch[1] : '';
     }
   }
@@ -260,16 +283,32 @@ export function detectEnvironment(overrides = {}) {
     : (ua || 'Unknown');
 
   const supportsFileSystemAccess = Boolean(win && typeof win.showOpenFilePicker === 'function' && typeof win.showSaveFilePicker === 'function');
-  const supportsPwaInstall = Boolean(isDesktop && isChromium);
+  const supportsWebInstall = overrides.navigator !== undefined
+    ? Boolean(nav && typeof nav.install === 'function')
+    : (typeof navigator !== 'undefined' && typeof navigator.install === 'function');
+  const browserMajor = parseInt(browserVersion, 10) || 0;
+  const isFirefoxWindowsPwa = Boolean(isDesktop && os === 'windows' && browser === 'firefox' && browserMajor >= 143);
+  const isSafariMacPwa = Boolean(isDesktop && os === 'macos' && browser === 'safari' && hasSafariVersion && browserMajor >= 17);
+  const supportsPwaInstall = Boolean(isDesktop && (isChromium || isFirefoxWindowsPwa || isSafariMacPwa || supportsWebInstall));
 
   return {
     os, osLabel, browser, browserName, browserVersion, browserInfo,
     userAgent: ua, isMobile, isDesktop, isMac, isChromium,
-    supportsFileSystemAccess, supportsPwaInstall
+    supportsFileSystemAccess, supportsWebInstall, supportsPwaInstall
   };
 }
 
 export const env = detectEnvironment();
+
+export function getManualInstallHint(customEnv = env) {
+  if (customEnv?.browser === 'firefox') {
+    return 'To install NanoCell in Firefox, click the "Add tab to taskbar" icon in the address bar.';
+  }
+  if (customEnv?.browser === 'safari') {
+    return 'To install NanoCell in Safari, choose File -> Add to Dock from the menu bar (or Share -> Add to Dock).';
+  }
+  return 'To install NanoCell, click the Install icon in your browser address bar (or Browser Menu -> Save and share -> Install page as app).';
+}
 
 export function formatShortcut(command) {
   if (!command?.key) return '';
@@ -306,6 +345,9 @@ export function createPwaManager(options = {}) {
   let isStandalone = checkStandalone();
   let storageInstalled = readInstalled();
   let deferredPrompt = null;
+  let webInstallAvailable = options.navigator !== undefined
+    ? Boolean(nav && typeof nav.install === 'function')
+    : (typeof navigator !== 'undefined' && typeof navigator.install === 'function');
   let authoritativeState = isStandalone ? 'installed' : 'unknown';
 
   if (isStandalone && !storageInstalled) {
@@ -321,7 +363,7 @@ export function createPwaManager(options = {}) {
       : isInstalled ? 'installed'
       : currentEnv.isMobile ? 'unsupported-mobile'
       : !currentEnv.supportsPwaInstall ? 'unsupported-browser'
-      : deferredPrompt !== null ? 'installable-prompt' : 'installable-manual';
+      : (deferredPrompt !== null || webInstallAvailable) ? 'installable-prompt' : 'installable-manual';
     const canInstall = status === 'installable-prompt' || status === 'installable-manual';
     return { status, isStandalone, isInstalled, canInstall, hasPrompt: status === 'installable-prompt', env: currentEnv };
   }
@@ -398,6 +440,22 @@ export function createPwaManager(options = {}) {
     const current = getState();
     if (current.isStandalone || current.isInstalled) return 'already-installed';
     if (!current.canInstall) return 'unsupported';
+
+    if (webInstallAvailable) {
+      try {
+        await (options.navigator !== undefined ? nav.install() : navigator.install());
+        setInstallState(true, null);
+        return 'accepted';
+      } catch (err) {
+        if (err?.name === 'AbortError') {
+          notify();
+          return 'dismissed';
+        }
+        webInstallAvailable = false;
+        notify();
+      }
+    }
+
     if (!deferredPrompt) return 'manual';
 
     const promptEvent = deferredPrompt;

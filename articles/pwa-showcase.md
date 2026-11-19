@@ -14,7 +14,7 @@ Progressive Web Apps are applications built with standard web technologies (HTML
 
 **100% Offline & Local Privacy** — Once loaded, a client-side PWA like [NanoCell CSV](https://nanocell-csv.com/) runs entirely in local memory with zero server uploads and zero telemetry.
 
-**Zero-Admin Installation** — On locked corporate laptops where IT blocks `.exe` or `.dmg` installers, a PWA installs in one click directly from Chrome, Edge, or Brave—including native OS `Open with...` support for `.csv` and `.tsv` files.
+**Zero-Admin Installation** — On locked corporate laptops where IT blocks `.exe` or `.dmg` installers, a PWA installs in one click directly from Chrome, Edge, or Brave (including native OS `Open with...` support for `.csv` and `.tsv` files), or pins directly to your taskbar/Dock via Firefox on Windows and Safari on macOS.
 
 **Cross-Platform Desktop Compatibility** — Whether you work on Windows, macOS, Linux, or ChromeOS, a single lightweight codebase delivers an identical, keyboard-driven desktop experience.
 

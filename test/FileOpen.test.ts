@@ -14,6 +14,9 @@ if (typeof globalThis.HTMLElement === 'undefined') {
       this.children.push(child);
       return child;
     }
+    append(...nodes: any[]) {
+      for (const n of nodes) this.appendChild(n);
+    }
     contains(child: any) {
       return this.children.includes(child);
     }
@@ -467,12 +470,12 @@ export async function runFileOpenTests(): Promise<{ passed: number; failed: numb
       ['10', '20']
     ]);
 
-    // Verify in-place save works using the preserved handle!
+    // Verify in-place save works using the preserved handle and preserves original LF line endings!
     getSheet().df.data[1][1] = '99';
     getSheet().df.isSaved = false;
     await csvHandle.save();
     assert.strictEqual(getSheet().df.isSaved, true);
-    assert.strictEqual(droppedHandle.getWrittenContent(), 'x,y\r\n10,99');
+    assert.strictEqual(droppedHandle.getWrittenContent(), 'x,y\n10,99');
   });
 
   await test('Way 5b (Drag & Drop with standard File fallback): Loads from dataTransfer.files[0] when getAsFileSystemHandle is unavailable', async () => {

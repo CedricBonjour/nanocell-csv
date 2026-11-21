@@ -33,8 +33,8 @@ Preparing a messy CSV export for a SQL database import or data pipeline usually 
 - **Duplicate Row Detector & Empty Trimmer:** Finds exact duplicate rows linked to their original row for review and removes trailing blank rows and columns (`Ctrl+Alt+T`).
 - **Multi-Format Export:** Copy selections or export the sheet as RFC 4180 CSV, TSV, pretty-printed JSON, or GitHub Markdown tables.
 
-## Open Source & Community-Driven
+## Source-Available & Community-Driven
 
-[NanoCell CSV](https://nanocell-csv.com/) is free and open-source on [GitHub](https://github.com/CedricBonjour/nanocell-csv). Whether you have a tricky CSV edge case, a new validation rule idea, or feedback on your daily data workflow, contributions and issue reports are always welcome!
+[NanoCell CSV](https://nanocell-csv.com/) is source-available on [GitHub](https://github.com/CedricBonjour/nanocell-csv) and free for personal, academic, nonprofit, and public-sector use. Whether you have a tricky CSV edge case, a new validation rule idea, or feedback on your daily data workflow, issue reports and feedback are always welcome!
 
 [Launch NanoCell CSV](https://nanocell-csv.com/)

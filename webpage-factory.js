@@ -52,7 +52,7 @@ export function renderTermsHtml({ appMetaImage = '' } = {}) {
   const md = (f) => marked.parse(readFileSync(p(f), 'utf-8'));
   const title = 'Terms of Use & License';
   const metaTitle = formatMetaTitle(title);
-  const description = 'Terms of Use and Creative Commons Attribution-NonCommercial-NoDerivs 3.0 Unported License for NanoCell CSV Editor.';
+  const description = 'Terms of Use and PolyForm Strict License 1.0.0 for NanoCell CSV Editor.';
   const canonicalUrl = `${siteOrigin}/terms_of_use_and_license.html`;
 
   return pageTpl

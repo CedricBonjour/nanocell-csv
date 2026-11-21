@@ -61,7 +61,7 @@ If CSV files are so important and universal, why does it feel so risky to open t
 
 ## The Solution: A Dedicated Verbatim CSV Editor
 
-[NanoCell CSV](https://nanocell-csv.com/) is a free, open-source, cross-platform editor built specifically for `.csv` and `.tsv` files. Its source code is available on [GitHub](https://github.com/CedricBonjour/nanocell-csv). Every cell is treated as 100% verbatim text by default, multi-gigabyte files preview in milliseconds via background Web Worker interval sampling, and built-in validation rules clean up headers, currencies, locale numbers, and dates in one click—running 100% locally in your browser or as an offline Desktop PWA.
+[NanoCell CSV](https://nanocell-csv.com/) is a cross-platform, source-available editor built specifically for `.csv` and `.tsv` files. Its source code is publicly inspectable on [GitHub](https://github.com/CedricBonjour/nanocell-csv). Every cell is treated as 100% verbatim text by default, multi-gigabyte files preview in milliseconds via background Web Worker interval sampling, and built-in validation rules clean up headers, currencies, locale numbers, and dates in one click—running 100% locally in your browser or as an offline Desktop PWA.
 
 > [NanoCell CSV](https://nanocell-csv.com/) embraces the core values of CSV:
 > - Simple

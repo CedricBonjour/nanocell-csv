@@ -376,7 +376,7 @@ header {
 .hero-content {
   position: relative;
   text-align: center;
-  max-width: 860px;
+  max-width: 920px;
   margin: 0 auto;
   padding: 2rem 1.5rem 0;
   box-sizing: border-box;
@@ -388,23 +388,32 @@ header {
   gap: 0.65rem;
   flex-wrap: wrap;
   justify-content: center;
+  max-width: 100%;
   margin-bottom: 1.1rem;
 }
 
 .eyebrow-pill {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
-  padding: 0.32rem 0.85rem;
-  border-radius: 999px;
-  font-size: 0.82rem;
+  gap: 0.5rem;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 0.34rem 0.9rem;
+  border-radius: 1.25rem;
+  font-size: 0.8rem;
   font-weight: 700;
+  line-height: 1.45;
   background: var(--green-soft);
   color: var(--green-dark);
   border: 1px solid var(--green-border);
 }
 
+.eyebrow-text {
+  text-wrap: balance;
+}
+
 .eyebrow-dot {
+  flex-shrink: 0;
   width: 7px;
   height: 7px;
   border-radius: 50%;
@@ -413,11 +422,12 @@ header {
 }
 
 .hero-content h1 {
+  max-width: 812px;
   font-size: clamp(2.25rem, 5vw, 3.7rem);
   font-weight: 850;
   line-height: 1.15;
   letter-spacing: -0.03em;
-  margin: 0.9rem 0 1.25rem;
+  margin: 0.9rem auto 1.25rem;
   color: var(--slate-900);
 }
 
@@ -1228,6 +1238,12 @@ section:nth-of-type(odd) {
 
   .window-meta {
     display: none;
+  }
+
+  .eyebrow-pill {
+    font-size: 0.75rem;
+    padding: 0.36rem 0.75rem;
+    border-radius: 0.9rem;
   }
 
   .metrics-strip,

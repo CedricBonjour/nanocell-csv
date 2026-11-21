@@ -18,8 +18,8 @@
     "url": "git+https://github.com/CedricBonjour/nanocell-csv.git"
   },
   "keywords": [],
-  "author": "",
-  "license": "CC-BY-NC-ND-3.0",
+  "author": "Cedric Bonjour",
+  "license": "LicenseRef-PolyForm-Strict-1.0.0",
   "bugs": {
     "url": "https://github.com/CedricBonjour/nanocell-csv/issues"
   },

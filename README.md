@@ -207,7 +207,7 @@ NanoCell CSV is free, 100% client-side, and actively shaped by real-world CSV ed
 
 ## 📄 License & Terms
 
-Copyright © Cedric Bonjour. Please see [LICENSE.md](LICENSE.md) and [TERMS_OF_USE.md](TERMS_OF_USE.md) for license and usage details.
+Copyright © 2021–2026 Cedric Bonjour. Licensed under the **[PolyForm Strict License 1.0.0](LICENSE.md)** — free for personal, educational, nonprofit, public research, and government use. For commercial workplace licensing, OEM inquiries, or a 30-day workplace evaluation, contact `nanocell.csv@gmail.com`. See [LICENSE.md](LICENSE.md) and [TERMS_OF_USE.md](TERMS_OF_USE.md) for full details.
 
 <div align="center">
   <br />
